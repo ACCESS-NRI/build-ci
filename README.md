@@ -24,7 +24,7 @@ on:
 
 jobs:
   reusable-workflow-job:
-    uses: access-nri/workflows/.github/workflows/example-workflow.yml
+    uses: access-nri/workflows/.github/workflows/example-workflow.yml@main
 ```
 
 See [Reusing workflows](https://docs.github.com/en/actions/using-workflows/reusing-workflows#calling-a-reusable-workflow) for more info.
