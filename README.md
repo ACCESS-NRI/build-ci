@@ -7,3 +7,24 @@ All available reusable workflows. Naming convention: `[name of associated projec
 
 ### `containers`
 Build container definitions. Organised into subdirectories by name of associated project repository.
+
+## Usage
+### Simple example
+`.github/workflows/workflow.yml`:
+
+```
+name: Example workflow
+
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  reusable-workflow-job:
+    uses: access-nri/workflows/.github/workflows/example-workflow.yml
+```
+
+See [Reusing workflows](https://docs.github.com/en/actions/using-workflows/reusing-workflows#calling-a-reusable-workflow) for more info.
