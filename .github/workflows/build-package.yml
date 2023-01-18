@@ -29,11 +29,11 @@ jobs:
     steps:
     - name: Build package via spack
       run: spack -v install --only package --no-checksum ${{ inputs.package-name }}@$GITHUB_REF_NAME
-      if: github.event_name != "pull_request"
+      if: github.event_name != 'pull_request'
 
     # Workaround for this issue: https://github.com/github/docs/issues/15319
     # In the case of a pull request, we need to use GITHUB_HEAD_REF to get the
     # correct branch name
     - name: Build package via spack
       run: spack -v install --only package --no-checksum ${{ inputs.package-name }}@$GITHUB_HEAD_REF
-      if: github.event_name == "pull_request"
+      if: github.event_name == 'pull_request'
