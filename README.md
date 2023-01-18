@@ -1,12 +1,25 @@
 # ACCESS-NRI reusable CI workflows
-A central repository for reusable github workflows and associated container defintions for CI across all ACCESS-NRI supported proejcts.
+A central repository for reusable github workflows for CI builds across all ACCESS-NRI supported proejcts.
 
 ## Directory structure
 ### `.github/workflows`
-All available reusable workflows. Naming convention: `[name of associated project repository]-[name of workflow].yml`. Subject to change once more generalised workflows are written. Unfortunately github currently disallows subdirectories in `.github/workflows`.
+Note: ufortunately github currently disallows subdirectories in `.github/workflows`.
 
-### `containers`
-Build container definitions. Organised into subdirectories by name of associated project repository.
+#### `build-and-push-image.yml`
+Build and push a Docker image to a specified container repository.
+
+Inputs:
+* `container-registry`: The container registry base URL (e.g.: `ghcr.io`)
+* `container-path`: The container path inside the registry (e.g. `access-nri/example-image`)
+* `dockerfile-directory`: The directory in the caller repository where the Dockerfile is located (e.g. `ci`)
+
+#### `build-package.yml`
+Build a specified spack package given a Docker build image.
+
+Inputs:
+* `container-registry`: The container registry base URL (e.g.: `ghcr.io`)
+* `container-path`: The container path inside the registry (e.g. `access-nri/example-image`)
+* `package-name`: The name of the spack package to be built (e.g. `access.nri.oasis3-mct`)
 
 ## Usage
 ### Simple example
@@ -25,6 +38,10 @@ on:
 jobs:
   reusable-workflow-job:
     uses: access-nri/workflows/.github/workflows/example-workflow.yml@main
+    with:
+      container-registry: ghcr.io
+      container-path: access-nri/example-image
+      dockerfile-directory: ci
 ```
 
 See [Reusing workflows](https://docs.github.com/en/actions/using-workflows/reusing-workflows#calling-a-reusable-workflow) for more info.
