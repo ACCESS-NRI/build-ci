@@ -1,11 +1,17 @@
-name: Build and push oasis3-mct image
+name: Build and push package build image
 
 on:
   workflow_call:
-
-env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}-build-image
+    inputs:
+      container-registry:
+        required: true
+        type: string
+      container-path:
+        required: true
+        type: string
+      dockerfile-directory:
+        required: true
+        type: string
 
 jobs:
   build-and-push-image:
@@ -26,7 +32,7 @@ jobs:
     - name: Log in to container registry
       uses: docker/login-action@v2
       with:
-        registry: ${{ env.REGISTRY }}
+        registry: ${{ inputs.container-registry }}
         username: ${{ github.repository_owner }}
         password: ${{ secrets.GITHUB_TOKEN }}
 
@@ -34,14 +40,14 @@ jobs:
       id: meta
       uses: docker/metadata-action@v4
       with:
-        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+        images: ${{ inputs.container-registry }}/${{ inputs.container-path }}
         flavor: |
           latest=true
 
     - name: Build and push Docker image
       uses: docker/build-push-action@v3
       with:
-        context: "{{defaultContext}}:ci"
+        context: "{{defaultContext}}:${{ inputs.dockerfile-directory }}"
         file: Dockerfile
         push: true
         tags: ${{ steps.meta.outputs.tags }}
