@@ -6,7 +6,7 @@ on:
       container-registry:
         required: true
         type: string
-      container-name:
+      container-path:
         required: true
         type: string
       package-name:
@@ -21,7 +21,7 @@ jobs:
       packages: read
 
     container:
-      image: ${{ inputs.container-registry }}/${{ github.repository_owner }}/${{ inputs.container-name }}:latest
+      image: ${{ inputs.container-registry }}/${{ inputs.container-path }}:latest
       credentials:
         username: ${{ github.repository_owner }}
         password: ${{ secrets.GITHUB_TOKEN }}
