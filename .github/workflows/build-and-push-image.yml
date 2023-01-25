@@ -15,6 +15,10 @@ on:
       dockerfile-name:
         required: true
         type: string
+      build-args:
+        required: false
+        type: list
+        default: ""
 
 jobs:
   build-and-push-image:
@@ -51,6 +55,7 @@ jobs:
       uses: docker/build-push-action@v3
       with:
         context: "{{defaultContext}}:${{ inputs.dockerfile-directory }}"
+        build-args: ${{ inputs.build-args }}
         file: ${{ inputs.dockerfile-name }}
         push: true
         tags: ${{ steps.meta.outputs.tags }}
