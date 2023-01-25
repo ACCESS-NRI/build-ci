@@ -6,10 +6,13 @@ on:
       container-registry:
         required: true
         type: string
-      container-path:
+      container-name:
         required: true
         type: string
       dockerfile-directory:
+        required: true
+        type: string
+      dockerfile-name:
         required: true
         type: string
 
@@ -40,7 +43,7 @@ jobs:
       id: meta
       uses: docker/metadata-action@v4
       with:
-        images: ${{ inputs.container-registry }}/${{ inputs.container-path }}
+        images: ${{ inputs.container-registry }}/${{ inputs.container-name }}
         flavor: |
           latest=true
 
@@ -48,7 +51,7 @@ jobs:
       uses: docker/build-push-action@v3
       with:
         context: "{{defaultContext}}:${{ inputs.dockerfile-directory }}"
-        file: Dockerfile
+        file: ${{ inputs.dockerfile-name }}
         push: true
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}

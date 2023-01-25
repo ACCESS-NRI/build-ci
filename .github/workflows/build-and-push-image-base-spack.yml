@@ -1,0 +1,16 @@
+name: Build and push access-nri/base-spack image
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-and-push-image:
+    uses: access-nri/workflows/.github/workflows/build-and-push-image.yml@main
+    with:
+      container-registry: ghcr.io
+      container-name: access-nri/base-spack
+      dockerfile-directory: containers
+      dockerfile-name: Dockerfile.base-spack
+    permissions:
+      contents: read
+      packages: write
