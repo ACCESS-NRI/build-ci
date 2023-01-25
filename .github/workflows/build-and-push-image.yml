@@ -17,7 +17,7 @@ on:
         type: string
       build-args:
         required: false
-        type: list
+        type: string
         default: ""
 
 jobs:
