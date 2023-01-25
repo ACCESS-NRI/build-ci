@@ -1,0 +1,21 @@
+name: Build and push access-nri/build-[package] images
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-and-push-image:
+    strategy:
+      matrix:
+        package-name: ["oasis3-mct"]
+    uses: access-nri/workflows/.github/workflows/build-and-push-image.yml@main
+    with:
+      container-registry: ghcr.io
+      container-name: access-nri/build-${{ matrix.package-name }}
+      dockerfile-directory: containers
+      dockerfile-name: Dockerfile.build
+      build-args: |
+        "PACKAGE_NAME=${{ matrix.package-name }}"
+    permissions:
+      contents: read
+      packages: write
