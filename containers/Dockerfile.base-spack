@@ -12,6 +12,10 @@ RUN apt-get update && apt-get install -y\
 RUN git clone https://github.com/spack/spack.git /root/spack --branch v0.19.0 --single-branch
 RUN ln -s /root/spack/bin/spack /bin
 
+# Add binary cache mirror
+RUN spack mirror add binary_mirror https://binaries.spack.io/develop
+RUN spack buildcache keys --install --trust
+
 # Set up ACCESS spack package repo
 RUN git clone https://github.com/ACCESS-NRI/spack_packages.git /root/spack_packages
 COPY repos.yaml /root/spack/etc/spack/repos.yaml
