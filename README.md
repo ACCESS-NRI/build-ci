@@ -1,8 +1,9 @@
-# ACCESS-NRI reusable CI workflows
-A central repository for reusable github workflows for CI builds across all ACCESS-NRI supported proejcts.
+# ACCESS-NRI model build CI repository
+A central repository for reusable CI build testing containers and pipelines used across ACCESS-NRI supported projects.
 
 ## Directory structure
 ### `.github/workflows`
+Reusable github workflows for CI builds.
 Note: ufortunately github currently disallows subdirectories in `.github/workflows`.
 
 #### `build-and-push-image.yml`
