@@ -9,9 +9,9 @@ RUN apt-get update && apt-get install -y\
     gfortran
 
 # Install spack
-# RUN git clone https://github.com/spack/spack.git /root/spack --branch v0.19.0 --single-branch
-RUN git clone -c feature.manyFiles=true https://github.com/spack/spack.git /root/spack --single-branch
-RUN ln -s /root/spack/bin/spack /bin
+# RUN git clone https://github.com/spack/spack.git /opt/spack --branch v0.19.0 --single-branch
+RUN git clone -c feature.manyFiles=true https://github.com/spack/spack.git /opt/spack --single-branch
+RUN ln -s /opt/spack/bin/spack /bin
 
 # Add E4S binary cache mirror
 # Use release-specific E4S cache as workaround for E4S issue #104
@@ -20,5 +20,5 @@ RUN spack mirror add E4S https://cache.e4s.io/22.11
 RUN spack buildcache keys --install --trust --force
 
 # Set up ACCESS spack package repo
-RUN git clone https://github.com/ACCESS-NRI/spack_packages.git /root/spack_packages
-COPY repos.yaml /root/spack/etc/spack/repos.yaml
+RUN git clone https://github.com/ACCESS-NRI/spack_packages.git /opt/spack_packages
+COPY repos.yaml /opt/spack/etc/spack/repos.yaml
