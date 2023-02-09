@@ -21,4 +21,4 @@ RUN spack buildcache keys --install --trust --force
 
 # Set up ACCESS spack package repo
 RUN git clone https://github.com/ACCESS-NRI/spack_packages.git /opt/spack_packages
-COPY repos.yaml /opt/spack/etc/spack/repos.yaml
+RUN spack repo add /opt/spack_packages
