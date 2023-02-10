@@ -9,8 +9,8 @@ RUN apt-get update && apt-get install -y\
     gfortran
 
 # Install spack
-# RUN git clone https://github.com/spack/spack.git /opt/spack --branch v0.19.0 --single-branch
-RUN git clone -c feature.manyFiles=true https://github.com/spack/spack.git /opt/spack --single-branch
+# RUN git clone -c feature.manyFiles=true https://github.com/spack/spack.git /opt/spack --branch v0.19.0 --single-branch --depth=1
+RUN git clone -c feature.manyFiles=true https://github.com/spack/spack.git /opt/spack --single-branch --depth=1
 RUN ln -s /opt/spack/bin/spack /bin
 
 # Add E4S binary cache mirror
