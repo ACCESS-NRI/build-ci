@@ -3,7 +3,6 @@ FROM ghcr.io/access-nri/base-spack:latest
 ARG PACKAGE_NAME
 
 # Install dependencies separately for caching
-RUN spack mirror list
 RUN spack -d install --only dependencies ${PACKAGE_NAME}
 
 ENTRYPOINT ["/bin/bash", "-c", "spack -d install --only package ${PACKAGE_NAME}"]
