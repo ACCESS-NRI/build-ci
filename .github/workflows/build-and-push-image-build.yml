@@ -1,4 +1,4 @@
-name: Build and push access-nri/build-[package] images
+name: Build and push access-nri/build images
 
 on:
   workflow_dispatch:
@@ -7,15 +7,29 @@ jobs:
   build-and-push-image:
     strategy:
       matrix:
-        package-name: ["oasis3-mct"]
+        package: [
+          "oasis3-mct",
+        ]
+        compiler: [
+          {
+            name: "intel",
+            package: "intel-oneapi-compilers",
+            version: "2021.1.2",
+          },
+        ]
     uses: access-nri/workflows/.github/workflows/build-and-push-image.yml@main
     with:
       container-registry: ghcr.io
-      container-name: access-nri/build-${{ matrix.package-name }}
+      container-name: access-nri/build-${{ matrix.package }}
       dockerfile-directory: containers
       dockerfile-name: Dockerfile.build
       build-args: |
-        "PACKAGE_NAME=${{ matrix.package-name }}"
+        # TODO: Probably shouldn't hard code base image path
+        "BASE_IMAGE=ghcr.io/access-nri/base-spack:latest"
+        "PACKAGE=${{ matrix.package }}"
+        "COMPILER_NAME=${{ matrix.compiler.name}}"
+        "COMPILER_PACKAGE=${{ matrix.compiler.package}}"
+        "COMPILER_VERSION=${{ matrix.compiler.version}}"
     permissions:
       contents: read
       packages: write
