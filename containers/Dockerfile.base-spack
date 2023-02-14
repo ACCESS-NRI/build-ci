@@ -1,5 +1,9 @@
 FROM ubuntu:20.04
 
+SHELL ["/bin/bash", "-c"]
+
+ENV SPACK_ROOT=/opt/spack
+
 # Install spack dependencies
 RUN apt-get update && apt-get install -y\
     git\
@@ -9,9 +13,12 @@ RUN apt-get update && apt-get install -y\
     gfortran
 
 # Install spack
-RUN git clone -c feature.manyFiles=true https://github.com/spack/spack.git /opt/spack --branch v0.19.0 --single-branch --depth=1
-RUN ln -s /opt/spack/bin/spack /bin
+RUN git clone -c feature.manyFiles=true https://github.com/spack/spack.git ${SPACK_ROOT} --branch v0.19.0 --single-branch --depth=1
+ENV PATH="$SPACK_ROOT/bin:$PATH"
 
 # Set up ACCESS spack package repo
 RUN git clone https://github.com/ACCESS-NRI/spack_packages.git /opt/spack_packages
 RUN spack repo add /opt/spack_packages
+
+# TODO
+# Think about setting up spack S3 build cache for CI here
