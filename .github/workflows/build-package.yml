@@ -6,10 +6,16 @@ on:
       container-registry:
         required: true
         type: string
-      container-path:
+      container-name:
         required: true
         type: string
       package-name:
+        required: true
+        type: string
+      compiler-name:
+        required: true
+        type: string
+      compiler-version:
         required: true
         type: string
 
@@ -21,19 +27,21 @@ jobs:
       packages: read
 
     container:
-      image: ${{ inputs.container-registry }}/${{ inputs.container-path }}:latest
+      image: ${{ inputs.container-registry }}/${{ inputs.container-name }}:latest
       credentials:
         username: ${{ github.repository_owner }}
         password: ${{ secrets.GITHUB_TOKEN }}
 
     steps:
     - name: Build package via spack
-      run: spack -v install --only package --no-checksum ${{ inputs.package-name }}@$GITHUB_REF_NAME
+      run: |
+        spack -d install --only package --no-checksum ${{ inputs.package-name }}@$GITHUB_REF_NAME%${{ inputs.compiler-name }}@${{ inputs.compiler-version }}
       if: github.event_name != 'pull_request'
 
     # Workaround for this issue: https://github.com/github/docs/issues/15319
     # In the case of a pull request, we need to use GITHUB_HEAD_REF to get the
     # correct branch name
     - name: Build package via spack
-      run: spack -v install --only package --no-checksum ${{ inputs.package-name }}@$GITHUB_HEAD_REF
+      run: |
+        spack -d install --only package --no-checksum ${{ inputs.package-name }}@$GITHUB_HEAD_REF%${{ inputs.compiler-name }}@${{ inputs.compiler-version }}
       if: github.event_name == 'pull_request'
