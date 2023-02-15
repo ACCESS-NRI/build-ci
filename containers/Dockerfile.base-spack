@@ -40,5 +40,5 @@ RUN spack repo add /opt/spack_packages
 # TODO
 # Think about setting up spack S3 build cache for CI here
 
-ENTRYPOINT ["/bin/bash", "$SPACK_ROOT/share/spack/docker/entrypoint.bash"]
+ENTRYPOINT ["/bin/bash", "/opt/spack/share/spack/docker/entrypoint.bash"]
 CMD ["interactive-shell"]
