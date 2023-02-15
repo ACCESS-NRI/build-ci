@@ -5,16 +5,33 @@ SHELL ["/bin/bash", "-c"]
 ENV SPACK_ROOT=/opt/spack
 
 # Install spack dependencies
-RUN apt-get update && apt-get install -y\
-    git\
-    python3\
-    build-essential\
-    curl\
+RUN apt-get update && apt-get install -y \
+    git \
+    python3 \
+    build-essential \
+    curl \
     gfortran
 
 # Install spack
-RUN git clone -c feature.manyFiles=true https://github.com/spack/spack.git ${SPACK_ROOT} --branch v0.19.0 --single-branch --depth=1
+RUN git clone -c feature.manyFiles=true https://github.com/spack/spack.git $SPACK_ROOT --branch v0.19.0 --single-branch --depth=1
 ENV PATH="$SPACK_ROOT/bin:$PATH"
+
+# Enables setting Spack setup type via SHELL command
+# docker-shell:      Use for build RUN steps
+# interactive-shell: Use for interactive shell instances
+# spack-env:         Use for CMD invocations (e.g. CI runners)
+RUN ln -s $SPACK_ROOT/share/spack/docker/entrypoint.bash \
+    /usr/local/bin/docker-shell && \
+    ln -s $SPACK_ROOT/share/spack/docker/entrypoint.bash \
+    /usr/local/bin/interactive-shell && \
+    ln -s $SPACK_ROOT/share/spack/docker/entrypoint.bash \
+    /usr/local/bin/spack-env
+
+# Setup Spack environment for subsequent RUN steps
+SHELL ["docker-shell"]
+
+# Bootstrap Spack
+RUN spack bootstrap now
 
 # Set up ACCESS spack package repo
 RUN git clone https://github.com/ACCESS-NRI/spack_packages.git /opt/spack_packages
@@ -22,3 +39,6 @@ RUN spack repo add /opt/spack_packages
 
 # TODO
 # Think about setting up spack S3 build cache for CI here
+
+ENTRYPOINT ["/bin/bash", "$SPACK_ROOT/share/spack/docker/entrypoint.bash"]
+CMD ["interactive-shell"]

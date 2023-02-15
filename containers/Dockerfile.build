@@ -10,13 +10,13 @@ ARG COMPILER_NAME
 ARG COMPILER_PACKAGE
 ARG COMPILER_VERSION
 
+# Use Spack shell environment for subsequent RUN steps
+SHELL ["docker-shell"]
+
 # Install required compiler
 RUN spack -d install ${COMPILER_PACKAGE}@${COMPILER_VERSION}
 
 # Load required compiler and build package dependencies
-RUN . ${SPACK_ROOT}/share/spack/setup-env.sh &&\
-  spack load ${COMPILER_PACKAGE}@${COMPILER_VERSION} &&\
-  spack compiler find &&\
+RUN spack load ${COMPILER_PACKAGE}@${COMPILER_VERSION} && \
+  spack compiler find && \
   spack -d install --only dependencies ${PACKAGE}%${COMPILER_NAME}@${COMPILER_VERSION}
-
-ENTRYPOINT ["/bin/bash", "-c", "spack -d install --only package ${PACKAGE}%${COMPILER_NAME}@${COMPILER_VERSION}"]
