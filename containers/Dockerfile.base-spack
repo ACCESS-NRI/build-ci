@@ -35,7 +35,7 @@ RUN spack bootstrap now
 
 # Set up ACCESS spack package repo
 RUN git clone https://github.com/ACCESS-NRI/spack_packages.git /opt/spack_packages
-RUN spack repo add /opt/spack_packages
+COPY repos.yaml /opt/spack/etc/spack/repos.yaml
 
 # TODO
 # Think about setting up spack S3 build cache for CI here
