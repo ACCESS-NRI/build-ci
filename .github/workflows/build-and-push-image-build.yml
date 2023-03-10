@@ -9,6 +9,7 @@ jobs:
       matrix:
         package: [
           "oasis3-mct",
+          "libaccessom2",
         ]
         compiler: [
           {
