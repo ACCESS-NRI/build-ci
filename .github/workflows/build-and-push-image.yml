@@ -19,6 +19,9 @@ on:
         required: false
         type: string
         default: ""
+    secrets:
+      build-secrets:
+        required: false
 
 jobs:
   build-and-push-image:
@@ -56,6 +59,7 @@ jobs:
       with:
         context: "{{defaultContext}}:${{ inputs.dockerfile-directory }}"
         build-args: ${{ inputs.build-args }}
+        secrets: ${{ secrets.build-secrets }}
         file: ${{ inputs.dockerfile-name }}
         push: true
         tags: ${{ steps.meta.outputs.tags }}

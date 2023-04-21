@@ -3,11 +3,14 @@ FROM ubuntu:20.04
 SHELL ["/bin/bash", "-c"]
 
 ENV SPACK_ROOT=/opt/spack
+ENV SPACK_PACKAGES_ROOT=/opt/spack_packages
+ENV GNUPGHOME=$SPACK_ROOT/opt/spack/gpg
 
-# Install spack dependencies
+# Install Spack dependencies
 RUN apt-get update && apt-get install -y \
     git \
     python3 \
+    python3-pip \
     build-essential \
     curl \
     gfortran
@@ -33,12 +36,30 @@ SHELL ["docker-shell"]
 # Bootstrap Spack
 RUN spack bootstrap now
 
-# Set up ACCESS spack package repo
-RUN git clone https://github.com/ACCESS-NRI/spack_packages.git /opt/spack_packages
-COPY repos.yaml /opt/spack/etc/spack/repos.yaml
+# Set up ACCESS Spack package repo
+RUN git clone https://github.com/ACCESS-NRI/spack_packages.git $SPACK_PACKAGES_ROOT
+COPY repos.yaml $SPACK_ROOT/etc/spack/repos.yaml
 
 # TODO
 # Think about setting up spack S3 build cache for CI here
+# Set up ACCESS Spack buildcache
+RUN pip install boto3
+RUN spack gpg init
+
+# Add buildcache mirror
+RUN --mount=type=secret,id=S3_ACCESS_KEY_ID \
+    --mount=type=secret,id=S3_ACCESS_KEY_SECRET \ 
+    spack mirror add \
+    --s3-access-key-id `cat /run/secrets/S3_ACCESS_KEY_ID` \
+    --s3-access-key-secret `cat /run/secrets/S3_ACCESS_KEY_SECRET` \
+    s3_buildcache \
+    s3://access-nri-spack-cache
+
+# Import buildcache keys
+RUN --mount=type=secret,id=access-nri.priv \
+    spack gpg trust /run/secrets/access-nri.priv
+RUN --mount=type=secret,id=access-nri.pub \
+    spack gpg trust /run/secrets/access-nri.pub
 
 ENTRYPOINT ["/bin/bash", "/opt/spack/share/spack/docker/entrypoint.bash"]
 CMD ["interactive-shell"]
