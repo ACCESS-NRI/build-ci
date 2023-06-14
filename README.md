@@ -23,11 +23,9 @@ gh workflow run build-and-push-image-build.yml
 
 Note the base Spack image must be built before running `build-and-push-image-build.yml`.
 
-# Using reusable workflows
+# Reusable workflows
 
-## Workflow overviews
-
-### `build-package.yml`
+## `build-package.yml`
 Build the specified Spack package given a Docker build image.
 
 Inputs:
@@ -37,39 +35,32 @@ Inputs:
 * `compiler-name`: The name of the compiler to use
 * `compiler-version`: The version of the compiler to use
 
-### `build-and-push-image.yml`
-Build and push a Docker image to a specified container repository.
+### Usage
+To use, modify the following .yml file and add to your target repository in the `.github/workflows/` directory:
 
-Inputs:
-* `container-registry`: The container registry base URL (e.g.: `ghcr.io`)
-* `container-name`: The container tag (e.g. `access-nri/example-image`)
-* `dockerfile-directory`: The directory in the caller repository where the Dockerfile is located (e.g. `ci`)
-* `dockerfile-name`: Name of the Dockerfile to use (e.g. `Dockerfile.base-spack`)
-
-## Usage
-To use a reusable workflow, add the following yml file your target repository in the `.github/workflows/` directory.
-
-### Simple example
 `.github/workflows/workflow.yml`:
 
 ```
-name: Example workflow
+name: Example package build testing workflow
 
 on:
   workflow_dispatch:
   pull_request:
   push:
     branches:
-      - main
+      - master
 
 jobs:
-  reusable-workflow-job:
-    uses: access-nri/workflows/.github/workflows/example-workflow.yml@main
+  build:
+    uses: access-nri/workflows/.github/workflows/build-package.yml@main
     with:
       container-registry: ghcr.io
-      container-path: access-nri/example-image
-      dockerfile-directory: ci
-      dockerfile-name: Dockerfile.example
+      container-name: access-nri/build-${{ github.event.repository.name }}-intel2021.1.2
+      package-name: [your package name]
+      compiler-name: intel
+      compiler-version: 2021.1.2
+    permissions:
+      packages: read
 ```
 
 See [Reusing workflows](https://docs.github.com/en/actions/using-workflows/reusing-workflows#calling-a-reusable-workflow) for more info.
