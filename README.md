@@ -1,29 +1,30 @@
-# ACCESS-NRI model build CI repository
-A central repository for reusable CI build testing containers and pipelines used across ACCESS-NRI supported projects.
+A central repository for reusable CI compilation testing containers and pipelines used across ACCESS-NRI supported projects.
 
-## Directory structure
-### `.github/workflows`
-Reusable github workflows for CI builds.
-Note: ufortunately github currently disallows subdirectories in `.github/workflows`.
+# Workflow descriptions
 
-#### `build-and-push-image.yml`
+## `build-package.yml`
+Build the specified Spack package given a Docker build image.
+
+Inputs:
+* `container-registry`: The container registry base URL (e.g.: `ghcr.io`)
+* `container-name`: The container tag (e.g. `access-nri/example-image`)
+* `package-name`: The name of the spack package to be built (e.g. `access.nri.oasis3-mct`)
+* `compiler-name`: The name of the compiler to use
+* `compiler-version`: The version of the compiler to use
+
+## `build-and-push-image.yml`
 Build and push a Docker image to a specified container repository.
 
 Inputs:
 * `container-registry`: The container registry base URL (e.g.: `ghcr.io`)
-* `container-path`: The container path inside the registry (e.g. `access-nri/example-image`)
+* `container-name`: The container tag (e.g. `access-nri/example-image`)
 * `dockerfile-directory`: The directory in the caller repository where the Dockerfile is located (e.g. `ci`)
+* `dockerfile-name`: Name of the Dockerfile to use (e.g. `Dockerfile.base-spack`)
 
-#### `build-package.yml`
-Build a specified spack package given a Docker build image.
+# Usage
+To use a reusable workflow, add the following yml file your target repository in the `.github/workflows/` directory. You will then be able to run it from the "Actions" tab on the repository page or via the Github CLI.
 
-Inputs:
-* `container-registry`: The container registry base URL (e.g.: `ghcr.io`)
-* `container-path`: The container path inside the registry (e.g. `access-nri/example-image`)
-* `package-name`: The name of the spack package to be built (e.g. `access.nri.oasis3-mct`)
-
-## Usage
-### Simple example
+## Simple example
 `.github/workflows/workflow.yml`:
 
 ```
@@ -43,6 +44,7 @@ jobs:
       container-registry: ghcr.io
       container-path: access-nri/example-image
       dockerfile-directory: ci
+      dockerfile-name: Dockerfile.example
 ```
 
 See [Reusing workflows](https://docs.github.com/en/actions/using-workflows/reusing-workflows#calling-a-reusable-workflow) for more info.
