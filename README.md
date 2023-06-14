@@ -21,7 +21,7 @@ gh workflow run build-and-push-image-base-spack.yml
 gh workflow run build-and-push-image-build.yml
 ```
 
-Note the base-spack image must be built before running the build-and-push-image-build.yml.
+Note the base Spack image must be built before running `build-and-push-image-build.yml`.
 
 # Using reusable workflows
 
@@ -47,7 +47,7 @@ Inputs:
 * `dockerfile-name`: Name of the Dockerfile to use (e.g. `Dockerfile.base-spack`)
 
 ## Usage
-To use a reusable workflow, add the following yml file your target repository in the `.github/workflows/` directory. You will then be able to run it from the "Actions" tab on the repository page or via the Github CLI.
+To use a reusable workflow, add the following yml file your target repository in the `.github/workflows/` directory.
 
 ### Simple example
 `.github/workflows/workflow.yml`:
