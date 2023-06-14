@@ -11,6 +11,7 @@ jobs:
           "oasis3-mct",
           "libaccessom2",
           "access-om3",
+          "mom5",
         ]
         compiler: [
           {
