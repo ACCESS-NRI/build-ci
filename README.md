@@ -4,6 +4,16 @@ This repository is also responsible for building Docker images used for CI compi
 
 # Building CI Docker images
 
+## Actions
+### build-and-push-image-base-spack.yml
+
+Builds and pushes the base Spack image used across CI compilation testing images. See Dockerfile at `containers/Dockerfile.base-spack`. Sets up base Linux image; installs and bootstraps Spack.
+
+### build-and-push-image-build.yml
+
+Builds and pushes the compilation testing images for all packages specified in the workflow file. See Dockerfile at `containers/Dockerfile.build`. Uses base Spack image; installs dependencies required for the specified package build.
+
+## Usage
 Using Github CLI:
 
 ```
@@ -15,7 +25,7 @@ Note the base-spack image must be built before running the build-and-push-image-
 
 # Using reusable workflows
 
-## Workflow descriptions
+## Workflow overviews
 
 ### `build-package.yml`
 Build the specified Spack package given a Docker build image.
