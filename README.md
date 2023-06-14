@@ -1,8 +1,23 @@
 A central repository for reusable CI compilation testing containers and pipelines used across ACCESS-NRI supported projects.
 
-# Workflow descriptions
+This repository is also responsible for building Docker images used for CI compilation testing.
 
-## `build-package.yml`
+# Building CI Docker images
+
+Using Github CLI:
+
+```
+gh workflow run build-and-push-image-base-spack.yml
+gh workflow run build-and-push-image-build.yml
+```
+
+Note the base-spack image must be built before running the build-and-push-image-build.yml.
+
+# Using reusable workflows
+
+## Workflow descriptions
+
+### `build-package.yml`
 Build the specified Spack package given a Docker build image.
 
 Inputs:
@@ -12,7 +27,7 @@ Inputs:
 * `compiler-name`: The name of the compiler to use
 * `compiler-version`: The version of the compiler to use
 
-## `build-and-push-image.yml`
+### `build-and-push-image.yml`
 Build and push a Docker image to a specified container repository.
 
 Inputs:
@@ -21,10 +36,10 @@ Inputs:
 * `dockerfile-directory`: The directory in the caller repository where the Dockerfile is located (e.g. `ci`)
 * `dockerfile-name`: Name of the Dockerfile to use (e.g. `Dockerfile.base-spack`)
 
-# Usage
+## Usage
 To use a reusable workflow, add the following yml file your target repository in the `.github/workflows/` directory. You will then be able to run it from the "Actions" tab on the repository page or via the Github CLI.
 
-## Simple example
+### Simple example
 `.github/workflows/workflow.yml`:
 
 ```
