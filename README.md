@@ -1,4 +1,4 @@
-A central repository for reusable CI compilation testing containers and pipelines used across ACCESS-NRI supported projects.
+A central repository for reusable CI compilation testing workflows and containers used across ACCESS-NRI supported projects.
 
 This repository is also responsible for building Docker images used for CI compilation testing.
 
