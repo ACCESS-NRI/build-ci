@@ -26,5 +26,5 @@ RUN spack -d install --only dependencies ${PACKAGE}%${COMPILER_NAME}@${COMPILER_
 # Push any uncached binaries to buildcache
 # `spack find --json | jq .[].name`
 # This returns all currently installed spec names
-RUN apt-get install -y jq
+RUN dnf -y install jq
 RUN spack -d buildcache create -a -m s3_buildcache `spack find --json | jq .[].name`

@@ -1,4 +1,4 @@
-FROM ubuntu:20.04
+FROM rockylinux:8.7
 
 SHELL ["/bin/bash", "-c"]
 
@@ -6,14 +6,13 @@ ENV SPACK_ROOT=/opt/spack
 ENV SPACK_PACKAGES_ROOT=/opt/spack_packages
 ENV GNUPGHOME=$SPACK_ROOT/opt/spack/gpg
 
-# Install Spack dependencies
-RUN apt-get update && apt-get install -y \
+RUN dnf -y group install "Development Tools"
+
+RUN dnf -y install \
+    gcc-gfortran \
     git \
     python3 \
     python3-pip \
-    build-essential \
-    curl \
-    gfortran \
     # csh currently required for some build scripts e.g. MOM5
     csh
 
@@ -45,7 +44,7 @@ COPY repos.yaml $SPACK_ROOT/etc/spack/repos.yaml
 # TODO
 # Think about setting up spack S3 build cache for CI here
 # Set up ACCESS Spack buildcache
-RUN pip install boto3
+RUN pip3 install boto3
 RUN spack gpg init
 
 # Add buildcache mirror
