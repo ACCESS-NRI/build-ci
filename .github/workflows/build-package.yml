@@ -45,3 +45,21 @@ jobs:
       run: |
         spack -d install --only package --no-checksum ${{ inputs.package-name }}@$GITHUB_HEAD_REF%${{ inputs.compiler-name }}@${{ inputs.compiler-version }}
       if: github.event_name == 'pull_request'
+
+    - name: Install tmate on failure
+      run: |
+        dnf -y install epel-release
+        dnf -y install libevent-devel ncurses-devel msgpack-devel libssh-devel
+        git clone https://github.com/tmate-io/tmate.git
+        cd tmate
+        ./autogen.sh
+        ./configure
+        make
+        make install
+      if: ${{ failure() }}
+
+    - name: Debug with tmate on failure
+      uses: mxschmitt/action-tmate@v3
+      if: ${{ failure() }}
+      with:
+        install-dependencies: false
