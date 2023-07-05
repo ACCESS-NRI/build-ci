@@ -12,6 +12,7 @@ jobs:
           "libaccessom2",
           "access-om3",
           "mom5",
+          "cice5",
         ]
         compiler: [
           {
