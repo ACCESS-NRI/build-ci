@@ -4,8 +4,10 @@ on:
   workflow_dispatch:
     inputs:
       spack-packages-version:
-        required: false
+        required: true
+        type: string
         default: "main"
+        description: "Either a git commit hash, a tag, or a branch name for the ACCESS-NRI/spack_packages repository, which defaults to the main branch"
 
 jobs:
   build-and-push-image:
@@ -15,7 +17,7 @@ jobs:
       container-name: access-nri/base-spack
       dockerfile-directory: containers
       dockerfile-name: Dockerfile.base-spack
-      build-args: "SPACK_PACKAGES_VERSION=${{ inputs.spack-packages-version }}"
+      build-args: "SPACK_PACKAGES_VERSION=${{ github.event.inputs.spack-packages-version }}"
     secrets: 
       build-secrets: |
         "S3_ACCESS_KEY_ID=${{ secrets.S3_ACCESS_KEY_ID }}"
