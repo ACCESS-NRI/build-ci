@@ -19,7 +19,7 @@ RUN dnf -y install \
     csh
 
 # Install spack
-RUN git clone -c feature.manyFiles=true https://github.com/spack/spack.git $SPACK_ROOT --branch v0.19.1 --single-branch --depth=1
+RUN git clone -c feature.manyFiles=true https://github.com/spack/spack.git $SPACK_ROOT --branch v0.20.1 --single-branch --depth=1
 ENV PATH="$SPACK_ROOT/bin:$PATH"
 
 # Enables setting Spack setup type via SHELL command
