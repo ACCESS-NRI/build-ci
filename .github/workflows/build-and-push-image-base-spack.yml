@@ -2,6 +2,10 @@ name: Build and push access-nri/base-spack image
 
 on:
   workflow_dispatch:
+    inputs:
+      spack-packages-version:
+        required: false
+        default: "main"
 
 jobs:
   build-and-push-image:
@@ -11,6 +15,7 @@ jobs:
       container-name: access-nri/base-spack
       dockerfile-directory: containers
       dockerfile-name: Dockerfile.base-spack
+      build-args: "SPACK_PACKAGES_VERSION=${{ inputs.spack-packages-version }}"
     secrets: 
       build-secrets: |
         "S3_ACCESS_KEY_ID=${{ secrets.S3_ACCESS_KEY_ID }}"
