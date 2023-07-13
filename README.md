@@ -18,6 +18,7 @@ Using Github CLI:
 
 ```
 gh workflow run build-and-push-image-base-spack.yml
+gh workflow run build-and-push-image-base-spack.yml -f spack-packages-version=v1.0.1
 gh workflow run build-and-push-image-build.yml
 ```
 
@@ -34,6 +35,7 @@ Inputs:
 * `package-name`: The name of the spack package to be built (e.g. `access.nri.oasis3-mct`)
 * `compiler-name`: The name of the compiler to use
 * `compiler-version`: The version of the compiler to use
+* `spack-packages-version`: Optional, defaults to `main`. The git tag or branch for the `ACCESS-NRI/spack_packages` repository. 
 
 ### Usage
 To use, modify the following .yml file and add to your target repository in the `.github/workflows/` directory:
@@ -59,6 +61,7 @@ jobs:
       package-name: [your package name]
       compiler-name: intel
       compiler-version: 2021.1.2
+      spack-packages-version: main # this defaults to main
     permissions:
       packages: read
 ```
