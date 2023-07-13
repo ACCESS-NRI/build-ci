@@ -40,9 +40,7 @@ SHELL ["docker-shell"]
 RUN spack bootstrap now
 
 # Set up ACCESS Spack package repo
-RUN git clone https://github.com/ACCESS-NRI/spack_packages.git ${SPACK_PACKAGES_ROOT} && \
-    cd ${SPACK_PACKAGES_ROOT} && \
-    git checkout ${SPACK_PACKAGES_VERSION}
+RUN git clone -b ${SPACK_PACKAGES_VERSION} https://github.com/ACCESS-NRI/spack_packages.git ${SPACK_PACKAGES_ROOT}
 COPY repos.yaml $SPACK_ROOT/etc/spack/repos.yaml
 
 # TODO
