@@ -46,6 +46,7 @@ jobs:
         spack -d install --only package --no-checksum ${{ inputs.package-name }}@$GITHUB_HEAD_REF%${{ inputs.compiler-name }}@${{ inputs.compiler-version }}
       if: github.event_name == 'pull_request'
 
+    # Install and launch interactive debugging on build failure
     - name: Install tmate on failure
       run: |
         dnf -y install epel-release
