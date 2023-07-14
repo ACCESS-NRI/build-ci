@@ -61,7 +61,7 @@ jobs:
       package-name: [your package name]
       compiler-name: intel
       compiler-version: 2021.1.2
-      spack-packages-version: main # this defaults to main
+      spack-packages-version: main # this doesn't need to be specified, defaults to main
     permissions:
       packages: read
 ```
