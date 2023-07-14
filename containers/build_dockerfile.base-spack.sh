@@ -5,6 +5,7 @@
 
 DOCKER_BUILDKIT=1 \
   docker build \
+  --build-arg SPACK_PACKAGES_VERSION="main" \
   --secret id=S3_ACCESS_KEY_ID \
   --secret id=S3_ACCESS_KEY_SECRET \
   --secret id=access-nri.priv,src=./keys/access-nri.priv \
