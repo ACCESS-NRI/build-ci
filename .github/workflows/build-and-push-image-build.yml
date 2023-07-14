@@ -29,7 +29,7 @@ jobs:
     uses: access-nri/workflows/.github/workflows/build-and-push-image.yml@main
     with:
       container-registry: ghcr.io
-      container-name: access-nri/build-${{ matrix.package }}-${{ matrix.compiler.name }}${{ matrix.compiler.version }}
+      container-name: access-nri/build-${{ matrix.package }}-${{ matrix.compiler.name }}${{ matrix.compiler.version }}-${{ github.event.inputs.spack-packages-version }}
       dockerfile-directory: containers
       dockerfile-name: Dockerfile.build
       build-args: |
