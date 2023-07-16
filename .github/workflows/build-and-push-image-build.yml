@@ -16,7 +16,7 @@ jobs:
         package: [
           "oasis3-mct",
           "libaccessom2",
-          "access-om3",
+          #"access-om3",
           "mom5",
           "cice5",
         ]
