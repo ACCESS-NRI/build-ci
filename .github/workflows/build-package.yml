@@ -18,6 +18,11 @@ on:
       compiler-version:
         required: true
         type: string
+      spack-packages-version:
+        required: false
+        type: string
+        description: Either a git tag or branch name for the ACCESS-NRI/spack_packages repository, which defaults to the main branch
+        default: main
 
 jobs:
   build:
@@ -27,7 +32,7 @@ jobs:
       packages: read
 
     container:
-      image: ${{ inputs.container-registry }}/${{ inputs.container-name }}:latest
+      image: ${{ inputs.container-registry }}/${{ inputs.container-name }}-${{ inputs.spack-packages-version }}:latest
       credentials:
         username: ${{ github.repository_owner }}
         password: ${{ secrets.GITHUB_TOKEN }}

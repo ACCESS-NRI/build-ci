@@ -2,6 +2,12 @@ name: Build and push access-nri/build images
 
 on:
   workflow_dispatch:
+    inputs:
+      spack-packages-version:
+        required: true
+        type: string
+        default: "main"
+        description: "Either a git tag or branch name for the ACCESS-NRI/spack_packages repository, which defaults to the main branch"
 
 jobs:
   build-and-push-image:
@@ -24,12 +30,12 @@ jobs:
     uses: access-nri/workflows/.github/workflows/build-and-push-image.yml@main
     with:
       container-registry: ghcr.io
-      container-name: access-nri/build-${{ matrix.package }}-${{ matrix.compiler.name }}${{ matrix.compiler.version }}
+      container-name: access-nri/build-${{ matrix.package }}-${{ matrix.compiler.name }}${{ matrix.compiler.version }}-${{ github.event.inputs.spack-packages-version }}
       dockerfile-directory: containers
       dockerfile-name: Dockerfile.build
       build-args: |
         # TODO: Probably shouldn't hard code base image path
-        "BASE_IMAGE=ghcr.io/access-nri/base-spack:latest"
+        "BASE_IMAGE=ghcr.io/access-nri/base-spack-${{ github.event.inputs.spack-packages-version }}:latest"
         "PACKAGE=${{ matrix.package }}"
         "COMPILER_NAME=${{ matrix.compiler.name}}"
         "COMPILER_PACKAGE=${{ matrix.compiler.package}}"
