@@ -7,10 +7,10 @@ on:
         required: true
         default: main
         description: "Either a git tag or branch name for the ACCESS-NRI/spack_packages repository, which defaults to the main branch"
-      package:
+      packages:
         type: string
         required: true
-        description: "package from spack_packages that needs to be rebuilt" # or should it be a list of models?
+        description: "packages from spack_packages that needs to be rebuilt"
 
 jobs:
   update-spack-base-image:
@@ -24,21 +24,14 @@ jobs:
   generate-matrix:
     runs-on: ubuntu-latest
     outputs:
-      package: ${{ steps.generate.outputs.packages }}
-      compiler: ${{ steps.generate.outputs.compilers }}
+      packages: ${{ steps.generate.outputs.packages }}
+      compilers: ${{ steps.generate.outputs.compilers }}
     steps:
+      - name: Checkout dependency mapping
+        uses: actions/checkout@v3
       - name: Generate model matrix
         id: generate
-        run: |
-          case ${{ github.event.inputs.package }} in
-            "libaccessom2")
-              echo "package={}" >> $GITHUB_OUTPUT
-              ;;
-            "something")
-              ;;
-            esac
-            echo "compiler={}" >> GITHUB_OUTPUT 
-        # do the output properly
+        run: python ./util/matrix-generator.py ${{ github.event.inputs.packages }}
 
   update-image-builds:
     runs-on: ubuntu-latest
@@ -47,8 +40,8 @@ jobs:
       - generate-matrix
     strategy:
       matrix: 
-        package: ${{ needs.generate-matrix.outputs.package }}
-        compiler: ${{ needs.generate-matrix.outputs.compiler }}
+        package: ${{ needs.generate-matrix.outputs.packages }}
+        compiler: ${{ needs.generate-matrix.outputs.compilers }}
     steps:
       - name: Build model image
         uses: ./.github/workflows/build-and-push-image.yml@main
