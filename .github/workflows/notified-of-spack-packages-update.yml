@@ -40,8 +40,8 @@ jobs:
       - generate-matrix
     strategy:
       matrix: 
-        package: ${{ needs.generate-matrix.outputs.packages }}
-        compiler: ${{ needs.generate-matrix.outputs.compilers }}
+        package: ${{ fromJson(needs.generate-matrix.outputs.packages) }}
+        compiler: ${{ fromJson(needs.generate-matrix.outputs.compilers) }}
     steps:
       - name: Build model image
         uses: ./.github/workflows/build-and-push-image.yml@main
