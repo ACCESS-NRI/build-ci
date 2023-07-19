@@ -27,8 +27,10 @@ jobs:
       packages: ${{ steps.generate.outputs.packages }}
       compilers: ${{ steps.generate.outputs.compilers }}
     steps:
-      - name: Checkout dependency mapping
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with: 
+          python-version: '3.10'
       - name: Generate model matrix
         id: generate
         run: python ./util/matrix-generator.py ${{ github.event.inputs.packages }}
