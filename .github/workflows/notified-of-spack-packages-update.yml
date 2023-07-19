@@ -1,0 +1,66 @@
+name: Notification of spack_packages update
+on:
+  workflow_dispatch:
+    inputs:
+      spack-packages-version:
+        type: string
+        required: true
+        default: main
+        description: "Either a git tag or branch name for the ACCESS-NRI/spack_packages repository, which defaults to the main branch"
+      packages:
+        type: string
+        required: true
+        description: "packages from spack_packages that needs to be rebuilt"
+
+jobs:
+  update-spack-base-image:
+    runs-on: ubuntu-latest
+    steps:
+      - name : Update Spack Base Image
+        uses: ./.github/workflows/build-and-push-image-base-spack.yml@main
+        with: 
+          spack-packages-version: ${{ github.event.inputs.spack-packages-version }}
+
+  generate-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      packages: ${{ steps.generate.outputs.packages }}
+      compilers: ${{ steps.generate.outputs.compilers }}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with: 
+          python-version: '3.10'
+      - name: Generate model matrix
+        id: generate
+        run: python ./util/matrix_generator.py ${{ github.event.inputs.packages }}
+
+  update-image-builds:
+    runs-on: ubuntu-latest
+    needs:
+      - update-spack-base-image
+      - generate-matrix
+    strategy:
+      matrix: 
+        package: ${{ fromJson(needs.generate-matrix.outputs.packages) }}
+        compiler: ${{ fromJson(needs.generate-matrix.outputs.compilers) }}
+    steps:
+      - name: Build model image
+        uses: ./.github/workflows/build-and-push-image.yml@main
+        with:
+          container-registry: ghcr.io
+          container-name: access-nri/build-${{ matrix.package }}-${{ matrix.compiler.name }}${{ matrix.compiler.version }}-${{ github.event.inputs.spack-packages-version }}
+          dockerfile-directory: containers
+          dockerfile-name: Dockerfile.build
+          build-args: |
+            # TODO: Probably shouldn't hard code base image path
+            "BASE_IMAGE=ghcr.io/access-nri/base-spack-${{ github.event.inputs.spack-packages-version }}:latest"
+            "PACKAGE=${{ matrix.package }}"
+            "COMPILER_NAME=${{ matrix.compiler.name}}"
+            "COMPILER_PACKAGE=${{ matrix.compiler.package}}"
+            "COMPILER_VERSION=${{ matrix.compiler.version}}"
+    permissions: 
+      contents: read
+      packages: write
+
+
