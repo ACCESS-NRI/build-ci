@@ -14,12 +14,9 @@ on:
 
 jobs:
   update-spack-base-image:
-    runs-on: ubuntu-latest
-    steps:
-      - name : Update Spack Base Image
-        uses: access-nri/workflows/.github/workflows/build-and-push-image-base-spack.yml@main
-        with: 
-          spack-packages-version: ${{ github.event.inputs.spack-packages-version }}
+    uses: access-nri/workflows/.github/workflows/build-and-push-image-base-spack.yml@main
+    with: 
+      spack-packages-version: ${{ github.event.inputs.spack-packages-version }}
 
   generate-matrix:
     runs-on: ubuntu-latest
