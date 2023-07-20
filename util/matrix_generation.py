@@ -34,12 +34,16 @@ def generate_matrix(
                     packages.update(package_mapping)
                     print(f"packages is now {packages}\n")
                     break
+            # reset the file pointer to the beginning of the file
+            file.seek(0)
 
     # send this to the special env var that handles output in github actions
     # turning the set of packages into a list and then into a json object
     with open(os.environ["GITHUB_OUTPUT"], "a") as out:
         print(f"packages={json.dumps(list(packages))}", file=out)
         print(f"compilers={json.dumps(compilers)}", file=out)
+
+    print(json.dumps(list(packages)))
 
     return packages
 
