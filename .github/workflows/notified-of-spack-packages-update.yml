@@ -17,6 +17,9 @@ jobs:
     uses: access-nri/workflows/.github/workflows/build-and-push-image-base-spack.yml@main
     with: 
       spack-packages-version: ${{ github.event.inputs.spack-packages-version }}
+    permissions:
+      contents: read
+      packages: write
 
   generate-matrix:
     runs-on: ubuntu-latest
