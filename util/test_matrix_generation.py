@@ -4,6 +4,7 @@ from unittest import mock
 
 from matrix_generation import generate_matrix
 
+
 @pytest.fixture(autouse=True)
 def mock_github_output_env_var():
     with mock.patch.dict(os.environ, {"GITHUB_OUTPUT": "/dev/null"}):
@@ -52,3 +53,6 @@ class TestMatrixGeneration:
             "cice5",
             "mom5",
         }
+
+    def test_mix_of_unknown_and_existing_deps(self):
+        assert generate_matrix(["access-om2", "cice5"]) == {"cice5"}
