@@ -5,23 +5,11 @@ on:
     inputs:
       spack-packages-build-required:
         required: true
-        default: false
+        default: true
         type: boolean
-        description: "A flag to note if building a spack_packages image is required"
+        description: "A flag to note if building a new spack_packages image at the below version is required"
       spack-packages-version:
-        required: false
-        type: string
-        default: "main"
-        description: "Either a git tag or branch name for the ACCESS-NRI/spack_packages repository, which defaults to the main branch"
-  workflow_call:
-    inputs:
-      spack-packages-build-required:
         required: true
-        default: false
-        type: boolean
-        description: "A flag to note if building a spack_packages image is required"
-      spack-packages-version:
-        required: false
         type: string
         default: "main"
         description: "Either a git tag or branch name for the ACCESS-NRI/spack_packages repository, which defaults to the main branch"
@@ -49,6 +37,7 @@ jobs:
   model-build-and-push-image:
     needs:
       - base-spack-build-and-push-image
+    if: needs.base-spack-build-and-push-image.result == 'success' || needs.base-spack-build-and-push-image.result == 'skipped'
     strategy:
       matrix:
         package: [
