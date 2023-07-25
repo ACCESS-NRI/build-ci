@@ -8,13 +8,6 @@ on:
         type: string
         default: "main"
         description: "Either a git tag or branch name for the ACCESS-NRI/spack_packages repository, which defaults to the main branch"
-  workflow_call:
-    inputs:
-      spack-packages-version:
-        required: true
-        type: string
-        default: "main"
-        description: "Either a git tag or branch name for the ACCESS-NRI/spack_packages repository, which defaults to the main branch"
 
 jobs:
   build-and-push-image:
