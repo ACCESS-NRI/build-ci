@@ -14,7 +14,7 @@ on:
 
 jobs:
   update-spack-base-image:
-    uses: access-nri/workflows/.github/workflows/build-and-push-image.yml@main
+    uses: access-nri/build-ci/.github/workflows/build-and-push-image.yml@main
     with:
       container-registry: ghcr.io
       container-name: access-nri/base-spack-${{ github.event.inputs.spack-packages-version }}
@@ -54,7 +54,7 @@ jobs:
         package: ${{ fromJson(needs.generate-matrix.outputs.packages) }}
         compiler: ${{ fromJson(needs.generate-matrix.outputs.compilers) }}
 
-    uses: access-nri/workflows/.github/workflows/build-and-push-image.yml@main
+    uses: access-nri/build-ci/.github/workflows/build-and-push-image.yml@main
     with:
       container-registry: ghcr.io
       container-name: access-nri/build-${{ matrix.package }}-${{ matrix.compiler.name }}${{ matrix.compiler.version }}-${{ github.event.inputs.spack-packages-version }}
