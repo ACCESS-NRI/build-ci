@@ -1,0 +1,10 @@
+spack: 
+  # add package specs to the `specs` list' 
+  specs: 
+  - intel-oneapi-compilers@2021.1.2
+  - mom5%intel@2021.1.2
+  view: /opt/view
+  concretizer:
+    unify: when_possible
+  config:
+    install_tree: /opt/software

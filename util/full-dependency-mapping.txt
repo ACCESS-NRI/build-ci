@@ -1,9 +1,0 @@
-datetime-fortran libaccessom2 cice5 mom5 access-om2
-oasis3-mct libaccessom2 cice5 mom5 access-om2
-libaccessom2 cice5 mom5 access-om2
-cice5 access-om2
-mom5 access-om2
-access-om2 
-access-om3 
-fcm
-gcom
