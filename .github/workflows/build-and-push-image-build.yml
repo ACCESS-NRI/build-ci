@@ -39,8 +39,8 @@ jobs:
       - base-spack-build-and-push-image
     if: needs.base-spack-build-and-push-image.result == 'success' || needs.base-spack-build-and-push-image.result == 'skipped'
     strategy:
+      fail-fast: false
       matrix:
-        fail-fast: false
         package: [
           "oasis3-mct",
           "libaccessom2",
