@@ -1,10 +1,40 @@
-spack: 
-  # add package specs to the `specs` list' 
-  specs: 
+
+# This is a Spack Environment file.
+#
+# It describes a set of packages to be installed, along with
+# configuration settings.
+spack:
+  # add package specs to the `specs` list
+  specs:
   - intel-oneapi-compilers@2021.1.2
   - mom5%intel@2021.1.2
-  view: /opt/view
+  view: true
   concretizer:
-    unify: when_possible
-  config:
-    install_tree: /opt/software
+    unify: true
+  compilers:
+  - compiler:
+    spec: intel@=2021.1.2
+    paths:
+      cc: /opt/spack/opt/spack/linux-rocky8-skylake/gcc-8.5.0/intel-oneapi-compilers-2021.1.2-tsos3okit6j3bcvw5uk2fixfmgbrbho4/compiler/2021.1.2/linux/bin/intel64/icc
+      cxx: /opt/spack/opt/spack/linux-rocky8-skylake/gcc-8.5.0/intel-oneapi-compilers-2021.1.2-tsos3okit6j3bcvw5uk2fixfmgbrbho4/compiler/2021.1.2/linux/bin/intel64/icpc
+      f77: /opt/spack/opt/spack/linux-rocky8-skylake/gcc-8.5.0/intel-oneapi-compilers-2021.1.2-tsos3okit6j3bcvw5uk2fixfmgbrbho4/compiler/2021.1.2/linux/bin/intel64/ifort
+      fc: /opt/spack/opt/spack/linux-rocky8-skylake/gcc-8.5.0/intel-oneapi-compilers-2021.1.2-tsos3okit6j3bcvw5uk2fixfmgbrbho4/compiler/2021.1.2/linux/bin/intel64/ifort
+    flags: {}
+    operating_system: rocky8
+    target: x86_64
+    modules: []
+    environment: {}
+    extra_rpaths: []
+  - compiler:
+      spec: gcc@=8.5.0
+      paths:
+        cc: /usr/bin/gcc
+        cxx: /usr/bin/g++
+        f77: /usr/bin/gfortran
+        fc: /usr/bin/gfortran
+      flags: {}
+      operating_system: rocky8
+      target: x86_64
+      modules: []
+      environment: {}
+      extra_rpaths: []
