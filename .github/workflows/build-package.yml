@@ -40,7 +40,7 @@ jobs:
     steps:
     - name: Build package via spack
       run: |
-        spack -d install --only package --no-checksum ${{ inputs.package-name }}@$GITHUB_REF_NAME%${{ inputs.compiler-name }}@${{ inputs.compiler-version }}
+        spack -d install --only package --no-checksum ${{ inputs.package-name }}@=$GITHUB_REF_NAME%${{ inputs.compiler-name }}@${{ inputs.compiler-version }}
       if: github.event_name != 'pull_request'
 
     # Workaround for this issue: https://github.com/github/docs/issues/15319
@@ -48,7 +48,7 @@ jobs:
     # correct branch name
     - name: Build package via spack
       run: |
-        spack -d install --only package --no-checksum ${{ inputs.package-name }}@$GITHUB_HEAD_REF%${{ inputs.compiler-name }}@${{ inputs.compiler-version }}
+        spack -d install --only package --no-checksum ${{ inputs.package-name }}@=$GITHUB_HEAD_REF%${{ inputs.compiler-name }}@${{ inputs.compiler-version }}
       if: github.event_name == 'pull_request'
 
     # Install and launch interactive debugging on build failure
