@@ -3,20 +3,22 @@ FROM rockylinux:8.7
 SHELL ["/bin/bash", "-c"]
 
 ENV SPACK_ROOT=/opt/spack
-ENV SPACK_PACKAGES_ROOT=/opt/spack_packages
+ENV SPACK_PACKAGES_REPO_ROOT=/opt/spack_packages
 ENV GNUPGHOME=$SPACK_ROOT/opt/spack/gpg
 
-ARG SPACK_PACKAGES_VERSION
+ARG SPACK_PACKAGES_REPO_VERSION
 
-RUN dnf -y group install "Development Tools"
-
-RUN dnf -y install \
+# csh currently required for some build scripts e.g. MOM5
+RUN dnf -y group install "Development Tools" \
+ && dnf -y install \
+    csh \
     gcc-gfortran \
     git \
+    jq \
     python3 \
     python3-pip \
-    # csh currently required for some build scripts e.g. MOM5
-    csh
+ && dnf clean all \
+ && rm -rf /var/cache/yum
 
 # Install spack
 RUN git clone -c feature.manyFiles=true https://github.com/spack/spack.git $SPACK_ROOT --branch v0.20.1 --single-branch --depth=1
@@ -40,13 +42,13 @@ SHELL ["docker-shell"]
 RUN spack bootstrap now
 
 # Set up ACCESS Spack package repo
-RUN git clone -b ${SPACK_PACKAGES_VERSION} https://github.com/ACCESS-NRI/spack_packages.git ${SPACK_PACKAGES_ROOT}
+RUN git clone --depth=1 -b ${SPACK_PACKAGES_REPO_VERSION} https://github.com/ACCESS-NRI/spack_packages.git ${SPACK_PACKAGES_REPO_ROOT}
 COPY repos.yaml $SPACK_ROOT/etc/spack/repos.yaml
 
 # TODO
 # Think about setting up spack S3 build cache for CI here
 # Set up ACCESS Spack buildcache
-RUN pip3 install boto3
+RUN pip3 install --no-cache-dir boto3
 RUN spack gpg init
 
 # Add buildcache mirror
