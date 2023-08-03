@@ -24,7 +24,7 @@ RUN dnf -y group install "Development Tools" \
  && dnf clean all \
  && rm -rf /var/cache/yum
 
-RUN pip3 install --no-cache-dir boto3==1.28.18
+RUN pip3 install --no-cache-dir boto3==1.23.10
 
 # Install spack
 RUN git clone -c feature.manyFiles=true https://github.com/spack/spack.git $SPACK_ROOT --branch ${SPACK_REPO_VERSION} --single-branch --depth=1
