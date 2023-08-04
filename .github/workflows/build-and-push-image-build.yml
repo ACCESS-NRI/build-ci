@@ -23,7 +23,7 @@ jobs:
       container-name: access-nri/base-spack-${{ github.event.inputs.spack-packages-version }}
       dockerfile-directory: containers
       dockerfile-name: Dockerfile.base-spack
-      build-args: "SPACK_PACKAGES_VERSION=${{ github.event.inputs.spack-packages-version }}"
+      build-args: "SPACK_PACKAGES_REPO_VERSION=${{ github.event.inputs.spack-packages-version }}"
     secrets:
       build-secrets: |
         "S3_ACCESS_KEY_ID=${{ secrets.S3_ACCESS_KEY_ID }}"
