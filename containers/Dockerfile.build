@@ -1,7 +1,7 @@
 ARG BASE_IMAGE
 FROM ${BASE_IMAGE}
 
-ARG PACKAGE_NAMES="mom5 cice5 access-om2 oasis3-mct"
+ARG PACKAGE_NAMES="mom5 cice5 access-om3 oasis3-mct libaccessom2"
 ARG COMPILER_PACKAGE
 ARG COMPILER_VERSION
 ARG COMPILER_NAME
