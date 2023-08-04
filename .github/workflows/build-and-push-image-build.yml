@@ -41,13 +41,6 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        package: [
-          "oasis3-mct",
-          "libaccessom2",
-          "access-om3",
-          "mom5",
-          "cice5",
-        ]
         compiler: [
           {
             name: "intel",
@@ -58,13 +51,12 @@ jobs:
     uses: access-nri/build-ci/.github/workflows/build-and-push-image.yml@main
     with:
       container-registry: ghcr.io
-      container-name: access-nri/build-${{ matrix.package }}-${{ matrix.compiler.name }}${{ matrix.compiler.version }}-${{ github.event.inputs.spack-packages-version }}
+      container-name: access-nri/build-${{ matrix.compiler.name }}${{ matrix.compiler.version }}-${{ github.event.inputs.spack-packages-version }}
       dockerfile-directory: containers
       dockerfile-name: Dockerfile.build
       build-args: |
         # TODO: Probably shouldn't hard code base image path
         "BASE_IMAGE=ghcr.io/access-nri/base-spack-${{ github.event.inputs.spack-packages-version }}:latest"
-        "PACKAGE=${{ matrix.package }}"
         "COMPILER_NAME=${{ matrix.compiler.name}}"
         "COMPILER_PACKAGE=${{ matrix.compiler.package}}"
         "COMPILER_VERSION=${{ matrix.compiler.version}}"
