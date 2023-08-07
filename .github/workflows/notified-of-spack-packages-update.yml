@@ -32,7 +32,7 @@ jobs:
       packages: write
 
   generate-matrix:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     outputs:
       packages: ${{ steps.generate.outputs.packages }}
       compilers: ${{ steps.generate.outputs.compilers }}
