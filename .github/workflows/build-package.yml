@@ -36,20 +36,26 @@ jobs:
       credentials:
         username: ${{ github.repository_owner }}
         password: ${{ secrets.GITHUB_TOKEN }}
+      options: -v /output_vol:/output_vol_mount
 
     steps:
+    - name: Get correct ref
+      run: echo "GH_REF=${{ github.event_name == 'pull_request' }} && ${{ github.head_ref }} || ${{ github.ref_name }}" >> $GITHUB_ENV
+    
+    - name: Activate environment
+      run: spack env activate ${{ inputs.package-name }}
+    
     - name: Build package via spack
+      run: spack -d install --add --only package --fail-fast --no-checksum ${{ inputs.package-name }}@=$GH_REF%${{ inputs.compiler-name }}@${{ inputs.compiler-version }}
+    
+    - name: Output lockfiles on failure
+      if: failure()
       run: |
-        spack -d install --only package --no-checksum ${{ inputs.package-name }}@=$GITHUB_REF_NAME%${{ inputs.compiler-name }}@${{ inputs.compiler-version }}
-      if: github.event_name != 'pull_request'
-
-    # Workaround for this issue: https://github.com/github/docs/issues/15319
-    # In the case of a pull request, we need to use GITHUB_HEAD_REF to get the
-    # correct branch name
-    - name: Build package via spack
-      run: |
-        spack -d install --only package --no-checksum ${{ inputs.package-name }}@=$GITHUB_HEAD_REF%${{ inputs.compiler-name }}@${{ inputs.compiler-version }}
-      if: github.event_name == 'pull_request'
+        cd /opt/spack/var/spack/environments/${{ inputs.package-name }}
+        cp spack.lock /output_vol_mount/${{ inputs.package-name }}.old.spack.lock
+        spack -d concretize --force
+        cp spack.lock /output_vol_mount/${{ inputs.package-name }}.force.spack.lock
+        
 
     # Install and launch interactive debugging on build failure
     - name: Install tmate on failure
