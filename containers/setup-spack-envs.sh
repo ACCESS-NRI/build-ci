@@ -13,10 +13,10 @@ PACKAGES="$3"
 for PACKAGE in $PACKAGES; do
   spack env create $PACKAGE
   spack env activate $PACKAGE
-  spack -d install --add --fail-fast $COMPILER_PACKAGE@$COMPILER_VERSION
+  spack -d install -j 4 --add --fail-fast $COMPILER_PACKAGE@$COMPILER_VERSION
   spack load $COMPILER_PACKAGE@$COMPILER_VERSION
   spack compiler find --scope env:$PACKAGE
-  spack -d install --add --only dependencies --fail-fast $PACKAGE
+  spack -d install -j 4 --add --only dependencies --fail-fast $PACKAGE
   spack gc -y
   spack env deactivate
 done

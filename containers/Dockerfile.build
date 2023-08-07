@@ -6,16 +6,19 @@ ARG COMPILER_PACKAGE
 ARG COMPILER_VERSION
 ARG COMPILER_NAME
 
-ENV SPACK_ENVIRONMENT_DIRECTORY_ROOT=/opt/spack_environment
+WORKDIR $SPACK_ROOT
 
 LABEL au.org.access-nri.ci.compiler ${COMPILER_PACKAGE}@${COMPILER_VERSION}
 LABEL au.org.access-nri.ci.packages ${PACKAGE_NAMES}
-LABEL au.org.access-nri.ci.base-spack-iamge ${BASE_IMAGE}
+LABEL au.org.access-nri.ci.base-spack-image ${BASE_IMAGE}
 
 # Use Spack shell environment for subsequent RUN steps
 SHELL ["docker-shell"]
 
-RUN ./setup-spack-envs ${COMPILER_PACKAGE} ${COMPILER_VERSION} ${PACKAGE_NAMES}
+COPY setup-spack-envs.sh .
+
+RUN chmod +x setup-spack-envs.sh \ 
+ && ./setup-spack-envs.sh ${COMPILER_PACKAGE} ${COMPILER_VERSION} "${PACKAGE_NAMES}"
 
 # Push any uncached binaries to buildcache
 RUN spack -d buildcache create -a -m s3_buildcache `spack find --json | jq --raw-output .[].name`
