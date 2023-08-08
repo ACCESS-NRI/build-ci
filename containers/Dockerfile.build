@@ -1,7 +1,7 @@
 ARG BASE_IMAGE
 FROM ${BASE_IMAGE}
 
-ARG PACKAGE_NAMES="mom5 cice5 access-om3 oasis3-mct libaccessom2"
+ARG PACKAGE_NAMES="mom5 cice5 oasis3-mct libaccessom2"
 ARG COMPILER_PACKAGE
 ARG COMPILER_VERSION
 ARG COMPILER_NAME
@@ -18,7 +18,7 @@ SHELL ["docker-shell"]
 COPY setup-spack-envs.sh .
 
 RUN chmod +x setup-spack-envs.sh \ 
- && ./setup-spack-envs.sh ${COMPILER_PACKAGE} ${COMPILER_VERSION} "${PACKAGE_NAMES}"
+ && ./setup-spack-envs.sh ${COMPILER_PACKAGE} ${COMPILER_NAME} ${COMPILER_VERSION} "${PACKAGE_NAMES}"
 
 # Push any uncached binaries to buildcache
-RUN spack -d buildcache create -a -m s3_buildcache `spack find --json | jq --raw-output .[].name`
+#RUN spack -d buildcache create -a -m s3_buildcache `spack find --json | jq --raw-output .[].name`
