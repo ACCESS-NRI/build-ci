@@ -36,7 +36,6 @@ jobs:
       credentials:
         username: ${{ github.repository_owner }}
         password: ${{ secrets.GITHUB_TOKEN }}
-      options: -v /output_vol:/output_vol_mount
 
     steps:
     - name: Get correct ref
@@ -48,13 +47,20 @@ jobs:
     - name: Build package via spack
       run: spack -d install --add --only package --fail-fast --no-checksum ${{ inputs.package-name }}@=$GH_REF%${{ inputs.compiler-name }}@${{ inputs.compiler-version }}
     
-    - name: Output lockfiles on failure
+    - name: Generate lockfiles on failure
       if: failure()
       run: |
         cd /opt/spack/var/spack/environments/${{ inputs.package-name }}
-        cp spack.lock /output_vol_mount/${{ inputs.package-name }}.old.spack.lock
+        cp spack.lock ${{ inputs.package-name }}.old.spack.lock
         spack -d concretize --force
-        cp spack.lock /output_vol_mount/${{ inputs.package-name }}.force.spack.lock
+        cp spack.lock ${{ inputs.package-name }}.force.spack.lock
+
+    - name: Upload lockfiles on failure
+      uses: actions/upload-artifact@v3
+      if: failure()
+      with: 
+        name: failed-lockfile-output
+        path: /opt/spack/var/spack/environments/${{ inputs.package-name }}/${{ inputs.package-name }}.*.spack.lock
         
 
     # Install and launch interactive debugging on build failure
