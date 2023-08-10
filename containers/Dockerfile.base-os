@@ -1,0 +1,15 @@
+FROM rockylinux:8.7
+
+# csh currently required for some build scripts e.g. MOM5
+RUN dnf -y group install "Development Tools" \
+ && dnf -y install \
+    gcc-gfortran \
+    git \
+    jq \
+    python3 \
+    python3-pip \
+    csh \
+ && dnf clean all \
+ && rm -rf /var/cache/yum
+
+RUN pip3 install --no-cache-dir boto3==1.23.10
