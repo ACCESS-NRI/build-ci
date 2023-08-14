@@ -52,14 +52,14 @@ jobs:
       - name: Determine correct model(s) to build
         id: get-model
         run: |
-          if [[ ${{ inputs.model }} -eq "all" ]]; then
-            echo "model=[access-om2, access-om3]" >> $GITHUB_OUTPUT
+          if [[ "${{ inputs.model }}" = "all" ]]; then
+            echo "model=['access-om2', 'access-om3']" >> $GITHUB_OUTPUT
           else
-            echo "model=[${{ inputs.model }}]" >> $GITHUB_OUTPUT
+            echo "model=['${{ inputs.model }}']" >> $GITHUB_OUTPUT
           fi
       - name: Determine compilers to build
         id: get-compiler
-        run: echo "compiler=`cat containers/compilers.yaml`" >> $GITHUB_OUTPUT
+        run: echo "compiler=$(cat containers/compilers.json | tr '\n' ' ')" >> $GITHUB_OUTPUT
   
   model-build-and-push-image:
     needs:
@@ -69,8 +69,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        model: ${{ needs.generate-matrix.outputs.model }}
-        compiler: ${{ needs.generate-matrix.outputs.compiler }}
+        model: ${{ fromJson(needs.generate-matrix.outputs.model) }}
+        compiler: ${{ fromJson(needs.generate-matrix.outputs.compiler) }}
     uses: access-nri/build-ci/.github/workflows/build-and-push-image.yml@main
     with:
       container-registry: ghcr.io

@@ -1,0 +1,7 @@
+[
+  {
+    "name": "intel",
+    "package": "intel-oneapi-compilers",
+    "version": "2021.1.2"
+  }
+]
