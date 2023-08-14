@@ -1,4 +1,4 @@
-FROM rockylinux:8.7
+FROM rockylinux:8.8
 
 # csh currently required for some build scripts e.g. MOM5
 RUN dnf -y group install "Development Tools" \
