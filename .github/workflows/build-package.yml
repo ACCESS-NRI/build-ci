@@ -47,19 +47,22 @@ jobs:
     - name: Build package via spack
       run: spack -d install --add --only package --fail-fast --no-checksum ${{ inputs.package-name }}@=$GH_REF%${{ inputs.compiler-name }}@${{ inputs.compiler-version }}
     
-    - name: Generate lockfiles on failure
+    - name: Generate lockfile
+      run: |
+        cd /opt/spack/var/spack/environments/${{ inputs.package-name }}
+        cp spack.lock ${{ inputs.package-name }}.original.spack.lock
+
+    - name: Generate force-concretized lockfile
       if: failure()
       run: |
         cd /opt/spack/var/spack/environments/${{ inputs.package-name }}
-        cp spack.lock ${{ inputs.package-name }}.old.spack.lock
         spack -d concretize --force
         cp spack.lock ${{ inputs.package-name }}.force.spack.lock
 
-    - name: Upload lockfiles on failure
+    - name: Upload lockfiles
       uses: actions/upload-artifact@v3
-      if: failure()
       with: 
-        name: failed-lockfile-output
+        name: lockfile-output
         path: /opt/spack/var/spack/environments/${{ inputs.package-name }}/${{ inputs.package-name }}.*.spack.lock
         
 
