@@ -13,6 +13,14 @@ on:
         type: string
         default: "main"
         description: "Either a git tag or branch name for the ACCESS-NRI/spack_packages repository, which defaults to the main branch"
+      model:
+        required: true
+        type: choice
+        default: "all"
+        options:
+          - access-om2
+          - access-om3
+          - all
 
 jobs:
   base-spack-build-and-push-image:
@@ -33,33 +41,48 @@ jobs:
     permissions:
       contents: read
       packages: write
-
+    
+  generate-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      model: ${{ steps.get-model.outputs.model }}
+      compiler: ${{ steps.get-compiler.outputs.compiler }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Determine correct model(s) to build
+        id: get-model
+        run: |
+          if [[ ${{ inputs.model }} -eq "all" ]]; then
+            echo "model=[access-om2, access-om3]" >> $GITHUB_OUTPUT
+          else
+            echo "model=[${{ inputs.model }}]" >> $GITHUB_OUTPUT
+          fi
+      - name: Determine compilers to build
+        id: get-compiler
+        run: echo "compiler=`cat containers/compilers.yaml`" >> $GITHUB_OUTPUT
+  
   model-build-and-push-image:
     needs:
       - base-spack-build-and-push-image
+      - generate-matrix
     if: always()
     strategy:
       fail-fast: false
       matrix:
-        compiler: [
-          {
-            name: "intel",
-            package: "intel-oneapi-compilers",
-            version: "2021.1.2",
-          },
-        ]
+        model: ${{ needs.generate-matrix.outputs.model }}
+        compiler: ${{ needs.generate-matrix.outputs.compiler }}
     uses: access-nri/build-ci/.github/workflows/build-and-push-image.yml@main
     with:
       container-registry: ghcr.io
-      container-name: access-nri/build-${{ matrix.compiler.name }}${{ matrix.compiler.version }}-${{ github.event.inputs.spack-packages-version }}
+      container-name: access-nri/build-${{ matrix.compiler.name }}${{ matrix.compiler.version }}-${{ inputs.spack-packages-version }}
       dockerfile-directory: containers
-      dockerfile-name: Dockerfile.build
+      dockerfile-name: Dockerfile.${{ matrix.model }}
       build-args: |
         # TODO: Probably shouldn't hard code base image path
         "BASE_IMAGE=ghcr.io/access-nri/base-spack-${{ github.event.inputs.spack-packages-version }}:latest"
-        "COMPILER_NAME=${{ matrix.compiler.name}}"
-        "COMPILER_PACKAGE=${{ matrix.compiler.package}}"
-        "COMPILER_VERSION=${{ matrix.compiler.version}}"
+        "COMPILER_NAME=${{ matrix.compiler.name }}"
+        "COMPILER_PACKAGE=${{ matrix.compiler.package }}"
+        "COMPILER_VERSION=${{ matrix.compiler.version }}"
     permissions:
       contents: read
       packages: write
