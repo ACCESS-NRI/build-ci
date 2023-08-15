@@ -39,7 +39,12 @@ jobs:
 
     steps:
     - name: Get correct ref
-      run: echo "GH_REF=${{ github.event_name == 'pull_request' }} && ${{ github.head_ref }} || ${{ github.ref_name }}" >> $GITHUB_ENV
+      run: |
+        if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+          echo "GH_REF=${{ github.head_ref }}" >> $GITHUB_ENV
+        else
+          echo "GH_REF=${{ github.ref_name }})" >> $GITHUB_ENV
+        fi
     
     - name: Activate environment
       run: spack env activate ${{ inputs.package-name }}
@@ -49,13 +54,13 @@ jobs:
     
     - name: Generate lockfile
       run: |
-        cd /opt/spack/var/spack/environments/${{ inputs.package-name }}
+        cd $SPACK_ROOT/var/spack/environments/${{ inputs.package-name }}
         cp spack.lock ${{ inputs.package-name }}.original.spack.lock
 
     - name: Generate force-concretized lockfile
       if: failure()
       run: |
-        cd /opt/spack/var/spack/environments/${{ inputs.package-name }}
+        cd $SPACK_ROOT/var/spack/environments/${{ inputs.package-name }}
         spack -d concretize --force
         cp spack.lock ${{ inputs.package-name }}.force.spack.lock
 
@@ -63,7 +68,7 @@ jobs:
       uses: actions/upload-artifact@v3
       with: 
         name: lockfile-output
-        path: /opt/spack/var/spack/environments/${{ inputs.package-name }}/${{ inputs.package-name }}.*.spack.lock
+        path: $SPACK_ROOT/var/spack/environments/${{ inputs.package-name }}/${{ inputs.package-name }}.*.spack.lock
         
 
     # Install and launch interactive debugging on build failure
