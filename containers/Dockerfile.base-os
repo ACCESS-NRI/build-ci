@@ -4,14 +4,30 @@ FROM rockylinux:8.8
 
 # csh currently required for some build scripts e.g. MOM5
 RUN dnf update -y \
- && dnf -y group install "Development Tools" \
  && dnf -y install \
+    autoconf \
+    automake \
+    binutils \
+    bison \
+    bzip2 \
+    csh \
+    flex \
+    gcc \
+    gcc-c++ \
     gcc-gfortran \
     git \
+    glibc-devel \
     jq \
+    libtool \
+    make \
+    patch \
+    patchutils \
+    pkgconf \
+    pkgconf-m4 \
+    pkgconf-pkg-config \
     python3 \
     python3-pip \
-    csh \
+    xz \
  && rm -rf /var/cache/dnf \
  && dnf clean all
 
