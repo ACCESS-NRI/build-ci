@@ -12,6 +12,9 @@ RUN dnf update -y \
     bzip2 \
     csh \
     flex \
+    curl \
+    file \
+    findutils \
     gcc \
     gcc-c++ \
     gcc-gfortran \
@@ -19,6 +22,10 @@ RUN dnf update -y \
     glibc-devel \
     jq \
     libtool \
+    gnupg2 \
+    hg \
+    hostname \
+    iproute \
     make \
     patch \
     patchutils \
@@ -27,7 +34,11 @@ RUN dnf update -y \
     pkgconf-pkg-config \
     python3 \
     python3-pip \
+    python3-setuptools \
+    svn \
+    unzip \
     xz \
+    zstd \
  && rm -rf /var/cache/dnf \
  && dnf clean all
 
