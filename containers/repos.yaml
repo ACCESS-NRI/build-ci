@@ -1,3 +1,0 @@
-repos:
-  - /opt/spack_packages
-  - $spack/var/spack/repos/builtin
