@@ -41,5 +41,3 @@ RUN dnf update -y \
     zstd \
  && rm -rf /var/cache/dnf \
  && dnf clean all
-
-RUN pip3 install --no-cache-dir boto3==1.23.10
