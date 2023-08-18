@@ -40,6 +40,7 @@ COPY repos.yaml $SPACK_ROOT/etc/spack/repos.yaml
 # TODO
 # Think about setting up spack S3 build cache for CI here
 # Set up ACCESS Spack buildcache
+RUN pip3 install --no-cache-dir boto3==1.23.10
 RUN spack gpg init
 
 # Add buildcache mirror
