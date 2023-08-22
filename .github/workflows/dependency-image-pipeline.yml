@@ -19,7 +19,7 @@ on:
         type: string
 jobs:
   base-spack-image-check:
-    name: Check for the existence of base-spack-${{ inputs.compiler-name }}@${{ inputs.compiler-version }}-${{ inputs.spack-packages-version }}
+    name: Check for the existence of base-spack-${{ inputs.compiler-name }}${{ inputs.compiler-version }}-${{ inputs.spack-packages-version }}
     runs-on: ubuntu-latest
     outputs:
       image-exists: ${{ steps.image-exists.outputs.check }}
@@ -33,7 +33,7 @@ jobs:
       - name: Check for existing package
         id: image-exists
         run: |
-          manifest=$(docker manifest inspect ghcr.io/access-nri/base-spack-${{ inputs.compiler-name }}@${{ inputs.compiler-version }}-${{ inputs.spack-packages-version }}:latest)
+          manifest=$(docker manifest inspect ghcr.io/access-nri/base-spack-${{ inputs.compiler-name }}${{ inputs.compiler-version }}-${{ inputs.spack-packages-version }}:latest)
           if [ "$manifest" != "manifest unknown" ]; then
             echo "check=true" >> $GITHUB_OUTPUT
           fi
@@ -46,7 +46,7 @@ jobs:
     uses: access-nri/build-ci/.github/workflows/build-and-push-image.yml@main
     with:
       container-registry: ghcr.io
-      container-name: access-nri/base-spack-${{ inputs.spack-packages-version }}
+      container-name: access-nri/base-spack-${{ inputs.compiler-name }}${{ inputs.compiler-version }}-${{ inputs.spack-packages-version }}
       dockerfile-directory: containers
       dockerfile-name: Dockerfile.base-spack
       build-args: |
@@ -77,7 +77,7 @@ jobs:
       dockerfile-name: Dockerfile.${{ inputs.model }}
       build-args: |
         # TODO: Probably shouldn't hard code base image path
-        "BASE_IMAGE=ghcr.io/access-nri/base-spack-${{ inputs.compiler-name }}@${{ inputs.compiler-version }}-${{ inputs.spack-packages-version }}:latest"
+        "BASE_IMAGE=ghcr.io/access-nri/base-spack-${{ inputs.compiler-name }}${{ inputs.compiler-version }}-${{ inputs.spack-packages-version }}:latest"
     permissions:
       contents: read
       packages: write
