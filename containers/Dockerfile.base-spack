@@ -1,16 +1,24 @@
 FROM ghcr.io/access-nri/base-os:latest
 
-SHELL ["/bin/bash", "-c"]
+ARG SPACK_REPO_VERSION=v0.20.1
+ARG SPACK_PACKAGES_REPO_VERSION=main
+ARG COMPILER_PACKAGE
+ARG COMPILER_VERSION
+ARG COMPILER_NAME
 
 ENV SPACK_ROOT=/opt/spack
-ENV SPACK_PACKAGES_REPO_ROOT=/opt/spack_packages
 ENV GNUPGHOME=$SPACK_ROOT/opt/spack/gpg
+ENV SPACK_REPO_VERSION=${SPACK_REPO_VERSION}
+ENV SPACK_PACKAGES_REPO_ROOT=/opt/spack_packages
+ENV SPACK_ENV_COMPILER_PACKAGE=${COMPILER_PACKAGE}
+ENV SPACK_ENV_COMPILER_VERSION=${COMPILER_VERSION}
+ENV SPACK_ENV_COMPILER_NAME=${COMPILER_NAME}
 
-ARG SPACK_PACKAGES_REPO_VERSION=main
-ARG SPACK_REPO_VERSION=v0.20.1
-
+LABEL au.org.access-nri.ci.spack-repo-version $SPACK_REPO_VERSION
 LABEL au.org.access-nri.ci.spack-packages-repo-version ${SPACK_PACKAGES_REPO_VERSION}
-LABEL au.org.access-nri.ci.spack-repo-version ${SPACK_REPO_VERSION}
+LABEL au.org.access-nri.ci.compiler ${SPACK_ENV_COMPILER_PACKAGE}@${SPACK_ENV_COMPILER_VERSION}
+
+SHELL ["/bin/bash", "-c"]
 
 # Install spack
 RUN git clone -c feature.manyFiles=true https://github.com/spack/spack.git $SPACK_ROOT --branch ${SPACK_REPO_VERSION} --single-branch --depth=1
@@ -38,8 +46,6 @@ RUN git clone  https://github.com/ACCESS-NRI/spack_packages.git ${SPACK_PACKAGES
 RUN spack repo add $SPACK_PACKAGES_REPO_ROOT && \
     spack bootstrap now
 
-# TODO
-# Think about setting up spack S3 build cache for CI here
 # Set up ACCESS Spack buildcache
 RUN pip3 install --no-cache-dir boto3==1.23.10
 RUN spack gpg init
@@ -58,6 +64,9 @@ RUN --mount=type=secret,id=access-nri.priv \
     spack gpg trust /run/secrets/access-nri.priv
 RUN --mount=type=secret,id=access-nri.pub \
     spack gpg trust /run/secrets/access-nri.pub
+
+# Set up compilers for this base-spack image 
+RUN spack install ${SPACK_ENV_COMPILER_PACKAGE}@${SPACK_ENV_COMPILER_VERSION}
 
 ENTRYPOINT ["/bin/bash", "/opt/spack/share/spack/docker/entrypoint.bash"]
 CMD ["interactive-shell"]

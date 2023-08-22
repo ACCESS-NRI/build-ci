@@ -1,0 +1,84 @@
+name: Dependency Image Generation Pipeline
+on:
+  workflow_call:
+    inputs:
+      spack-packages-version:
+        description: Tag associated with the access-nri/spack_packages repo
+        type: string
+      compiler-name:
+        description: Name of the compiler
+        type: string
+      compiler-package:
+        description: Spack package name of the compiler
+        type: string
+      compiler-version:
+        description: Spack package version of the compiler
+        type: string
+      model:
+        description: A model name (eg. access-om2)
+        type: string
+jobs:
+  base-spack-image-check:
+    name: Check for the existence of base-spack-${{ inputs.compiler-name }}@${{ inputs.compiler-version }}-${{ inputs.spack-packages-version }}
+    runs-on: ubuntu-latest
+    outputs:
+      image-exists: ${{ steps.image-exists.outputs.check }}
+    steps:
+      - name: Log in to container registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Check for existing package
+        id: image-exists
+        run: |
+          manifest=$(docker manifest inspect ghcr.io/access-nri/base-spack-${{ inputs.compiler-name }}@${{ inputs.compiler-version }}-${{ inputs.spack-packages-version }}:latest)
+          if [ "$manifest" != "manifest unknown" ]; then
+            echo "check=true" >> $GITHUB_OUTPUT
+          fi
+
+  base-spack-image:
+    name: Create the base-spack image
+    needs: 
+      - base-spack-image-check
+    if: needs.base-spack-image-check.outputs.image-exists
+    uses: access-nri/build-ci/.github/workflows/build-and-push-image.yml@main
+    with:
+      container-registry: ghcr.io
+      container-name: access-nri/base-spack-${{ inputs.spack-packages-version }}
+      dockerfile-directory: containers
+      dockerfile-name: Dockerfile.base-spack
+      build-args: |
+        "SPACK_PACKAGES_REPO_VERSION=${{ inputs.spack-packages-version }}"
+        "COMPILER_NAME=${{ inputs.compiler-name }}"
+        "COMPILER_PACKAGE=${{ inputs.compiler-package }}"
+        "COMPILER_VERSION=${{ inputs.compiler-version }}"
+    secrets:
+      build-secrets: |
+        "S3_ACCESS_KEY_ID=${{ secrets.S3_ACCESS_KEY_ID }}"
+        "S3_ACCESS_KEY_SECRET=${{ secrets.S3_ACCESS_KEY_SECRET }}"
+        "access-nri.priv=${{ secrets.BUILDCACHE_KEY_PRIVATE }}"
+        "access-nri.pub=${{ secrets.BUILDCACHE_KEY_PUBLIC }}"
+    permissions:
+      contents: read
+      packages: write
+    
+  dependency-image:
+    # running always() means it will run even if base-spack is skipped
+    if: always()
+    needs:
+      - base-spack-image
+    uses: access-nri/build-ci/.github/workflows/build-and-push-image.yml@main
+    with:
+      container-registry: ghcr.io
+      container-name: access-nri/build-${{ inputs.model}}-${{ inputs.compiler-name }}${{ inputs.compiler-version }}-${{ inputs.spack-packages-version }}
+      dockerfile-directory: containers
+      dockerfile-name: Dockerfile.${{ inputs.model }}
+      build-args: |
+        # TODO: Probably shouldn't hard code base image path
+        "BASE_IMAGE=ghcr.io/access-nri/base-spack-${{ inputs.compiler-name }}@${{ inputs.compiler-version }}-${{ inputs.spack-packages-version }}:latest"
+    permissions:
+      contents: read
+      packages: write
+      
