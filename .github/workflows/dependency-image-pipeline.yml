@@ -22,7 +22,7 @@ jobs:
     name: Check for the existence of base-spack-${{ inputs.compiler-name }}${{ inputs.compiler-version }}-${{ inputs.spack-packages-version }}
     runs-on: ubuntu-latest
     outputs:
-      image-exists: ${{ steps.image-exists.outputs.check }}
+      no-image-exists: ${{ steps.no-image-exists.outputs.check }}
     steps:
       - name: Log in to container registry
         uses: docker/login-action@v2
@@ -31,11 +31,13 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Check for existing package
-        id: image-exists
-        continue-on-error: true
+        id: no-image-exists
+        # by default, actions use `bash -e {0}` (exit immediately on nonzero exit code), but `docker manifest` failing is perfectly valid. 
+        # overriding the shell to use bash without `-e` fixes this. 
+        shell: bash {0}
         run: |
           manifest=$(docker manifest inspect ghcr.io/access-nri/base-spack-${{ inputs.compiler-name }}${{ inputs.compiler-version }}-${{ inputs.spack-packages-version }}:latest)
-          if [ "$manifest" != "manifest unknown" ]; then
+          if [ "$manifest" == "manifest unknown" ]; then
             echo "check=true" >> $GITHUB_OUTPUT
             exit 0
           fi
@@ -44,7 +46,7 @@ jobs:
     name: Create the base-spack image
     needs: 
       - base-spack-image-check
-    if: needs.base-spack-image-check.outputs.image-exists
+    if: needs.base-spack-image-check.outputs.no-image-exists
     uses: access-nri/build-ci/.github/workflows/build-and-push-image.yml@main
     with:
       container-registry: ghcr.io
