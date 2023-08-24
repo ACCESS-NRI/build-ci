@@ -45,8 +45,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        model: ${{ needs.generate-matrix.outputs.model }}
-        compiler: ${{ needs.generate-matrix.outputs.compiler }}
+        model: ${{ fromJson(needs.generate-matrix.outputs.model) }}
+        compiler: ${{ fromJson(needs.generate-matrix.outputs.compiler) }}
     uses: access-nri/build-ci/.github/workflows/dependency-image-pipeline.yml@main
     with:
       spack-packages-version: ${{ inputs.spack-packages-version }}
