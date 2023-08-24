@@ -32,7 +32,9 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Check for existing package
         id: no-image-exists
-        continue-on-error: true
+        # by default, actions use `bash -e {0}` (exit immediately on nonzero exit code), but `docker manifest` failing is perfectly valid. 
+        # overriding the shell to use bash without `-e` fixes this. 
+        shell: bash {0}
         run: |
           manifest=$(docker manifest inspect ghcr.io/access-nri/base-spack-${{ inputs.compiler-name }}${{ inputs.compiler-version }}-${{ inputs.spack-packages-version }}:latest)
           if [ "$manifest" == "manifest unknown" ]; then
