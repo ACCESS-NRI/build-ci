@@ -32,14 +32,14 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Check for existing package
         id: no-image-exists
-        # by default, actions use `bash -e {0}` (exit immediately on nonzero exit code), but `docker manifest` failing is perfectly valid. 
+        # by default, actions use `bash -e {0}` (exit immediately on nonzero exit code), but `docker manifest` failing (aka, image doesn't exist) is perfectly valid. 
         # overriding the shell to use bash without `-e` fixes this. 
         shell: bash {0}
+        # in this `run` we attempt to check the existence of the given image with `docker manifest inspect`, and if it doesn't exist (exit code nonzero) we set the `no-image-exists` output to true
         run: |
-          manifest=$(docker manifest inspect ghcr.io/access-nri/base-spack-${{ inputs.compiler-name }}${{ inputs.compiler-version }}-${{ inputs.spack-packages-version }}:latest)
-          if [ "$manifest" == "manifest unknown" ]; then
+          docker manifest inspect ghcr.io/access-nri/base-spack-${{ inputs.compiler-name }}${{ inputs.compiler-version }}-${{ inputs.spack-packages-version }}:latest
+          if [ $? -ne 0 ]; then
             echo "check=true" >> $GITHUB_OUTPUT
-            exit 0
           fi
 
   base-spack-image:
