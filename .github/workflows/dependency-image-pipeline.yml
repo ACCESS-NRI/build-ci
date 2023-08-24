@@ -32,10 +32,12 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Check for existing package
         id: image-exists
+        continue-on-error: true
         run: |
           manifest=$(docker manifest inspect ghcr.io/access-nri/base-spack-${{ inputs.compiler-name }}${{ inputs.compiler-version }}-${{ inputs.spack-packages-version }}:latest)
           if [ "$manifest" != "manifest unknown" ]; then
             echo "check=true" >> $GITHUB_OUTPUT
+            exit 0
           fi
 
   base-spack-image:
