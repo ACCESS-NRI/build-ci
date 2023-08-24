@@ -54,6 +54,7 @@ jobs:
       compiler-package: ${{ matrix.compiler.package }}
       compiler-version: ${{ matrix.compiler.version }}
       model: ${{ matrix.model }}
+    secrets: inherit
     permissions:
       contents: read
       packages: write

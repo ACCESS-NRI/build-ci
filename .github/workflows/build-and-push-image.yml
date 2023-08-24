@@ -25,6 +25,7 @@ on:
 
 jobs:
   build-and-push-image:
+    name: Build and push ${{ inputs.container-name }}
     runs-on: ubuntu-latest
 
     permissions:
