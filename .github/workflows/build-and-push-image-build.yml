@@ -22,38 +22,38 @@ jobs:
     name: Generate Matrix of compilers and models
     runs-on: ubuntu-latest
     outputs:
-      model: ${{ steps.get-model.outputs.model }}
-      compiler: ${{ steps.get-compiler.outputs.compiler }}
+      models: ${{ steps.get-model.outputs.models }}
+      compilers: ${{ steps.get-compiler.outputs.compilers }}
     steps:
       - uses: actions/checkout@v3
       - name: Determine correct model(s) to build
         id: get-model
         run: |
           if [[ "${{ inputs.model }}" = "all" ]]; then
-            echo "model=['access-om2', 'access-om3']" >> $GITHUB_OUTPUT
+            echo "models=['access-om2', 'access-om3']" >> $GITHUB_OUTPUT
           else
-            echo "model=['${{ inputs.model }}']" >> $GITHUB_OUTPUT
+            echo "models=['${{ inputs.model }}']" >> $GITHUB_OUTPUT
           fi
       - name: Determine compilers to build
         id: get-compiler
-        run: echo "compiler=$(jq -c . containers/compilers.json)" >> $GITHUB_OUTPUT
+        run: echo "compilers=$(jq -c . containers/compilers.json)" >> $GITHUB_OUTPUT
   
-  dependency-image-pipeline:
-    name: Generate images required for dependency image
+  dependency-image-workflow:
+    name: Create dependency images based on varied compilers and models
     needs:
       - generate-matrix
     strategy:
       fail-fast: false
       matrix:
-        model: ${{ fromJson(needs.generate-matrix.outputs.model) }}
-        compiler: ${{ fromJson(needs.generate-matrix.outputs.compiler) }}
+        compiler: ${{ fromJson(needs.generate-matrix.outputs.compilers) }}
     uses: access-nri/build-ci/.github/workflows/dependency-image-pipeline.yml@main
     with:
-      spack-packages-version: ${{ inputs.spack-packages-version }}
       compiler-name: ${{ matrix.compiler.name }}
       compiler-package: ${{ matrix.compiler.package }}
       compiler-version: ${{ matrix.compiler.version }}
-      model: ${{ matrix.model }}
-    permissions:
-      contents: read
+      spack-packages-version: ${{ inputs.spack-packages-version }}
+      models: ${{ needs.generate-matrix.outputs.models }}
+    permissions: 
       packages: write
+      contents: read
+    secrets: inherit

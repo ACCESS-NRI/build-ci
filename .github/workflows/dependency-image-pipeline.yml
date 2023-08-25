@@ -3,19 +3,19 @@ on:
   workflow_call:
     inputs:
       spack-packages-version:
-        description: Tag associated with the access-nri/spack_packages repo
+        description: the tag/branch of the access-nri/spack_packages repo to use
         type: string
       compiler-name:
-        description: Name of the compiler
+        description: the short name of the compiler
         type: string
       compiler-package:
-        description: Spack package name of the compiler
+        description: the spack-specific package name of the compiler
         type: string
       compiler-version:
-        description: Spack package version of the compiler
+        description: the spack-specific package version of the compiler
         type: string
-      model:
-        description: A model name (eg. access-om2)
+      models:
+        description: a json-string array of all models to be built in a matrix strategy
         type: string
 jobs:
   base-spack-image-check:
@@ -73,12 +73,16 @@ jobs:
     if: always()
     needs:
       - base-spack-image
+    strategy:
+      fail-fast: false
+      matrix:
+        model: ${{ fromJson(inputs.models) }}
     uses: access-nri/build-ci/.github/workflows/build-and-push-image.yml@main
     with:
       container-registry: ghcr.io
-      container-name: access-nri/build-${{ inputs.model}}-${{ inputs.compiler-name }}${{ inputs.compiler-version }}-${{ inputs.spack-packages-version }}
+      container-name: access-nri/build-${{ matrix.model}}-${{ inputs.compiler-name }}${{ inputs.compiler-version }}-${{ inputs.spack-packages-version }}
       dockerfile-directory: containers
-      dockerfile-name: Dockerfile.${{ inputs.model }}
+      dockerfile-name: Dockerfile.${{ matrix.model }}
       build-args: |
         # TODO: Probably shouldn't hard code base image path
         "BASE_IMAGE=ghcr.io/access-nri/base-spack-${{ inputs.compiler-name }}${{ inputs.compiler-version }}-${{ inputs.spack-packages-version }}:latest"
