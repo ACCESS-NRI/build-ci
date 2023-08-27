@@ -13,6 +13,7 @@ ENV SPACK_PACKAGES_REPO_ROOT=/opt/spack_packages
 ENV SPACK_ENV_COMPILER_PACKAGE=${COMPILER_PACKAGE}
 ENV SPACK_ENV_COMPILER_VERSION=${COMPILER_VERSION}
 ENV SPACK_ENV_COMPILER_NAME=${COMPILER_NAME}
+ENV SPACK_ENV_TARGET=x86_64
 
 LABEL au.org.access-nri.ci.spack-repo-version $SPACK_REPO_VERSION
 LABEL au.org.access-nri.ci.spack-packages-repo-version ${SPACK_PACKAGES_REPO_VERSION}
@@ -66,7 +67,7 @@ RUN --mount=type=secret,id=access-nri.pub \
     spack gpg trust /run/secrets/access-nri.pub
 
 # Set up compilers for this base-spack image 
-RUN spack install ${SPACK_ENV_COMPILER_PACKAGE}@${SPACK_ENV_COMPILER_VERSION}
+RUN spack install ${SPACK_ENV_COMPILER_PACKAGE}@${SPACK_ENV_COMPILER_VERSION} target=${SPACK_ENV_TARGET}
 
 ENTRYPOINT ["/bin/bash", "/opt/spack/share/spack/docker/entrypoint.bash"]
 CMD ["interactive-shell"]
