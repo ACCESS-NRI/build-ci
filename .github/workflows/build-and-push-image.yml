@@ -19,6 +19,10 @@ on:
         required: false
         type: string
         default: ""
+      target:
+        required: false
+        type: string
+        default: ""
     secrets:
       build-secrets:
         required: false
@@ -64,6 +68,7 @@ jobs:
         secrets: ${{ secrets.build-secrets }}
         file: ${{ inputs.dockerfile-name }}
         push: true
+        target: ${{ inputs.target }}
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
         cache-from: type=gha

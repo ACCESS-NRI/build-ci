@@ -53,6 +53,7 @@ jobs:
       container-name: access-nri/base-spack-${{ inputs.compiler-name }}${{ inputs.compiler-version }}-${{ inputs.spack-packages-version }}
       dockerfile-directory: containers
       dockerfile-name: Dockerfile.base-spack
+      target: "ci"
       build-args: |
         "SPACK_PACKAGES_REPO_VERSION=${{ inputs.spack-packages-version }}"
         "COMPILER_NAME=${{ inputs.compiler-name }}"
