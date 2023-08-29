@@ -1,51 +1,112 @@
-FROM ghcr.io/access-nri/base-os:latest
+# Copyright 2023 ACCESS-NRI and contributors. See the top-level COPYRIGHT file for details.
+# SPDX-License-Identifier: Apache-2.0
+#
+# Contains build targets: base-os, base-spack, ci, dev
+
+################################################################################
+# NOTE: Keep an eye on:
+#       ${SPACK_ROOT}/share/spack/templates/container/rockylinux_8.dockerfile
+FROM rockylinux:8.8 as base-os
+
+# csh currently required for some build scripts e.g. MOM5
+RUN dnf update -y \
+ && dnf -y install \
+    autoconf \
+    automake \
+    binutils \
+    bison \
+    bzip2 \
+    csh \
+    flex \
+    curl \
+    file \
+    findutils \
+    gcc \
+    gcc-c++ \
+    gcc-gfortran \
+    git \
+    glibc-devel \
+    jq \
+    libtool \
+    gnupg2 \
+    hg \
+    hostname \
+    iproute \
+    make \
+    patch \
+    patchutils \
+    pkgconf \
+    pkgconf-m4 \
+    pkgconf-pkg-config \
+    python3 \
+    python3-pip \
+    python3-setuptools \
+    svn \
+    unzip \
+    xz \
+    zstd \
+ && rm -rf /var/cache/dnf \
+ && dnf clean all
+
+
+################################################################################
+FROM base-os as base-spack
 
 ARG SPACK_REPO_VERSION=v0.20.1
 ARG SPACK_PACKAGES_REPO_VERSION=main
-ARG COMPILER_PACKAGE
-ARG COMPILER_VERSION
-ARG COMPILER_NAME
+ARG SPACK_ARCH=linux-rocky8-x86_64
+ARG COMPILER_PACKAGE=intel-oneapi-compilers
+ARG COMPILER_VERSION=2021.1.2
+ARG COMPILER_NAME=intel
 
 ENV SPACK_ROOT=/opt/spack
-ENV GNUPGHOME=$SPACK_ROOT/opt/spack/gpg
+ENV GNUPGHOME=${SPACK_ROOT}/opt/spack/gpg
 ENV SPACK_REPO_VERSION=${SPACK_REPO_VERSION}
+ENV SPACK_ENV_ARCH=${SPACK_ARCH}
 ENV SPACK_PACKAGES_REPO_ROOT=/opt/spack_packages
 ENV SPACK_ENV_COMPILER_PACKAGE=${COMPILER_PACKAGE}
 ENV SPACK_ENV_COMPILER_VERSION=${COMPILER_VERSION}
 ENV SPACK_ENV_COMPILER_NAME=${COMPILER_NAME}
-ENV SPACK_ENV_ARCH=linux-rocky8-x86_64
 
-LABEL au.org.access-nri.ci.spack-repo-version $SPACK_REPO_VERSION
-LABEL au.org.access-nri.ci.spack-packages-repo-version ${SPACK_PACKAGES_REPO_VERSION}
-LABEL au.org.access-nri.ci.compiler ${SPACK_ENV_COMPILER_PACKAGE}@${SPACK_ENV_COMPILER_VERSION}
+LABEL au.org.access-nri.image.spack-repo-version ${SPACK_REPO_VERSION}
+LABEL au.org.access-nri.image.spack-packages-repo-version ${SPACK_PACKAGES_REPO_VERSION}
+LABEL au.org.access-nri.image.compiler ${SPACK_ENV_COMPILER_PACKAGE}@${SPACK_ENV_COMPILER_VERSION}
+LABEL au.org.access-nri.image.arch ${SPACK_ENV_ARCH}
 
 SHELL ["/bin/bash", "-c"]
 
 # Install spack
-RUN git clone -c feature.manyFiles=true https://github.com/spack/spack.git $SPACK_ROOT --branch ${SPACK_REPO_VERSION} --single-branch --depth=1
+RUN git clone -c feature.manyFiles=true https://github.com/spack/spack.git ${SPACK_ROOT} --branch ${SPACK_REPO_VERSION} --single-branch --depth=1
 
-RUN sed -i 's/granularity: microarchitectures/granularity: generic/' $SPACK_ROOT/etc/spack/defaults/concretizer.yaml
+RUN sed -i 's/granularity: microarchitectures/granularity: generic/' ${SPACK_ROOT}/etc/spack/defaults/concretizer.yaml
 
 # Enables setting Spack setup type via SHELL command
 # docker-shell:      Use for build RUN steps
 # interactive-shell: Use for interactive shell instances
 # spack-env:         Use for CMD invocations (e.g. CI runners)
-# $SPACK_ROOT/share/spack/templates/container/bootstrap-base.dockerfile:
-RUN ln -s $SPACK_ROOT/share/spack/docker/entrypoint.bash \
+# ${SPACK_ROOT}/share/spack/templates/container/bootstrap-base.dockerfile:
+RUN ln -s ${SPACK_ROOT}/share/spack/docker/entrypoint.bash \
     /usr/local/bin/docker-shell && \
-    ln -s $SPACK_ROOT/share/spack/docker/entrypoint.bash \
+    ln -s ${SPACK_ROOT}/share/spack/docker/entrypoint.bash \
     /usr/local/bin/interactive-shell && \
-    ln -s $SPACK_ROOT/share/spack/docker/entrypoint.bash \
+    ln -s ${SPACK_ROOT}/share/spack/docker/entrypoint.bash \
     /usr/local/bin/spack-env
 
 # Setup Spack environment for subsequent RUN steps
 SHELL ["docker-shell"]
 
-# Set up ACCESS Spack package repo
-RUN git clone  https://github.com/ACCESS-NRI/spack_packages.git ${SPACK_PACKAGES_REPO_ROOT} --branch ${SPACK_PACKAGES_REPO_VERSION} --single-branch --depth=1
+# Install ACCESS-NRI's spack_packages repo
+RUN git clone  https://github.com/ACCESS-NRI/spack_packages.git ${SPACK_PACKAGES_REPO_ROOT} --branch ${SPACK_PACKAGES_REPO_VERSION}
 
-RUN spack repo add $SPACK_PACKAGES_REPO_ROOT && \
+RUN spack repo add ${SPACK_PACKAGES_REPO_ROOT} && \
     spack bootstrap now
+
+# Install compilers
+RUN spack install ${SPACK_ENV_COMPILER_PACKAGE}@${SPACK_ENV_COMPILER_VERSION} arch=${SPACK_ENV_ARCH}
+
+
+################################################################################
+FROM base-spack as ci
 
 # Set up ACCESS Spack buildcache
 RUN pip3 install --no-cache-dir boto3==1.23.10
@@ -66,8 +127,17 @@ RUN --mount=type=secret,id=access-nri.priv \
 RUN --mount=type=secret,id=access-nri.pub \
     spack gpg trust /run/secrets/access-nri.pub
 
-# Set up compilers for this base-spack image 
-RUN spack install ${SPACK_ENV_COMPILER_PACKAGE}@${SPACK_ENV_COMPILER_VERSION} arch=${SPACK_ENV_ARCH}
+
+################################################################################
+FROM base-spack as dev
+
+RUN spack load ${COMPILER_PACKAGE}@${COMPILER_VERSION} \
+ && spack compiler find
+
+RUN spack install cmake%${COMPILER_NAME}@${COMPILER_VERSION} \
+    gmake%${COMPILER_NAME}@${COMPILER_VERSION} \
+    openmpi@4.0.2%${COMPILER_NAME}@${COMPILER_VERSION} \
+    arch=${SPACK_ENV_ARCH}
 
 ENTRYPOINT ["/bin/bash", "/opt/spack/share/spack/docker/entrypoint.bash"]
 CMD ["interactive-shell"]
