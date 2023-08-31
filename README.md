@@ -57,10 +57,10 @@ jobs:
     uses: access-nri/workflows/.github/workflows/build-package.yml@main
     with:
       container-registry: ghcr.io
-      container-name: access-nri/build-${{ github.event.repository.name }}-intel2021.1.2
+      container-name: access-nri/build-${{ github.event.repository.name }}-intel2021.2.0
       package-name: [your package name]
       compiler-name: intel
-      compiler-version: 2021.1.2
+      compiler-version: 2021.2.0
       spack-packages-version: main # this doesn't need to be specified, defaults to main
     permissions:
       packages: read
