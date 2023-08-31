@@ -56,7 +56,7 @@ ARG SPACK_REPO_VERSION=v0.20.1
 ARG SPACK_PACKAGES_REPO_VERSION=main
 ARG SPACK_ARCH=linux-rocky8-x86_64
 ARG COMPILER_PACKAGE=intel-oneapi-compilers
-ARG COMPILER_VERSION=2021.1.2
+ARG COMPILER_VERSION=2021.2.0
 ARG COMPILER_NAME=intel
 
 ENV SPACK_ROOT=/opt/spack
@@ -95,14 +95,17 @@ RUN ln -s ${SPACK_ROOT}/share/spack/docker/entrypoint.bash \
 # Setup Spack environment for subsequent RUN steps
 SHELL ["docker-shell"]
 
-# Install ACCESS-NRI's spack_packages repo
-RUN git clone  https://github.com/ACCESS-NRI/spack_packages.git ${SPACK_PACKAGES_REPO_ROOT} --branch ${SPACK_PACKAGES_REPO_VERSION}
-
-RUN spack repo add ${SPACK_PACKAGES_REPO_ROOT} && \
-    spack bootstrap now
+# https://spack.readthedocs.io/en/latest/bootstrapping.html
+# Spack is configured to bootstrap its dependencies lazily by default;
+# i.e. the first time they are needed and can’t be found.
 
 # Install compilers
 RUN spack install ${SPACK_ENV_COMPILER_PACKAGE}@${SPACK_ENV_COMPILER_VERSION} arch=${SPACK_ENV_ARCH}
+
+# Install ACCESS-NRI's spack_packages repo
+RUN git clone  https://github.com/ACCESS-NRI/spack_packages.git ${SPACK_PACKAGES_REPO_ROOT} --branch ${SPACK_PACKAGES_REPO_VERSION}
+
+RUN spack repo add ${SPACK_PACKAGES_REPO_ROOT}
 
 
 ################################################################################
