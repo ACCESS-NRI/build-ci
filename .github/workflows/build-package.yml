@@ -19,9 +19,22 @@ jobs:
         id: get-version
         run: echo "version=$(git describe --tags)" >> $GITHUB_OUTPUT
 
+  setup-model:
+    name: Get information from ${{ github.repository }}
+    runs-on: ubuntu-latest
+    outputs:
+      package-name: ${{ steps.get-package-name.outputs.package }}
+    steps:
+      - name: Get package name
+        id: get-package-name
+        # for the cases where the repo name is in uppercase but the package name is lowercase (eg. access-nri/MOM5)
+        run: echo "package=$(echo ${{ github.event.repository.name }} | tr [:upper:] [:lower:])" >> $GITHUB_OUTPUT
+      
   setup-build-ci:
     name: Get information from build-ci
     runs-on: ubuntu-latest
+    needs:
+      - setup-model
     outputs:
       compilers: ${{ steps.get-compilers.outputs.compilers }}
       model: ${{ steps.get-model.outputs.model }}
@@ -35,20 +48,14 @@ jobs:
     - name: Get model to test
       id: get-model
       # model-components are associated with an overarching model (for example, cice5 is associated with access-om2), this uses models.json to find the associated model
-      run: echo "model=$(jq -c 'to_entries[] | select(.value | contains(["${{ github.event.repository.name }}"])) | .key' containers/models.json)" >> $GITHUB_OUTPUT
-  
-  setup-model:
-    name: Get information from ${{ github.repository }}
-    runs-on: ubuntu-latest
-    outputs:
-      package-name: ${{ steps.get-package-name.outputs.package }}
-    steps:
-      - uses: actions/checkout@v3
-      - name: Get package name
-        id: get-package-name
-        # for the cases where the repo name is in uppercase but the package name is lowercase (eg. access-nri/MOM5)
-        run: echo "package=$(echo ${{ github.event.repository.name }} | tr [:upper:] [:lower:])" >> $GITHUB_OUTPUT
-      
+      run: |
+        model=$(jq -cr 'to_entries[] | select(.value | contains(["${{ needs.setup-model.outputs.package-name }}"])) | .key' containers/models.json)
+        if [ -z "$model" ]; then 
+          exit 1
+        else
+          echo "model=$model" >> $GITHUB_OUTPUT
+        fi
+
   build:
     runs-on: ubuntu-latest
     needs:
