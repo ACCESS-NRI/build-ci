@@ -1,0 +1,45 @@
+name: Build dependency image
+on:
+  workflow_call:
+    inputs:
+      spack-packages-version:
+        description: the tag/branch of the access-nri/spack_packages repo to use
+        type: string
+      compiler-name:
+        description: the short name of the compiler
+        type: string
+      compiler-package:
+        description: the spack-specific package name of the compiler
+        type: string
+      compiler-version:
+        description: the spack-specific package version of the compiler
+        type: string
+      model:
+        description: the model to be built
+        type: string
+
+jobs:
+  setup-dependency-image:
+    runs-on: ubuntu-latest
+    outputs: 
+      model-components: ${{ steps.get-model-components.outputs.model-components }}
+    steps:
+      - name: Get model components for ${{ inputs.model }}
+        id: get-model-components
+        run: echo "model-components=$(jq -cr 'keys' containers/models.json)" >> $GITHUB_OUTPUT
+
+  dependency-image:
+    needs:
+      - setup-dependency-image
+    uses: access-nri/build-ci/.github/workflows/build-and-push-image.yml@main
+    with:
+      container-registry: ghcr.io
+      container-name: access-nri/build-${{ inputs.model}}-${{ inputs.compiler-name }}${{ inputs.compiler-version }}-${{ inputs.spack-packages-version }}
+      dockerfile-directory: containers
+      dockerfile-name: Dockerfile.dependency
+      build-args: |
+        "PACKAGES=${{ needs.setup-dependency-image.outputs.model-components }}"
+        "BASE_IMAGE=ghcr.io/access-nri/base-spack-${{ inputs.compiler-name }}${{ inputs.compiler-version }}-${{ inputs.spack-packages-version }}:latest"
+    permissions:
+      contents: read
+      packages: write

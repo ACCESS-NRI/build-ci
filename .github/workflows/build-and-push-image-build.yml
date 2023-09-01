@@ -10,12 +10,9 @@ on:
         description: "Either a git tag or branch name for the ACCESS-NRI/spack_packages repository, which defaults to the main branch"
       model:
         required: true
-        type: choice
+        type: string
+        description: "A (coupled) model name (eg. access-om2, access-om3)"
         default: "all"
-        options:
-          - access-om2
-          - access-om3
-          - all
 
 jobs:
   generate-matrix:
@@ -30,9 +27,14 @@ jobs:
         id: get-model
         run: |
           if [[ "${{ inputs.model }}" = "all" ]]; then
-            echo "models=['access-om2', 'access-om3']" >> $GITHUB_OUTPUT
+            echo "models=$(jq -cr 'keys' containers/models.json)" >> $GITHUB_OUTPUT
           else
-            echo "models=['${{ inputs.model }}']" >> $GITHUB_OUTPUT
+            query=$(jq -cr '."${{ inputs.model }}"' containers/models.json)
+            if [ -z "$query" ]; then
+              exit 1
+            else
+              echo "models=['${{ inputs.model }}']" >> $GITHUB_OUTPUT
+            fi
           fi
       - name: Determine compilers to build
         id: get-compiler
