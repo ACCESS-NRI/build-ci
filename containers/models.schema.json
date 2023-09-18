@@ -1,0 +1,14 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "Models",
+    "description": "A list of ACCESS-NRI Models that are supported",
+    "type": "object",
+    "patternProperties": {
+        "^.*$": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            }
+        } 
+    }
+}

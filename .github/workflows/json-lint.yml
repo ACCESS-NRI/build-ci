@@ -1,0 +1,36 @@
+name: Validate JSON files
+on:
+  pull_request:
+    paths:
+      - '**.json' 
+jobs:
+  setup-validate-json:
+    name: Setup Validate JSON
+    runs-on: ubuntu-latest
+    outputs:
+      json-to-validate: ${{ steps.get-json.outputs.json }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Get all schema 
+        id: get-json
+        # this command finds all the filenames with the '.schema.json' extension, removes that extension, then turns them into a json array
+        # an example of this transformation would be: 'compilers.schema.json models.schema.json' -> 'compilers models' -> '["compilers","models"]' 
+        run: echo "json=$(find containers/ -type f -name '*.schema.json' | xargs basename -s .schema.json | jq -Rcn '[inputs]')" >> $GITHUB_OUTPUT
+
+  validate-json:
+    name: Validate JSON
+    runs-on: ubuntu-latest
+    needs:
+      - setup-validate-json
+    strategy:
+      fail-fast: false
+      matrix: 
+        file: ${{ fromJson(needs.setup-validate-json.outputs.json-to-validate) }}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v3
+        with:
+          python-version: '3.10'
+      - name: Validate files
+        run: jsonschema -i containers/${{ matrix.file }}.json containers/${{ matrix.file }}.schema.json
+
