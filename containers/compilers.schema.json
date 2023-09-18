@@ -1,0 +1,22 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "Compilers",
+    "description": "A list of compilers that are supported",
+    "type": "array",
+    "items": {
+        "type": "object",
+        "properties": {
+            "name": {
+                "type": "string"
+            },
+            "package": {
+                "type": "string"
+            },
+            "version": {
+                "type": "string"
+            }
+        },
+        "required": [ "name", "package", "version" ],
+        "additionalProperties": false
+    }
+}
