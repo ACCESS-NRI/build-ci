@@ -119,8 +119,8 @@ RUN spack gpg init
 RUN --mount=type=secret,id=S3_ACCESS_KEY_ID \
     --mount=type=secret,id=S3_ACCESS_KEY_SECRET \
     spack mirror add \
-    --s3-access-key-id `cat /run/secrets/S3_ACCESS_KEY_ID` \
-    --s3-access-key-secret `cat /run/secrets/S3_ACCESS_KEY_SECRET` \
+    --s3-access-key-id $(cat /run/secrets/S3_ACCESS_KEY_ID) \
+    --s3-access-key-secret $(cat /run/secrets/S3_ACCESS_KEY_SECRET) \
     s3_buildcache \
     s3://access-nri-spack-cache
 
