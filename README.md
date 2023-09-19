@@ -1,69 +1,41 @@
+# build-ci
+
 A central repository for reusable CI compilation testing workflows and containers used across ACCESS-NRI supported projects.
 
 This repository is also responsible for building Docker images used for CI compilation testing.
 
-# Building CI Docker images
+## Overview
 
-## Actions
-### build-and-push-image-base-spack.yml
+This repository contains three overarching CI pipelines:
 
-Builds and pushes the base Spack image used across CI compilation testing images. See Dockerfile at `containers/Dockerfile.base-spack`. Sets up base Linux image; installs and bootstraps Spack.
+### Dependency Image Pipeline
 
-### build-and-push-image-build.yml
+This pipeline creates Docker images that contain an install of `spack`, a version of the `access-nri/spack_packages` repository, and a set of independent `spack env`ironments that contain all the dependencies for all the model components of a coupled model.
 
-Builds and pushes the compilation testing images for all packages specified in the workflow file. See Dockerfile at `containers/Dockerfile.build`. Uses base Spack image; installs dependencies required for the specified package build.
+This allows the install of modified models (and model components) for quick CI testing, rather than having to install an entire dependency tree every time a PR is opened.
+
+If you want to take a look, these packages can be [found here](https://github.com/orgs/ACCESS-NRI/packages?tab=packages&q=build-) in the `build-ci` repo.
+
+### Model Test Pipeline
+
+This pipeline is called by any model repo that uses the `model-build-test-ci.yml` starter workflow. It uses the images mentioned above to test the installability of modified models (usually created via PRs) quickly.
+
+### JSON Lint Pipeline
+
+This pipeline checks that a given `*.json` file complies with an associated `*.schema.json` file. Right now it is only being used in the `build-ci` repo.
 
 ## Usage
-Using Github CLI:
 
-```
-gh workflow run build-and-push-image-base-spack.yml
-gh workflow run build-and-push-image-base-spack.yml -f spack-packages-version=v1.0.1
-gh workflow run build-and-push-image-build.yml
-```
+### For Model repositories
 
-Note the base Spack image must be built before running `build-and-push-image-build.yml`.
+If you want to use the Model Test Pipeline (and the model is available in `access-nri/spack_packages` and has an associated entry in `containers/models.json`), go to the repo, then the `Actions` tab, then the `New Workflow` button. You should see a section of starter workflows by ACCESS-NRI. Simply add the `Model Build Test Workflow`, and next time there is a PR on that repo, it will test for installability.
 
-# Reusable workflows
+### Creation of your own Dependency Images
 
-## `build-package.yml`
-Build the specified Spack package given a Docker build image.
+There is an associated `workflow_dispatch` trigger on `build-and-push-image-build.yml` that allows the creation of your own `base-spack` and `dependency` images. Just make sure that the `spack_packages version` tag exists in the `access-nri/spack_packages` repo.
 
-Inputs:
-* `container-registry`: The container registry base URL (e.g.: `ghcr.io`)
-* `container-name`: The container tag (e.g. `access-nri/example-image`)
-* `package-name`: The name of the spack package to be built (e.g. `access.nri.oasis3-mct`)
-* `compiler-name`: The name of the compiler to use
-* `compiler-version`: The version of the compiler to use
-* `spack-packages-version`: Optional, defaults to `main`. The git tag or branch for the `ACCESS-NRI/spack_packages` repository. 
+The Web UI trigger can be [found here](https://github.com/ACCESS-NRI/build-ci/actions/workflows/build-and-push-image-build.yml).
 
-### Usage
-To use, modify the following .yml file and add to your target repository in the `.github/workflows/` directory:
+## More information
 
-`.github/workflows/workflow.yml`:
-
-```
-name: Example package build testing workflow
-
-on:
-  workflow_dispatch:
-  pull_request:
-  push:
-    branches:
-      - master
-
-jobs:
-  build:
-    uses: access-nri/workflows/.github/workflows/build-package.yml@main
-    with:
-      container-registry: ghcr.io
-      container-name: access-nri/build-${{ github.event.repository.name }}-intel2021.2.0
-      package-name: [your package name]
-      compiler-name: intel
-      compiler-version: 2021.2.0
-      spack-packages-version: main # this doesn't need to be specified, defaults to main
-    permissions:
-      packages: read
-```
-
-See [Reusing workflows](https://docs.github.com/en/actions/using-workflows/reusing-workflows#calling-a-reusable-workflow) for more info.
+For more of a dev-focussed look at the CI pipeline, see `.github/documentation.md`.
