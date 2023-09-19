@@ -68,8 +68,8 @@ jobs:
     permissions:
       contents: read
       packages: write
-    
-  dependency-image:
+  
+  setup-dependency-image:
     # running always() means it will run even if base-spack is skipped
     if: always()
     needs:
@@ -78,16 +78,11 @@ jobs:
       fail-fast: false
       matrix:
         model: ${{ fromJson(inputs.models) }}
-    uses: access-nri/build-ci/.github/workflows/build-and-push-image.yml@main
+    uses: access-nri/build-ci/.github/workflows/dependency-image-build.yml@main
     with:
-      container-registry: ghcr.io
-      container-name: access-nri/build-${{ matrix.model}}-${{ inputs.compiler-name }}${{ inputs.compiler-version }}-${{ inputs.spack-packages-version }}
-      dockerfile-directory: containers
-      dockerfile-name: Dockerfile.${{ matrix.model }}
-      build-args: |
-        # TODO: Probably shouldn't hard code base image path
-        "BASE_IMAGE=ghcr.io/access-nri/base-spack-${{ inputs.compiler-name }}${{ inputs.compiler-version }}-${{ inputs.spack-packages-version }}:latest"
-    permissions:
-      contents: read
-      packages: write
+      compiler-name: ${{ inputs.compiler-name }}
+      compiler-package: ${{ inputs.compiler-package }}
+      compiler-version: ${{ inputs.compiler-version }}
+      spack-packages-version: ${{ inputs.spack-packages-version }}
+      model: ${{ matrix.model }}
       

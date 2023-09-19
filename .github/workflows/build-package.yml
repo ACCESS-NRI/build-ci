@@ -70,7 +70,7 @@ jobs:
       packages: read
 
     container:
-      image: ghcr.io/build-${{ needs.setup-build-ci.outputs.model }}-${{ matrix.compiler.name }}${{ matrix.compiler.version }}-${{ needs.setup-spack-packages.outputs.version }}:latest
+      image: ghcr.io/access-nri/build-${{ needs.setup-build-ci.outputs.model }}-${{ matrix.compiler.name }}${{ matrix.compiler.version }}-${{ needs.setup-spack-packages.outputs.version }}:latest
       credentials:
         username: ${{ github.repository_owner }}
         password: ${{ secrets.GITHUB_TOKEN }}
