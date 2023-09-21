@@ -20,6 +20,8 @@ If you want to take a look, these packages can be [found here](https://github.co
 
 This pipeline is called by any model repo that uses the `model-build-test-ci.yml` starter workflow. It uses the images mentioned above to test the installability of modified models (usually created via PRs) quickly.
 
+Examples of this are [access-nri/cice5](https://github.com/ACCESS-NRI/cice5/blob/master/.github/workflows/model-build-test-ci.yml) and [access-nri/mom5](https://github.com/ACCESS-NRI/MOM5/blob/master/.github/workflows/model-build-test-ci.yml)
+
 ### JSON Lint Pipeline
 
 This pipeline checks that a given `*.json` file complies with an associated `*.schema.json` file. Right now it is only being used in the `build-ci` repo.
