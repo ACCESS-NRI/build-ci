@@ -78,7 +78,7 @@ As an overview, this workflow, given a `access-nri/spack_packages` repo version 
 
 #### Pipeline Overview
 
-In the follow example, we have two compilers (`c1, c2`) and two (coupled) models (`m1, m2`).
+In the following example, we have two compilers (`c1, c2`) and two (coupled) models (`m1, m2`).
 
 ##### The Beginning (build-and-push-image-build.yml)
 
