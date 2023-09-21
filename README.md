@@ -10,7 +10,7 @@ This repository contains three overarching CI pipelines:
 
 ### Dependency Image Pipeline
 
-This pipeline creates Docker images that contain an install of `spack`, a version of the `access-nri/spack_packages` repository, and a set of independent `spack env`ironments that contain all the dependencies for all the model components of a coupled model.
+This pipeline creates Docker images that contain an install of `spack`, a version of the `access-nri/spack_packages` [repository](https://github.com/ACCESS-NRI/spack_packages), and a set of independent `spack env`ironments that contain all the dependencies for all the model components of a coupled model.
 
 This allows the install of modified models (and model components) for quick CI testing, rather than having to install an entire dependency tree every time a PR is opened.
 
