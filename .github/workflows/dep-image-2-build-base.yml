@@ -1,4 +1,4 @@
-name: Dependency Image Generation Pipeline
+name: Build Base Spack
 on:
   workflow_call:
     inputs:
@@ -19,7 +19,7 @@ on:
         type: string
 jobs:
   base-spack-image-check:
-    name: Check for the existence of base-spack-${{ inputs.compiler-name }}${{ inputs.compiler-version }}-${{ inputs.spack-packages-version }}
+    name: Check base-spack-${{ inputs.compiler-name }}${{ inputs.compiler-version }}-${{ inputs.spack-packages-version }}
     runs-on: ubuntu-latest
     outputs:
       no-image-exists: ${{ steps.no-image-exists.outputs.check }}
@@ -43,11 +43,11 @@ jobs:
           fi
 
   base-spack-image:
-    name: Create the base-spack image
+    name: Build base-spack-${{ inputs.compiler-name }}${{ inputs.compiler-version }}-${{ inputs.spack-packages-version }}
     needs: 
       - base-spack-image-check
     if: needs.base-spack-image-check.outputs.no-image-exists
-    uses: access-nri/build-ci/.github/workflows/build-and-push-image.yml@main
+    uses: access-nri/build-ci/.github/workflows/build-docker-image.yml@main
     with:
       container-registry: ghcr.io
       container-name: access-nri/base-spack-${{ inputs.compiler-name }}${{ inputs.compiler-version }}-${{ inputs.spack-packages-version }}
@@ -69,16 +69,17 @@ jobs:
       contents: read
       packages: write
   
-  setup-dependency-image:
-    # running always() means it will run even if base-spack is skipped
-    if: always()
+  setup-dependency-images:
+    name: Setup Dependency Images
     needs:
       - base-spack-image
+    # running always() means it will run even if base-spack is skipped
+    if: always()
     strategy:
       fail-fast: false
       matrix:
         model: ${{ fromJson(inputs.models) }}
-    uses: access-nri/build-ci/.github/workflows/dependency-image-build.yml@main
+    uses: access-nri/build-ci/.github/workflows/dep-image-3-build.yml@main
     with:
       compiler-name: ${{ inputs.compiler-name }}
       compiler-package: ${{ inputs.compiler-package }}

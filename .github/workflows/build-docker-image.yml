@@ -1,4 +1,4 @@
-name: Build and push package build image
+name: Build Docker Image
 
 on:
   workflow_call:
@@ -29,7 +29,7 @@ on:
 
 jobs:
   build-and-push-image:
-    name: Build and push ${{ inputs.container-name }}
+    name: Build ${{ inputs.container-name }}
 
     runs-on: ubuntu-latest
 
