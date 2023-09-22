@@ -4,9 +4,9 @@ This documentation is intended to give a rationale for design decisions, and a m
 
 This repository contains three main pipelines:
 
-* Dependency Image Pipeline: uses `build-and-push-image-build.yml`, `dependency-image-pipeline.yml`, `dependency-image-build.yml` and `build-and-push-image.yml` workflows.
-* Model Test Pipeline: uses `build-package.yml` workflow.
-* JSON Lint Pipeline: uses `json-lint.yml` workflow.
+* Dependency Image Pipeline: uses `dep-image-1-start.yml`, `dep-image-2-build-base.yml`, `dep-image-3-build.yml` and `build-docker-image.yml` workflows.
+* Model Test Pipeline: uses `model-1-build.yml` workflow.
+* JSON Validate Pipeline: uses `json-1-validate.yml` workflow.
 
 How they are used can be found in the [CI Run Through section](#ci-workflow-run-through).
 
@@ -36,7 +36,7 @@ It also indirectly uses:
 
 #### Model Test Pipeline Inputs
 
-There are no explicit inputs to this workflow. The information required is inferred by the model repository that calls the `build-package.yml` workflow.
+There are no explicit inputs to this workflow. The information required is inferred by the model repository that calls the `model-1-build.yml` workflow.
 
 However, there are indirect inputs into this pipeline:
 
@@ -49,9 +49,9 @@ However, there are indirect inputs into this pipeline:
 * `<env>.original.spack.lock`: A `spack.lock` file from the `spack env` associated with the modified model repository (eg. `mom5`), before the installation of the modified model. If the install succeeds then then this `spack.lock` file was unmodified during the installation and can be used to recreate this `spack env`. This file is uploaded as an artifact.
 * Optionally, a `<env>.force.spack.lock`: If the installation fails (namely, if installing the modified model would change the `spack.lock` file) we force a regeneration of the `spack.lock` file and upload this as an artifact as well.
 
-### I/O for JSON Linter Pipeline
+### I/O for JSON Validator Pipeline
 
-#### Inputs for JSON Linter Pipeline
+#### Inputs for JSON Validator Pipeline
 
 This pipeline has no explicit inputs.
 
@@ -60,7 +60,7 @@ However, there are indirect inputs into this pipeline:
 * `*.json`: All JSON files that need to be validated.
 * `*.schema.json`: All JSON schemas that validate the above `*.json` files.
 
-#### Outputs for JSON Linter Pipeline
+#### Outputs for JSON Validator Pipeline
 
 There are no outputs from this pipeline (outside of checks).
 
@@ -80,67 +80,67 @@ As an overview, this workflow, given a `access-nri/spack_packages` repo version 
 
 In the following example, we have two compilers (`c1, c2`) and two (coupled) models (`m1, m2`).
 
-##### The Beginning (build-and-push-image-build.yml)
+##### The Beginning (dep-image-1-start.yml)
 
-This pipeline begins at `build-and-push-image-build.yml`:
+This pipeline begins at `dep-image-1-start.yml`:
 
 ```txt
-build-and-push-image-build.yml [compilers c1 c2]
+dep-image-1-start.yml [compilers c1 c2]
 ```
 
 This workflow is responsible for generating the matrix of compilers (from `containers/compilers.json`) and the information necessary for creating a matrix of coupled models for a future matrix (from `models.json`).
 
 Rather than doing the `compiler x model` matrix at the beginning of the workflow, we do the model matrix later. This is because we would be duplicating the creation of the `base-spack` image, which thrashes dockers caching. A more detailed explanation is in [the appendix of this document](#on-the-matrix-strategy-for-the-dependency-image-pipeline).
 
-After the `compiler` matrix is created, we call the `dependency-image-pipeline.yml` workflow on each of the compilers, parallelizing the pipeline like so:
+After the `compiler` matrix is created, we call the `dep-image-2-build-base.yml` workflow on each of the compilers, parallelizing the pipeline like so:
 
 ```txt
-build-and-push-image-build.yml [compilers c1 c2]
-    |- [c1] dependency-image-pipeline.yml
-    |- [c2] dependency-image-pipeline.yml 
+dep-image-1-start.yml [compilers c1 c2]
+    |- [c1] dep-image-2-build-base.yml
+    |- [c2] dep-image-2-build-base.yml 
 ```
 
-##### Creation of `base-spack` and setup of dependency image (dependency-image-pipeline.yml)
+##### Creation of `base-spack` and setup of dependency image (dep-image-2-build-base.yml)
 
 In this workflow, given the specs for a given compiler, a `spack_packages` version, and a list of models for a future `model` matrix strategy, we seek to:
 
 * Check that a suitable `base-spack` image doesn't already exists. This would be one that has the same compiler and same version of spack_packages.
-* If it doesn't exist, create and push it using the reusable `build-and-push-image.yml` workflow.
-* After those steps, create the aforementioned `model` matrix strategy, running the `dependency-image-build.yml` workflow for each of the models. At this point, the pipeline looks like this:
+* If it doesn't exist, create and push it using the reusable `build-docker-image.yml` workflow.
+* After those steps, create the aforementioned `model` matrix strategy, running the `dep-image-3-build.yml` workflow for each of the models. At this point, the pipeline looks like this:
 
 ```txt
-build-and-push-image-build.yml [compilers c1 c2]
-    |- [c1] dependency-image-pipeline.yml
-    |   |- build-and-push-image.yml (base-spack-c1)
-    |   |- dependency-image-build.yml [models m1 m2]
-    |- [c2] dependency-image-pipeline.yml
-        |- build-and-push-image.yml (base-spack-c2)
-        |- dependency-image-build.yml [models m1 m2]
+dep-image-1-start.yml [compilers c1 c2]
+    |- [c1] dep-image-2-build-base.yml
+    |   |- build-docker-image.yml (base-spack-c1)
+    |   |- dep-image-3-build.yml [models m1 m2]
+    |- [c2] dep-image-2-build-base.yml
+        |- build-docker-image.yml (base-spack-c2)
+        |- dep-image-3-build.yml [models m1 m2]
 ```
 
-##### Creation of Dependency Image (dependency-image-build.yml)
+##### Creation of Dependency Image (dep-image-3-build.yml)
 
 Finally, with the `base-spack` image created, and the models that need to be built turned into a matrix strategy, we can create the dependency image. At this stage, we have as inputs: a given compiler spec, a `spack_packages` version, and the name of a single coupled model that we want turned into a dependency image. We have all the information necessary for this now.  
 
-In the `dependency-image-build.yml` workflow, we:
+In the `dep-image-3-build.yml` workflow, we:
 
 * Get the associated model components of our coupled model from the `containers/models.json` file.
-* Build and push the dependency image given the existing `base-spack` image as a base, and the list of model components from the previous job, using the reusable `build-and-push-image.yml` workflow.
+* Build and push the dependency image given the existing `base-spack` image as a base, and the list of model components from the previous job, using the reusable `build-docker-image.yml` workflow.
 
 This leads to a final pipeline looking like the following:
 
 ```txt
-build-and-push-image-build.yml [compilers c1 c2]
-    |- [c1] dependency-image-pipeline.yml
-    |   |- build-and-push-image.yml (base-spack-c1)
-    |   |- dependency-image-build.yml [models m1 m2]
-    |       |- [m1] build-and-push-image.yml (dep-image-c1-m1) 
-    |       |- [m2] build-and-push-image.yml (dep-image-c1-m2) 
-    |- [c2] dependency-image-pipeline.yml 
-    |   |- build-and-push-image.yml (base-spack-c2)
-    |   |- dependency-image-build.yml [models m1 m2]
-    |       |- [m1] build-and-push-image.yml (dep-image-c2-m1) 
-    |       |- [m2] build-and-push-image.yml (dep-image-c2-m2) 
+dep-image-1-start.yml [compilers c1 c2]
+    |- [c1] dep-image-2-build-base.yml
+    |   |- build-docker-image.yml (base-spack-c1)
+    |   |- dep-image-3-build.yml [models m1 m2]
+    |       |- [m1] build-docker-image.yml (dep-image-c1-m1) 
+    |       |- [m2] build-docker-image.yml (dep-image-c1-m2) 
+    |- [c2] dep-image-2-build-base.yml 
+    |   |- build-docker-image.yml (base-spack-c2)
+    |   |- dep-image-3-build.yml [models m1 m2]
+    |       |- [m1] build-docker-image.yml (dep-image-c2-m1) 
+    |       |- [m2] build-docker-image.yml (dep-image-c2-m2) 
 ```
 
 ### Model Test Pipeline
@@ -149,7 +149,7 @@ This workflow seeks to build upon the Dependency Image Pipeline as explained abo
 
 #### Model Test Pipeline Overview
 
-Model repositories that implement the `model-build-test-ci.yml` starter workflow (such as the [access-nri/MOM5](https://github.com/ACCESS-NRI/MOM5/blob/master/.github/workflows/model-build-test-ci.yml) repo) will call `build-ci`s `build-package.yml` workflow.
+Model repositories that implement the `model-build-test-ci.yml` starter workflow (such as the [access-nri/MOM5](https://github.com/ACCESS-NRI/MOM5/blob/master/.github/workflows/model-build-test-ci.yml) repo) will call `build-ci`s `model-1-build.yml` workflow.
 
 This workflow begins by inferring the 'appropriate dependency image' based on a number of factors, mostly coming from the name of the dependency image (which is of the form `build-<coupled model>-<compiler name><compiler version>-<spack_packages version>:latest`).
 
@@ -163,15 +163,15 @@ Given those inferences, we would be able to find the appropriate dependency imag
 
 We then use those containers to upload the original `spack.lock` files (also known as lockfiles) and then attempt to install the modified model in the appropriate `spack env`. If this fails, we force a recreation of the lockfile and upload this one as well, for reference.
 
-### JSON Linter Pipeline
+### JSON Validator Pipeline
 
-This is a relatively simple pipeline (found in `json-lint.yml`) that looks for `*.schema.json` files in `containers`, matches them up with the associated `*.json` files and makes sure they comply with the given schema.
+This is a relatively simple pipeline (found in `json-1-validate.yml`) that looks for `*.schema.json` files in `containers`, matches them up with the associated `*.json` files and makes sure they comply with the given schema.
 
 ## Reusable Workflows
 
-### build-and-push-image.yml
+### build-docker-image.yml
 
-`build-and-push-image.yml` is the most used reusable workflow. This workflow builds, caches, and pushes a given Dockerfile to a given container registry. Build args and build secrets can also be added.
+`build-docker-image.yml` is the most used reusable workflow. This workflow builds, caches, and pushes a given Dockerfile to a given container registry. Build args and build secrets can also be added.
 
 ## Appendix
 
