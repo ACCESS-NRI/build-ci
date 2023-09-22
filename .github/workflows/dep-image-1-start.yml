@@ -1,4 +1,4 @@
-name: Build and push access-nri/build images
+name: Dependency Image Pipeline
 
 on:
   workflow_dispatch:
@@ -16,7 +16,7 @@ on:
 
 jobs:
   generate-matrix:
-    name: Generate Matrix of compilers and models
+    name: Generate Matrices
     runs-on: ubuntu-latest
     outputs:
       models: ${{ steps.get-model.outputs.models }}
@@ -41,14 +41,14 @@ jobs:
         run: echo "compilers=$(jq -c . containers/compilers.json)" >> $GITHUB_OUTPUT
   
   dependency-image-workflow:
-    name: Create dependency images based on varied compilers and models
+    name: Create Dependency Image
     needs:
       - generate-matrix
     strategy:
       fail-fast: false
       matrix:
         compiler: ${{ fromJson(needs.generate-matrix.outputs.compilers) }}
-    uses: access-nri/build-ci/.github/workflows/dependency-image-pipeline.yml@main
+    uses: access-nri/build-ci/.github/workflows/dep-image-2-build-base.yml@main
     with:
       compiler-name: ${{ matrix.compiler.name }}
       compiler-package: ${{ matrix.compiler.package }}

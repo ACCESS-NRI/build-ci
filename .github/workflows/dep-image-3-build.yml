@@ -1,4 +1,4 @@
-name: Build dependency image
+name: Build Dependency Image
 on:
   workflow_call:
     inputs:
@@ -20,6 +20,7 @@ on:
 
 jobs:
   setup-dependency-image:
+    name: Setup build-${{ inputs.model }}-${{ inputs.compiler-name}}${{ inputs.compiler-version }}-${{ inputs.spack-packages-version }}
     runs-on: ubuntu-latest
     outputs: 
       model-components: ${{ steps.get-model-components.outputs.model-components }}
@@ -29,9 +30,10 @@ jobs:
         run: echo "model-components=$(jq -cr '.["${{ inputs.model }}"]' containers/models.json)" >> $GITHUB_OUTPUT
 
   dependency-image:
+    name: Build build-${{ inputs.model }}-${{ inputs.compiler-name}}${{ inputs.compiler-version }}-${{ inputs.spack-packages-version }}
     needs:
       - setup-dependency-image
-    uses: access-nri/build-ci/.github/workflows/build-and-push-image.yml@main
+    uses: access-nri/build-ci/.github/workflows/build-docker-image.yml@main
     with:
       container-registry: ghcr.io
       container-name: access-nri/build-${{ inputs.model}}-${{ inputs.compiler-name }}${{ inputs.compiler-version }}-${{ inputs.spack-packages-version }}
