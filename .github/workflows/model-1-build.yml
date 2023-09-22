@@ -5,7 +5,7 @@ on:
 
 jobs:
   setup-spack-packages:
-    name: Get information from spack_packages
+    name: Info from spack_packages
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.get-version.outputs.version }}
@@ -15,12 +15,18 @@ jobs:
           repository: access-nri/spack_packages
           ref: main
           fetch-tags: true
+      - name: Fetch history for main
+        # By default, actions/checkout only checks out `--depth=1` (the tip of the main branch). 
+        # Even when we fetch tags the history is fragmented and usually isn't traversable from HEAD with `git describe --tags`.
+        # We fetch the entirety of the main branch history to be able to do the next step. 
+        run: git fetch --unshallow
       - name: Get latest spack_packages tags
         id: get-version
-        run: echo "version=$(git describe --tags)" >> $GITHUB_OUTPUT
+        # This command traverses `main` to find the last `git tag` and suppresses the 'long form' of tags (that have a bunch of commit metadata). 
+        run: echo "version=$(git describe --tags --abbrev=0)" >> $GITHUB_OUTPUT
 
   setup-model:
-    name: Get information from ${{ github.repository }}
+    name: Info from ${{ github.repository }}
     runs-on: ubuntu-latest
     outputs:
       package-name: ${{ steps.get-package-name.outputs.package }}
@@ -31,7 +37,7 @@ jobs:
         run: echo "package=$(echo ${{ github.event.repository.name }} | tr [:upper:] [:lower:])" >> $GITHUB_OUTPUT
       
   setup-build-ci:
-    name: Get information from build-ci
+    name: Info from build-ci
     runs-on: ubuntu-latest
     needs:
       - setup-model
