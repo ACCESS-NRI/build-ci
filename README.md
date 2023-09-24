@@ -36,7 +36,7 @@ If you want to use the Model Test Pipeline (and the model is available in `acces
 
 There is an associated `workflow_dispatch` trigger on `build-and-push-image-build.yml` that allows the creation of your own `base-spack` and `dependency` images. Just make sure that the `spack_packages version` tag exists in the `access-nri/spack_packages` repo.
 
-The Web UI trigger can be [found here](https://github.com/ACCESS-NRI/build-ci/actions/workflows/build-and-push-image-build.yml).
+A [Web UI trigger](https://github.com/ACCESS-NRI/build-ci/actions/workflows/build-and-push-image-build.yml) is available.
 
 ## More information
 
