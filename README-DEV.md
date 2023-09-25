@@ -90,7 +90,27 @@ dep-image-1-start.yml [compilers c1 c2]
 
 This workflow is responsible for generating the matrix of compilers (from `containers/compilers.json`) and the information necessary for creating a matrix of coupled models for a future matrix (from `models.json`).
 
-Rather than doing the `compiler x model` matrix at the beginning of the workflow, we do the model matrix later. This is because we would be duplicating the creation of the `base-spack` image, which thrashes dockers caching. A more detailed explanation is in [the appendix of this document](#on-the-matrix-strategy-for-the-dependency-image-pipeline).
+Rather than doing the `compiler x model` matrix at the beginning of the workflow, we do the model matrix later in a staggered approach. We do this because it removes duplication of effort and effectively uses the cache, rather than thrashing it. The differences between a `compiler x model` and a staggered `compiler` then `matrix` model strategy are explained below.
+
+Imagine we have a `compiler x model` matrix with 2 compilers `c1, c2` and two models `m1, m2`. The matrix strategy would be:
+
+```txt
+[compiler x model] --- [c1, m1] --- base-spack-c1 image --- dep-c1-m1 image
+                    |- [c1, m2] --- base-spack-c1 image --- dep-c1-m2 image
+                    |- [c2, m1] --- base-spack-c2 image --- dep-c2-m1 image
+                    |- [c2, m2] --- base-spack-c2 image --- dep-c2-m2 image
+```
+
+The two copies of `base-spack-c1` and `base-spack-c2` images are created in parallel, which duplicates effort and makes the cache unusable. Instead, if we stagger the creation of the matrix, as noted below:  
+
+```txt
+[compiler] --- [c1] --- base-spack-c1 image --- [model] --- [m1] --- dep-c1-m1 image
+            |                                            |- [m2] --- dep-c1-m2 image
+            |- [c2] --- base-spack-c2 image --- [model] --- [m1] --- dep-c2-m1 image
+                                                         |- [m2] --- dep-c1-m2 image
+```
+
+We instead only create one copy of `base-spack-c1` and `base-spack-c2`, leveraging the various caches we use.
 
 After the `compiler` matrix is created, we call the `dep-image-2-build-base.yml` workflow on each of the compilers, parallelizing the pipeline like so:
 
@@ -172,31 +192,3 @@ This is a relatively simple pipeline (found in `json-1-validate.yml`) that looks
 ### build-docker-image.yml
 
 `build-docker-image.yml` is the most used reusable workflow. This workflow builds, caches, and pushes a given Dockerfile to a given container registry. Build args and build secrets can also be added.
-
-## Appendix
-
-### On the matrix strategy for the Dependency Image Pipeline
-
-At first glance, the Dependency Image Pipeline seems needlessly complex. Why do we do a `compiler` matrix then a `model` matrix strategy, instead of a `compiler x model` matrix strategy? This section attempts to explain it.
-
-At it's core, it is about removing duplication of effort and effectively using the cache, rather than thrashing the cache.
-
-Imagine we have a `compiler x model` matrix with 2 compilers `c1, c2` and two models `m1, m2`. The matrix strategy would be:
-
-```txt
-[compiler x model] --- [c1, m1] --- base-spack-c1 image --- dep-c1-m1 image
-                    |- [c1, m2] --- base-spack-c1 image --- dep-c1-m2 image
-                    |- [c2, m1] --- base-spack-c2 image --- dep-c2-m1 image
-                    |- [c2, m2] --- base-spack-c2 image --- dep-c2-m2 image
-```
-
-The two copies of `base-spack-c1` and `base-spack-c2` images are created in parallel, which duplicates effort and makes the cache unusable. Instead, if we stagger the creation of the matrix, as noted below:  
-
-```txt
-[compiler] --- [c1] --- base-spack-c1 image --- [model] --- [m1] --- dep-c1-m1 image
-            |                                            |- [m2] --- dep-c1-m2 image
-            |- [c2] --- base-spack-c2 image --- [model] --- [m1] --- dep-c2-m1 image
-                                                         |- [m2] --- dep-c1-m2 image
-```
-
-We instead only create one copy of `base-spack-c1` and `base-spack-c2`, leveraging the various caches we use.
