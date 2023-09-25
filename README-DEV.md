@@ -68,7 +68,7 @@ There are no outputs from this pipeline (outside of checks).
 
 ### Dependency Image Build Pipeline
 
-The rationale for this pipeline is the creation of a model-dependency docker image. This image contains spack, the `spack env`ironments, and the dependencies for the install of a model, but not the model itself. This allows modified models/model components to be 'dropped in' to the dependency image and installed quickly, without needing to install the dependencies again.
+The rationale for this pipeline is the creation of a model-dependency docker image. This image contains spack, the `spack env`s, and the dependencies for the install of a model, but not the model itself. This allows modified models/model components to be 'dropped in' to the dependency image and installed quickly, without needing to install the dependencies again.
 
 As an overview, this workflow, given a `access-nri/spack_packages` repo version and coupled model(s):
 
