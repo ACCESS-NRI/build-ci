@@ -40,4 +40,4 @@ A [Web UI trigger](https://github.com/ACCESS-NRI/build-ci/actions/workflows/buil
 
 ## More information
 
-For more of a dev-focussed look at the CI pipeline, see `.github/documentation.md`.
+For more of a dev-focussed look at the CI pipeline, see `README-DEV.md`.
