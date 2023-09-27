@@ -18,7 +18,7 @@ How they are used can be found in the [CI Run Through section](#ci-workflow-run-
 
 This pipeline has explicit inputs:
 
-* `spack-packages-version`: A tag or branch of the `access-nri/spack_packages` repository. This allows provenance of the build process of models.
+* `spack-packages-version`: A tag or branch of the `access-nri/spack_packages` [repository](https://github.com/ACCESS-NRI/spack_packages). This allows provenance of the build process of models.
 * `model`: a coupled model name (such as `access-om2` or `access-om3`) or `all` if we want to build dependency images for all coupled models defined in `containers/models.json`.
 
 It also indirectly uses:
