@@ -8,7 +8,7 @@ This repository is also responsible for building Docker images used for CI compi
 
 This repository contains three overarching CI pipelines:
 
-### Dependency Image Pipeline
+### Dependency Image Pipeline (dep-image-*)
 
 This pipeline creates Docker images that contain an install of `spack`, a version of the `access-nri/spack_packages` [repository](https://github.com/ACCESS-NRI/spack_packages), and a set of independent `spack env`s that contain all the dependencies for all the model components of a coupled model.
 
@@ -16,15 +16,15 @@ This allows the install of modified models (and model components) for quick CI t
 
 These Dependency Images are in the [`build-ci` repo](https://github.com/orgs/ACCESS-NRI/packages?tab=packages&q=build-).
 
-### Model Test Pipeline
+### Model Test Pipeline (model-*)
 
 This pipeline is called by any model repo that uses the `model-build-test-ci.yml` starter workflow. It uses the images mentioned above to test the installability of modified models (usually created via PRs) quickly.
 
 Examples of this are [access-nri/cice5](https://github.com/ACCESS-NRI/cice5/blob/master/.github/workflows/model-build-test-ci.yml) and [access-nri/mom5](https://github.com/ACCESS-NRI/MOM5/blob/master/.github/workflows/model-build-test-ci.yml)
 
-### JSON Lint Pipeline
+### JSON Lint Pipeline (json-*)
 
-This pipeline checks that a given `*.json` file complies with an associated `*.schema.json` file. Right now it is only being used in the `build-ci` repo.
+This pipeline calls a reusable workflow (namely, [validate-json.yml](https://github.com/ACCESS-NRI/build-ci/blob/main/.github/workflows/validate-json.yml)) that checks that a given `*.json` file complies with an associated `*.schema.json` file. Right now it is only being used in the `build-ci` repo.
 
 ## Usage
 

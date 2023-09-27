@@ -207,3 +207,7 @@ This is a relatively simple pipeline (found in [`json-1-validate.yml`](https://g
 ### build-docker-image.yml
 
 [`build-docker-image.yml`](https://github.com/ACCESS-NRI/build-ci/blob/main/.github/workflows/build-docker-image.yml) is the most used reusable workflow. This workflow builds, caches, and pushes a given Dockerfile to a given container registry. Build args and build secrets can also be added.
+
+### validate-json.yml
+
+[validate-json.yml](https://github.com/ACCESS-NRI/build-ci/blob/main/.github/workflows/validate-json.yml) is a workflow that searches for `*.schema.json` files, matches them with their associated `*.json` files, and runs a parallel `jsonschema` check over all of the files that it finds. The only input to this workflow is the `src` directory, which is used to discover matching `*.schema.json`/`*.json` pairs. For now, they must be in the same directory. 
