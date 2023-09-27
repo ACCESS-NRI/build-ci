@@ -40,7 +40,7 @@ Model must meet these requirements:
 
 ### Create your own Dependency Images
 
-There is an associated `workflow_dispatch` trigger on `build-and-push-image-build.yml` that allows the creation of your own `base-spack` and `dependency` images. Just make sure that the `spack_packages version` tag exists in the `access-nri/spack_packages` repo.
+There is an associated `workflow_dispatch` trigger on [`dep-image-1-start.yml`](https://github.com/ACCESS-NRI/build-ci/blob/main/.github/workflows/dep-image-1-start.yml) that allows the creation of your own `base-spack` and `dependency` images. Just make sure that the `spack_packages version` tag exists in the `access-nri/spack_packages` repo.
 
 A [Web UI trigger](https://github.com/ACCESS-NRI/build-ci/actions/workflows/build-and-push-image-build.yml) is available.
 
