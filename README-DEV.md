@@ -16,7 +16,7 @@ How they are used can be found in the [CI Run Through section](#ci-workflow-run-
 
 #### Inputs
 
-This pipeline has explicit inputs:
+This pipeline has explicit inputs, defined in the [`on.workflow_call.inputs` section](https://github.com/ACCESS-NRI/build-ci/blob/1b998192946c364fb75040e6807e7143c9123527/.github/workflows/dep-image-1-start.yml#L5-L15):
 
 * `spack-packages-version`: A tag or branch of the `access-nri/spack_packages` [repository](https://github.com/ACCESS-NRI/spack_packages). This allows provenance of the build process of models.
 * `model`: a coupled model name (such as `access-om2` or `access-om3`) or `all` if we want to build dependency images for all coupled models defined in `containers/models.json`.
@@ -53,9 +53,9 @@ However, there are indirect inputs into this pipeline:
 
 ### JSON Validator Pipeline
 
-#### Inputs
-
 This workflow finds all the [JSON Schema](https://json-schema.org/) files in the project, i.e. those with the '.schema.json' extension, and then runs [`jsonschema`](https://pypi.org/project/jsonschema/) on the matching json files. e.g. `containers/model.json` is validated against `containers/models.schema.json`.
+
+#### Inputs
 
 This pipeline has no explicit inputs.
 
