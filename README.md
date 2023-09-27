@@ -14,7 +14,7 @@ This pipeline creates Docker images that contain an install of `spack`, a versio
 
 This allows the install of modified models (and model components) for quick CI testing, rather than having to install an entire dependency tree every time a PR is opened.
 
-These packages are in the [`build-ci` repo](https://github.com/orgs/ACCESS-NRI/packages?tab=packages&q=build-).
+These Dependency Images are in the [`build-ci` repo](https://github.com/orgs/ACCESS-NRI/packages?tab=packages&q=build-).
 
 ### Model Test Pipeline
 
