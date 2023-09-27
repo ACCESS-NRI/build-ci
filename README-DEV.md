@@ -23,14 +23,16 @@ This pipeline has explicit inputs:
 
 It also indirectly uses:
 
-* `[containers/compilers.json`](https://github.com/ACCESS-NRI/build-ci/blob/main/containers/compilers.json): This is a data structure containing all the compilers we want to test against.
+* [`containers/compilers.json`](https://github.com/ACCESS-NRI/build-ci/blob/main/containers/compilers.json): This is a data structure containing all the compilers we want to test against.
 * [`containers/models.json`](https://github.com/ACCESS-NRI/build-ci/blob/main/containers/models.json): This is a data structure containing all the coupled models (and their associated model components) that we want to test against.
-* [`containers/Dockefile.base-spack`](https://github.com/ACCESS-NRI/build-ci/blob/main/containers/Dockerfile.base-spack), [`containers/Dockerfile.depdency`](https://github.com/ACCESS-NRI/build-ci/blob/main/containers/Dockerfile.dependency) : uses these Dockerfiles to create the `base-spack` and `dependency` images.
+* [`containers/Dockefile.base-spack`](https://github.com/ACCESS-NRI/build-ci/blob/main/containers/Dockerfile.base-spack), [`containers/Dockerfile.dependency`](https://github.com/ACCESS-NRI/build-ci/blob/main/containers/Dockerfile.dependency) : uses these Dockerfiles to create the `base-spack` and `dependency` images.
 
 #### Outputs
+
 This pipeline creates two docker image outputs:
-* `base-spack` Docker image: Of the form `base-spack-<compiler name><compiler version>-<spack_packages version>:latest`. A docker image that contains a `spack` install, `access-nri/spack_packages` repo at the specified version, and a site-wide compiler for spack to use to build dependencies.
-* `dependency` Docker image: Of the form `build-<coupled model>-<compiler name><compiler version>-<spack_packages version>:latest`: A docker image based on the above `base-spack` image, that contains all the model components dependencies (separated by `spack env`s), but not the models themselves. The models are added on top of the install in a different pipeline, negating the need for a costly install of the dependencies again (in most cases).
+
+* `base-spack` Docker image: Of the form `base-spack-<compiler name><compiler version>-<spack_packages version>:latest`. A docker image that contains a `spack` install, `access-nri/spack_packages` repo at the specified version, and a site-wide compiler for spack to use to build dependencies. An example of this package is [`base-spack-intel2021.2.0-main`](https://github.com/ACCESS-NRI/build-ci/pkgs/container/base-spack-intel2021.2.0-main).
+* `dependency` Docker image: Of the form `build-<coupled model>-<compiler name><compiler version>-<spack_packages version>:latest`: A docker image based on the above `base-spack` image, that contains all the model components dependencies (separated by `spack env`s), but not the models themselves. The models are added on top of the install in a different pipeline, negating the need for a costly install of the dependencies again (in most cases). An example of this package is [`build-access-om3-intel2021.2.0-main`](https://github.com/orgs/ACCESS-NRI/packages/container/package/build-access-om3-intel2021.2.0-main).
 
 ### Model Test Pipeline
 
@@ -41,7 +43,7 @@ There are no explicit inputs to this workflow. The information required is infer
 However, there are indirect inputs into this pipeline:
 
 * Appropriate `dependency` Docker images of the form: `ghcr.io/access-nri/build-<coupled model>-<compiler name><compiler version>-<spack_packages version>:latest`.
-* `[containers/compilers.json`](https://github.com/ACCESS-NRI/build-ci/blob/main/containers/compilers.json): This is a data structure containing all the compilers we want to test against.
+* [`containers/compilers.json`](https://github.com/ACCESS-NRI/build-ci/blob/main/containers/compilers.json): This is a data structure containing all the compilers we want to test against.
 * [`containers/models.json`](https://github.com/ACCESS-NRI/build-ci/blob/main/containers/models.json): This is a data structure containing all the coupled models (and their associated model components) that we want to test against.
 
 #### Outputs
