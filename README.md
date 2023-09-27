@@ -30,9 +30,15 @@ This pipeline checks that a given `*.json` file complies with an associated `*.s
 
 ### For Model repositories
 
-If you want to use the Model Test Pipeline (and the model is available in `access-nri/spack_packages` and has an associated entry in `containers/models.json`), go to the repo, then the `Actions` tab, then the `New Workflow` button. You should see a section of starter workflows by ACCESS-NRI. Simply add the `Model Build Test Workflow`, and next time there is a PR on that repo, it will test for installability.
+If you want to use the Model Test Pipeline go to the repo, then the `Actions` tab, then the `New Workflow` button. You should see a section of starter workflows by ACCESS-NRI. Simply add the `Model Build Test Workflow`, and next time there is a PR on that repo, it will test for installability. Note your model must meet the requirements below
 
-### Creation of your own Dependency Images
+#### Requirements
+
+Model must meet these requirements:
+- Be [available as a spack package](https://github.com/ACCESS-NRI/spack_packages/tree/main/packages) in the [`access-nri/spack_packages` repo](https://github.com/ACCESS-NRI/spack_packages)
+- Have an entry in [`containers/models.json`](https://github.com/ACCESS-NRI/build-ci/blob/main/containers/models.json) in this repo
+
+### Create your own Dependency Images
 
 There is an associated `workflow_dispatch` trigger on `build-and-push-image-build.yml` that allows the creation of your own `base-spack` and `dependency` images. Just make sure that the `spack_packages version` tag exists in the `access-nri/spack_packages` repo.
 
@@ -40,4 +46,4 @@ A [Web UI trigger](https://github.com/ACCESS-NRI/build-ci/actions/workflows/buil
 
 ## More information
 
-For more of a dev-focussed look at the CI pipeline, see `README-DEV.md`.
+For more of a dev-focussed look at the CI pipeline, see [`README-DEV.md`](https://github.com/ACCESS-NRI/build-ci/blob/main/README-DEV.md).

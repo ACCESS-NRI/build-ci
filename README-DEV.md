@@ -12,9 +12,9 @@ How they are used can be found in the [CI Run Through section](#ci-workflow-run-
 
 ## Inputs and Outputs
 
-### I/O for Dependency Image Build Pipeline
+### Dependency Image Build Pipeline
 
-#### Dependency Image Build Pipeline Inputs
+#### Inputs
 
 This pipeline has explicit inputs:
 
@@ -23,35 +23,35 @@ This pipeline has explicit inputs:
 
 It also indirectly uses:
 
-* `containers/compilers.json`: This is a structure of all the compilers we want to test against.
-* `containers/models.json`: This is a structure of all the coupled models (and their associated model components) that we want to test against.
-* `containers/Dockerfile.*`: uses these Dockerfiles to create the `base-spack` and `dependency` images.
+* `[containers/compilers.json`](https://github.com/ACCESS-NRI/build-ci/blob/main/containers/compilers.json): This is a data structure containing all the compilers we want to test against.
+* [`containers/models.json`](https://github.com/ACCESS-NRI/build-ci/blob/main/containers/models.json): This is a data structure containing all the coupled models (and their associated model components) that we want to test against.
+* [`containers/Dockefile.base-spack`](https://github.com/ACCESS-NRI/build-ci/blob/main/containers/Dockerfile.base-spack), [`containers/Dockerfile.depdency`](https://github.com/ACCESS-NRI/build-ci/blob/main/containers/Dockerfile.dependency) : uses these Dockerfiles to create the `base-spack` and `dependency` images.
 
-#### Dependency Image Build Pipeline Outputs
-
+#### Outputs
+This pipeline creates two docker image outputs:
 * `base-spack` Docker image: Of the form `base-spack-<compiler name><compiler version>-<spack_packages version>:latest`. A docker image that contains a `spack` install, `access-nri/spack_packages` repo at the specified version, and a site-wide compiler for spack to use to build dependencies.
 * `dependency` Docker image: Of the form `build-<coupled model>-<compiler name><compiler version>-<spack_packages version>:latest`: A docker image based on the above `base-spack` image, that contains all the model components dependencies (separated by `spack env`s), but not the models themselves. The models are added on top of the install in a different pipeline, negating the need for a costly install of the dependencies again (in most cases).
 
-### I/O for Model Test Pipeline
+### Model Test Pipeline
 
-#### Model Test Pipeline Inputs
+#### Inputs
 
-There are no explicit inputs to this workflow. The information required is inferred by the model repository that calls the `model-1-build.yml` workflow.
+There are no explicit inputs to this workflow. The information required is inferred by the model repository that calls the [`model-1-build.yml`](https://github.com/ACCESS-NRI/build-ci/blob/main/.github/workflows/model-1-build.yml) workflow.
 
 However, there are indirect inputs into this pipeline:
 
 * Appropriate `dependency` Docker images of the form: `ghcr.io/access-nri/build-<coupled model>-<compiler name><compiler version>-<spack_packages version>:latest`.
-* `containers/compilers.json`: This is a structure of all the compilers we want to test against.
-* `containers/models.json`: This is a structure of all the coupled models (and their associated model components) that we want to test against.
+* `[containers/compilers.json`](https://github.com/ACCESS-NRI/build-ci/blob/main/containers/compilers.json): This is a data structure containing all the compilers we want to test against.
+* [`containers/models.json`](https://github.com/ACCESS-NRI/build-ci/blob/main/containers/models.json): This is a data structure containing all the coupled models (and their associated model components) that we want to test against.
 
-#### Model Test Pipeline Outputs
+#### Outputs
 
-* `<env>.original.spack.lock`: A `spack.lock` file from the `spack env` associated with the modified model repository (eg. `mom5`), before the installation of the modified model. If the install succeeds then then this `spack.lock` file was unmodified during the installation and can be used to recreate this `spack env`. This file is uploaded as an artifact.
+* `<env>.original.spack.lock`: A `spack.lock` file from the `spack env` associated with the modified model repository (eg. `mom5`), before the installation of the modified model. If the install succeeds then this `spack.lock` file was unmodified during the installation and can be used to recreate this `spack env`. This file is uploaded as an artifact.
 * Optionally, a `<env>.force.spack.lock`: If the installation fails (namely, if installing the modified model would change the `spack.lock` file) we force a regeneration of the `spack.lock` file and upload this as an artifact as well.
 
-### I/O for JSON Validator Pipeline
+### JSON Validator Pipeline
 
-#### Inputs for JSON Validator Pipeline
+#### Inputs
 
 This pipeline has no explicit inputs.
 
@@ -60,9 +60,9 @@ However, there are indirect inputs into this pipeline:
 * `*.json`: All JSON files that need to be validated.
 * `*.schema.json`: All JSON schemas that validate the above `*.json` files.
 
-#### Outputs for JSON Validator Pipeline
+#### Outputs
 
-There are no outputs from this pipeline (outside of checks).
+There are no specific outputs from this pipeline. Only the normal output to the terminal and status checks reported by GitHub workflows.
 
 ## CI Workflow Run Through
 
@@ -72,7 +72,7 @@ The rationale for this pipeline is the creation of a model-dependency docker ima
 
 As an overview, this workflow, given a `access-nri/spack_packages` repo version and coupled model(s):
 
-* Generates a staggered `compiler x model` matrix based on the `compilers.json` and `models.json`. This allows generation and testing of multiple different compiler and model image combinations in parallel.  
+* Generates a staggered `compiler x model` matrix based on the [`compilers.json`](https://github.com/ACCESS-NRI/build-ci/blob/maine/containers/compilers.json) and [`models.json`](https://github.com/ACCESS-NRI/build-ci/blob/main/containers/models.json). This allows generation and testing of multiple different compiler and model image combinations in parallel.  
 * Uses an existing `base-spack` docker image (or creates it if it doesn't exist) that contains an install of spack, access-nri/spack_packages and a given compiler.
 * Using the above `base-spack` image, creates a spack-based model-dependency docker image that separates each model (and it's components) into `spack env`s. This has all the dependencies of the model installed, but not the model itself.
 
@@ -82,7 +82,7 @@ In the following example, we have two compilers (`c1, c2`) and two (coupled) mod
 
 ##### The Beginning (dep-image-1-start.yml)
 
-This pipeline begins at `dep-image-1-start.yml`:
+This pipeline begins at [`dep-image-1-start.yml`](https://github.com/ACCESS-NRI/build-ci/blob/main/.github/workflows/dep-image-1-start.yml):
 
 ```txt
 dep-image-1-start.yml [compilers c1 c2]
@@ -124,9 +124,9 @@ dep-image-1-start.yml [compilers c1 c2]
 
 In this workflow, given the specs for a given compiler, a `spack_packages` version, and a list of models for a future `model` matrix strategy, we seek to:
 
-* Check that a suitable `base-spack` image doesn't already exists. This would be one that has the same compiler and same version of spack_packages.
-* If it doesn't exist, create and push it using the reusable `build-docker-image.yml` workflow.
-* After those steps, create the aforementioned `model` matrix strategy, running the `dep-image-3-build.yml` workflow for each of the models. At this point, the pipeline looks like this:
+* Check that a suitable `base-spack` image doesn't already exists. This would be one that has the same compiler and same version of `spack_packages`.
+* If it doesn't exist, create and push it using the reusable [`build-docker-image.yml`](https://github.com/ACCESS-NRI/build-ci/blob/main/.github/workflows/build-docker-image.yml) workflow.
+* After those steps, create the aforementioned `model` matrix strategy, running the [`dep-image-3-build.yml`](https://github.com/ACCESS-NRI/build-ci/blob/main/.github/workflows/dep-image-3-build.yml) workflow for each of the models. At this point, the pipeline looks like this:
 
 ```txt
 dep-image-1-start.yml [compilers c1 c2]
@@ -140,12 +140,12 @@ dep-image-1-start.yml [compilers c1 c2]
 
 ##### Creation of Dependency Image (dep-image-3-build.yml)
 
-Finally, with the `base-spack` image created, and the models that need to be built turned into a matrix strategy, we can create the dependency image. At this stage, we have as inputs: a given compiler spec, a `spack_packages` version, and the name of a single coupled model that we want turned into a dependency image. We have all the information necessary for this now.  
+Finally, with the `base-spack` image created, and the models that need to be built turned into a matrix strategy, we can create the dependency image. At this stage, we have as inputs: a given compiler spec, a `spack_packages` version, and the name of a coupled model, e.g. `access-om2`, that we want turned into a dependency image. We have all the information necessary for this now.  
 
 In the `dep-image-3-build.yml` workflow, we:
 
-* Get the associated model components of our coupled model from the `containers/models.json` file.
-* Build and push the dependency image given the existing `base-spack` image as a base, and the list of model components from the previous job, using the reusable `build-docker-image.yml` workflow.
+* Get the associated model components of our coupled model from the [`containers/models.json`](https://github.com/ACCESS-NRI/build-ci/blob/main/containers/models.json) file.
+* Build and push the dependency image given the existing `base-spack` image as a base, and the list of model components from the previous job, using the reusable [`build-docker-image.yml`](https://github.com/ACCESS-NRI/build-ci/blob/main/.github/workflows/build-docker-image.yml) workflow.
 
 This leads to a final pipeline looking like the following:
 
@@ -167,28 +167,28 @@ dep-image-1-start.yml [compilers c1 c2]
 
 This workflow seeks to build upon the Dependency Image Pipeline as explained above by taking an appropriate dependency image and attempting to install a modified (most likely from a PR) model over the top. This allows further testing and runs of a modified model without the excessive overhead of installing dependencies from scratch.
 
-#### Model Test Pipeline Overview
+#### Overview
 
-Model repositories that implement the `model-build-test-ci.yml` starter workflow (such as the [access-nri/MOM5](https://github.com/ACCESS-NRI/MOM5/blob/master/.github/workflows/model-build-test-ci.yml) repo) will call `build-ci`s `model-1-build.yml` workflow.
+Model repositories that implement the [`model-build-test-ci.yml`](https://github.com/ACCESS-NRI/.github/blob/main/workflow-templates/model-build-test-ci.yml) starter workflow (such as the [access-nri/MOM5](https://github.com/ACCESS-NRI/MOM5/blob/master/.github/workflows/model-build-test-ci.yml) repo) will call `build-ci`s [`model-1-build.yml`](https://github.com/ACCESS-NRI/build-ci/blob/main/.github/workflows/model-1-build.yml) workflow.
 
 This workflow begins by inferring the 'appropriate dependency image' based on a number of factors, mostly coming from the name of the dependency image (which is of the form `build-<coupled model>-<compiler name><compiler version>-<spack_packages version>:latest`).
 
 In order to find:
 
-* `spack_packages version`: In the `setup-spack-packages` job, we take the latest tagged version of the `access-nri/spack_packages` repo.
-* `coupled model`: In the `setup-model` and `setup-build-ci` jobs, we use the name of the calling repository (eg. `cice5`) and `build-ci`s `containers/models.json` to infer the overarching `coupled model` name.
-* `compiler name`/`compiler version`: In the `setup-build-ci` job, we use all compilers from the `containers/compilers.json` file. This would mean that another matrix strategy would be in order.
+* `spack_packages version`: In the [`setup-spack-packages`](https://github.com/ACCESS-NRI/build-ci/blob/main/.github/workflows/model-1-build.yml#L8-L26) job, we take the latest tagged version of the `access-nri/spack_packages` repo.
+* `coupled model`: In the [`setup-model`](https://github.com/ACCESS-NRI/build-ci/blob/main/.github/workflows/model-1-build.yml#L28-L37) and [`setup-build-ci`](https://github.com/ACCESS-NRI/build-ci/blob/main/.github/workflows/model-1-build.yml#L39-L63) jobs, we use the name of the calling repository (eg. `cice5`) and `build-ci`s [`containers/models.json`](https://github.com/ACCESS-NRI/build-ci/blob/main/containers/models.json) to infer the overarching `coupled model` name.
+* `compiler name`/`compiler version`: In the [`setup-build-ci`](https://github.com/ACCESS-NRI/build-ci/blob/main/.github/workflows/model-1-build.yml#L39-L63) job, we use all compilers from the [`containers/compilers.json`](https://github.com/ACCESS-NRI/build-ci/blob/main/containers/compilers.json) file. This would mean that another matrix strategy would be in order.
 
-Given those inferences, we would be able to find the appropriate dependency images to install the modified models into.
+Given those inferences, we are able to find the appropriate dependency images to use to build the modified models .
 
 We then use those containers to upload the original `spack.lock` files (also known as lockfiles) and then attempt to install the modified model in the appropriate `spack env`. If this fails, we force a recreation of the lockfile and upload this one as well, for reference.
 
 ### JSON Validator Pipeline
 
-This is a relatively simple pipeline (found in `json-1-validate.yml`) that looks for `*.schema.json` files in `containers`, matches them up with the associated `*.json` files and makes sure they comply with the given schema.
+This is a relatively simple pipeline (found in [`json-1-validate.yml`](https://github.com/ACCESS-NRI/build-ci/blob/main/.github/workflows/json-1-validate.yml)) that looks for `*.schema.json` files in a `containers` directory and matches them up with their associated `*.json` files and tests that they comply with the given schema.
 
 ## Reusable Workflows
 
 ### build-docker-image.yml
 
-`build-docker-image.yml` is the most used reusable workflow. This workflow builds, caches, and pushes a given Dockerfile to a given container registry. Build args and build secrets can also be added.
+[`build-docker-image.yml`](https://github.com/ACCESS-NRI/build-ci/blob/main/.github/workflows/build-docker-image.yml) is the most used reusable workflow. This workflow builds, caches, and pushes a given Dockerfile to a given container registry. Build args and build secrets can also be added.
