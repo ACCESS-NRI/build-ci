@@ -35,6 +35,7 @@ If you want to use the Model Test Pipeline go to the repo, then the `Actions` ta
 #### Requirements
 
 Model must meet these requirements:
+
 - Be [available as a spack package](https://github.com/ACCESS-NRI/spack_packages/tree/main/packages) in the [`access-nri/spack_packages` repo](https://github.com/ACCESS-NRI/spack_packages)
 - Have an entry in [`containers/models.json`](https://github.com/ACCESS-NRI/build-ci/blob/main/containers/models.json) in this repo
 

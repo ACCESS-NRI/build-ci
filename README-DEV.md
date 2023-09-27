@@ -82,7 +82,18 @@ As an overview, this workflow, given a `access-nri/spack_packages` repo version 
 
 #### Pipeline Overview
 
-In the following example, we have two compilers (`c1, c2`) and two (coupled) models (`m1, m2`).
+There will be diagrams that seek to explain the calling and matrix structure of the pipeline, in parts. They will look like this:
+
+```txt
+workflow.yml [component comp1 comp2 comp3]
+  |- [comp1] another-workflow.yml
+  |- [comp2] another-workflow.yml
+  |- [comp3] another-workflow.yml
+```
+
+In the above diagram, the first line means that we initially call `workflow.yml`. Within that workflow, we have a matrix strategy in which we call `another-workflow.yml` with each part of the `component` matrix in parallel (with these components being `comp1`, `comp2` and `comp3`).
+
+In the example we will be using for this pipeline, we have a compiler matrix with two compilers (`c1, c2`) and a model matrix with two (coupled) models (`m1, m2`). 
 
 ##### The Beginning (dep-image-1-start.yml)
 
