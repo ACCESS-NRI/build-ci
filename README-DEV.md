@@ -77,7 +77,7 @@ The rationale for this pipeline is the creation of a model-dependency docker ima
 As an overview, this workflow, given a `access-nri/spack_packages` repo version and coupled model(s):
 
 * Generates a staggered `compiler x model` matrix based on the [`compilers.json`](https://github.com/ACCESS-NRI/build-ci/blob/maine/containers/compilers.json) and [`models.json`](https://github.com/ACCESS-NRI/build-ci/blob/main/containers/models.json). This allows generation and testing of multiple different compiler and model image combinations in parallel.  
-* Uses an existing `base-spack` docker image (or creates it if it doesn't exist) that contains an install of spack, access-nri/spack_packages and a given compiler.
+* Uses an existing `base-spack` docker image (or creates it if it doesn't exist) that contains an install of spack, `access-nri/spack_packages` and a given compiler.
 * Using the above `base-spack` image, creates a spack-based model-dependency docker image that separates each model (and it's components) into `spack env`s. This has all the dependencies of the model installed, but not the model itself.
 
 #### Pipeline Overview
