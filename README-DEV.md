@@ -200,7 +200,7 @@ We then use those containers to upload the original `spack.lock` files (also kno
 
 ### JSON Validator Pipeline
 
-This is a relatively simple pipeline (found in [`json-1-validate.yml`](https://github.com/ACCESS-NRI/build-ci/blob/main/.github/workflows/json-1-validate.yml)) that looks for `*.schema.json` files in a `containers` directory and matches them up with their associated `*.json` files and tests that they comply with the given schema.
+This is a relatively simple pipeline (found in [`json-1-validate.yml`](https://github.com/ACCESS-NRI/build-ci/blob/main/.github/workflows/json-1-validate.yml)) that looks for `*.schema.json` files in a `config` directory and matches them up with their associated `*.json` files and tests that they comply with the given schema.
 
 ## Reusable Workflows
 
