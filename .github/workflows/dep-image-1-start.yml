@@ -27,9 +27,9 @@ jobs:
         id: get-model
         run: |
           if [[ "${{ inputs.model }}" = "all" ]]; then
-            echo "models=$(jq -cr 'keys' containers/models.json)" >> $GITHUB_OUTPUT
+            echo "models=$(jq -cr 'keys' config/models.json)" >> $GITHUB_OUTPUT
           else
-            query=$(jq -cr '."${{ inputs.model }}"' containers/models.json)
+            query=$(jq -cr '."${{ inputs.model }}"' config/models.json)
             if [ -z "$query" ]; then
               exit 1
             else
@@ -38,7 +38,7 @@ jobs:
           fi
       - name: Determine compilers to build
         id: get-compiler
-        run: echo "compilers=$(jq -c . containers/compilers.json)" >> $GITHUB_OUTPUT
+        run: echo "compilers=$(jq -c . config/compilers.json)" >> $GITHUB_OUTPUT
   
   dependency-image-workflow:
     name: Create Dependency Image

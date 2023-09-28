@@ -19,12 +19,12 @@ How they are used can be found in the [CI Run Through section](#ci-workflow-run-
 This pipeline has explicit inputs, defined in the [`on.workflow_call.inputs` section](https://github.com/ACCESS-NRI/build-ci/blob/1b998192946c364fb75040e6807e7143c9123527/.github/workflows/dep-image-1-start.yml#L5-L15):
 
 * `spack-packages-version`: A tag or branch of the `access-nri/spack_packages` [repository](https://github.com/ACCESS-NRI/spack_packages). This allows provenance of the build process of models.
-* `model`: a coupled model name (such as `access-om2` or `access-om3`) or `all` if we want to build dependency images for all coupled models defined in `containers/models.json`.
+* `model`: a coupled model name (such as `access-om2` or `access-om3`) or `all` if we want to build dependency images for all coupled models defined in `config/models.json`.
 
 It also indirectly uses:
 
-* [`containers/compilers.json`](https://github.com/ACCESS-NRI/build-ci/blob/main/containers/compilers.json): This is a data structure containing all the compilers we want to test against.
-* [`containers/models.json`](https://github.com/ACCESS-NRI/build-ci/blob/main/containers/models.json): This is a data structure containing all the coupled models (and their associated model components) that we want to test against.
+* [`config/compilers.json`](https://github.com/ACCESS-NRI/build-ci/blob/main/config/compilers.json): This is a data structure containing all the compilers we want to test against.
+* [`config/models.json`](https://github.com/ACCESS-NRI/build-ci/blob/main/config/models.json): This is a data structure containing all the coupled models (and their associated model components) that we want to test against.
 * [`containers/Dockefile.base-spack`](https://github.com/ACCESS-NRI/build-ci/blob/main/containers/Dockerfile.base-spack), [`containers/Dockerfile.dependency`](https://github.com/ACCESS-NRI/build-ci/blob/main/containers/Dockerfile.dependency) : uses these Dockerfiles to create the `base-spack` and `dependency` images.
 
 #### Outputs
@@ -43,8 +43,8 @@ There are no explicit inputs to this workflow. The information required is infer
 However, there are indirect inputs into this pipeline:
 
 * Appropriate `dependency` Docker images of the form: `ghcr.io/access-nri/build-<coupled model>-<compiler name><compiler version>-<spack_packages version>:latest`.
-* [`containers/compilers.json`](https://github.com/ACCESS-NRI/build-ci/blob/main/containers/compilers.json): This is a data structure containing all the compilers we want to test against.
-* [`containers/models.json`](https://github.com/ACCESS-NRI/build-ci/blob/main/containers/models.json): This is a data structure containing all the coupled models (and their associated model components) that we want to test against.
+* [`config/compilers.json`](https://github.com/ACCESS-NRI/build-ci/blob/main/config/compilers.json): This is a data structure containing all the compilers we want to test against.
+* [`config/models.json`](https://github.com/ACCESS-NRI/build-ci/blob/main/config/models.json): This is a data structure containing all the coupled models (and their associated model components) that we want to test against.
 
 #### Outputs
 
@@ -53,7 +53,7 @@ However, there are indirect inputs into this pipeline:
 
 ### JSON Validator Pipeline
 
-This workflow finds all the [JSON Schema](https://json-schema.org/) files in the project, i.e. those with the '.schema.json' extension, and then runs [`jsonschema`](https://pypi.org/project/jsonschema/) on the matching json files. e.g. `containers/model.json` is validated against `containers/models.schema.json`.
+This workflow finds all the [JSON Schema](https://json-schema.org/) files in the project, i.e. those with the '.schema.json' extension, and then runs [`jsonschema`](https://pypi.org/project/jsonschema/) on the matching json files. e.g. `config/model.json` is validated against `config/models.schema.json`.
 
 #### Inputs
 
@@ -76,7 +76,7 @@ The rationale for this pipeline is the creation of a model-dependency docker ima
 
 As an overview, this workflow, given a `access-nri/spack_packages` repo version and coupled model(s):
 
-* Generates a staggered `compiler x model` matrix based on the [`compilers.json`](https://github.com/ACCESS-NRI/build-ci/blob/maine/containers/compilers.json) and [`models.json`](https://github.com/ACCESS-NRI/build-ci/blob/main/containers/models.json). This allows generation and testing of multiple different compiler and model image combinations in parallel.  
+* Generates a staggered `compiler x model` matrix based on the [`compilers.json`](https://github.com/ACCESS-NRI/build-ci/blob/maine/config/compilers.json) and [`models.json`](https://github.com/ACCESS-NRI/build-ci/blob/main/config/models.json). This allows generation and testing of multiple different compiler and model image combinations in parallel.  
 * Uses an existing `base-spack` docker image (or creates it if it doesn't exist) that contains an install of spack, `access-nri/spack_packages` and a given compiler.
 * Using the above `base-spack` image, creates a spack-based model-dependency docker image that separates each model (and it's components) into `spack env`s. This has all the dependencies of the model installed, but not the model itself.
 
@@ -103,7 +103,7 @@ This pipeline begins at [`dep-image-1-start.yml`](https://github.com/ACCESS-NRI/
 dep-image-1-start.yml [compilers c1 c2]
 ```
 
-This workflow is responsible for generating the matrix of compilers (from `containers/compilers.json`) and the information necessary for creating a matrix of coupled models for a future matrix (from `models.json`).
+This workflow is responsible for generating the matrix of compilers (from `config/compilers.json`) and the information necessary for creating a matrix of coupled models for a future matrix (from `models.json`).
 
 Rather than doing the `compiler x model` matrix at the beginning of the workflow, we do the model matrix later in a staggered approach. We do this because it removes duplication of effort and effectively uses the cache, rather than thrashing it. The differences between a `compiler x model` and a staggered `compiler` then `matrix` model strategy are explained below.
 
@@ -159,7 +159,7 @@ Finally, with the `base-spack` image created, and the models that need to be bui
 
 In the `dep-image-3-build.yml` workflow, we:
 
-* Get the associated model components of our coupled model from the [`containers/models.json`](https://github.com/ACCESS-NRI/build-ci/blob/main/containers/models.json) file.
+* Get the associated model components of our coupled model from the [`config/models.json`](https://github.com/ACCESS-NRI/build-ci/blob/main/config/models.json) file.
 * Build and push the dependency image given the existing `base-spack` image as a base, and the list of model components from the previous job, using the reusable [`build-docker-image.yml`](https://github.com/ACCESS-NRI/build-ci/blob/main/.github/workflows/build-docker-image.yml) workflow.
 
 This leads to a final pipeline looking like the following:
@@ -191,8 +191,8 @@ This workflow begins by inferring the 'appropriate dependency image' based on a 
 In order to find:
 
 * `spack_packages version`: In the [`setup-spack-packages`](https://github.com/ACCESS-NRI/build-ci/blob/main/.github/workflows/model-1-build.yml#L8-L26) job, we take the latest tagged version of the `access-nri/spack_packages` repo.
-* `coupled model`: In the [`setup-model`](https://github.com/ACCESS-NRI/build-ci/blob/main/.github/workflows/model-1-build.yml#L28-L37) and [`setup-build-ci`](https://github.com/ACCESS-NRI/build-ci/blob/main/.github/workflows/model-1-build.yml#L39-L63) jobs, we use the name of the calling repository (eg. `cice5`) and `build-ci`s [`containers/models.json`](https://github.com/ACCESS-NRI/build-ci/blob/main/containers/models.json) to infer the overarching `coupled model` name.
-* `compiler name`/`compiler version`: In the [`setup-build-ci`](https://github.com/ACCESS-NRI/build-ci/blob/main/.github/workflows/model-1-build.yml#L39-L63) job, we use all compilers from the [`containers/compilers.json`](https://github.com/ACCESS-NRI/build-ci/blob/main/containers/compilers.json) file. This would mean that another matrix strategy would be in order.
+* `coupled model`: In the [`setup-model`](https://github.com/ACCESS-NRI/build-ci/blob/main/.github/workflows/model-1-build.yml#L28-L37) and [`setup-build-ci`](https://github.com/ACCESS-NRI/build-ci/blob/main/.github/workflows/model-1-build.yml#L39-L63) jobs, we use the name of the calling repository (eg. `cice5`) and `build-ci`s [`config/models.json`](https://github.com/ACCESS-NRI/build-ci/blob/main/config/models.json) to infer the overarching `coupled model` name.
+* `compiler name`/`compiler version`: In the [`setup-build-ci`](https://github.com/ACCESS-NRI/build-ci/blob/main/.github/workflows/model-1-build.yml#L39-L63) job, we use all compilers from the [`config/compilers.json`](https://github.com/ACCESS-NRI/build-ci/blob/main/config/compilers.json) file. This would mean that another matrix strategy would be in order.
 
 Given those inferences, we are able to find the appropriate dependency images to use to build the modified models .
 

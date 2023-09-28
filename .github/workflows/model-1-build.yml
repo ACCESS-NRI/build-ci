@@ -50,12 +50,12 @@ jobs:
         repository: access-nri/build-ci
     - name: Get compilers to test
       id: get-compilers
-      run: echo "compilers=$(jq -c . containers/compilers.json)" >> $GITHUB_OUTPUT
+      run: echo "compilers=$(jq -c . config/compilers.json)" >> $GITHUB_OUTPUT
     - name: Get model to test
       id: get-model
       # model-components are associated with an overarching model (for example, cice5 is associated with access-om2), this uses models.json to find the associated model
       run: |
-        model=$(jq -cr 'to_entries[] | select(.value | contains(["${{ needs.setup-model.outputs.package-name }}"])) | .key' containers/models.json)
+        model=$(jq -cr 'to_entries[] | select(.value | contains(["${{ needs.setup-model.outputs.package-name }}"])) | .key' config/models.json)
         if [ -z "$model" ]; then 
           exit 1
         else
