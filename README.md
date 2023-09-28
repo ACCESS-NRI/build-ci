@@ -37,7 +37,7 @@ If you want to use the Model Test Pipeline go to the repo, then the `Actions` ta
 Model must meet these requirements:
 
 - Be [available as a spack package](https://github.com/ACCESS-NRI/spack_packages/tree/main/packages) in the [`access-nri/spack_packages` repo](https://github.com/ACCESS-NRI/spack_packages)
-- Have an entry in [`containers/models.json`](https://github.com/ACCESS-NRI/build-ci/blob/main/containers/models.json) in this repo
+- Have an entry in [`config/models.json`](https://github.com/ACCESS-NRI/build-ci/blob/main/config/models.json) in this repo
 
 ### Create your own Dependency Images
 

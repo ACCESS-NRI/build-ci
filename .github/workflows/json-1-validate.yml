@@ -8,4 +8,4 @@ jobs:
     name: Validate
     uses: access-nri/build-ci/.github/workflows/validate-json.yml@main
     with:
-      src: "containers"
+      src: "config"
