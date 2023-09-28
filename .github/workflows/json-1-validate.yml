@@ -9,3 +9,54 @@ jobs:
     uses: access-nri/build-ci/.github/workflows/validate-json.yml@main
     with:
       src: "config"
+  
+  check-rebuild:
+    name: Check if Rebuild Required
+    runs-on: ubuntu-latest
+    outputs:
+      is-required: ${{ steps.get-files.outputs.is-non-schema-json }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Check non-schema json is changed
+        id: get-files
+        run: |
+          query=$(git diff --name-only ${{ github.event.before }} ${{ github.event.after }} -- '**.json' ':!**.schema.json')
+          if [ -z $query ]; then
+            echo "is-non-schema-json=1" >> $GITHUB_OUTPUT
+          fi
+    
+  
+  setup-rebuild:
+    name: Setup Rebuild Dependency Images
+    needs:
+      - check-rebuild
+    if: ${{ needs.check-rebuild.outputs.is-required }}
+    runs-on: ubuntu-latest
+    outputs:
+      spack-packages-version: ${{ steps.get-version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          repository: access-nri/spack_packages
+          ref: main
+          fetch-tags: true
+      - name: Fetch history for main
+        # By default, actions/checkout only checks out `--depth=1` (the tip of the main branch). 
+        # Even when we fetch tags the history is fragmented and usually isn't traversable from HEAD with `git describe --tags`.
+        # We fetch the entirety of the main branch history to be able to do the next step. 
+        run: git fetch --unshallow
+      - name: Get latest spack_packages tags
+        id: get-version
+        # This command traverses `main` to find the last `git tag` and suppresses the 'long form' of tags (that have a bunch of commit metadata). 
+        run: echo "version=$(git describe --tags --abbrev=0)" >> $GITHUB_OUTPUT
+
+  rebuild:
+    name: Rebuild Dependency Images
+    needs:
+      - validate
+      - setup-rebuild
+    uses: access-nri/build-ci/.github/workflows/dep-image-1-start.yml@main
+    with:
+      spack-packages-version: ${{ needs.setup-rebuild.outputs.spack-packages-version }}
+      model: "all"
+
