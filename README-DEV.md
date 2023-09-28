@@ -53,7 +53,7 @@ However, there are indirect inputs into this pipeline:
 
 ### JSON Validator Pipeline
 
-This workflow finds all the [JSON Schema](https://json-schema.org/) files in the project, i.e. those with the '.schema.json' extension, and then runs [`jsonschema`](https://pypi.org/project/jsonschema/) on the matching json files. e.g. `config/model.json` is validated against `config/models.schema.json`.
+This workflow finds all the [JSON Schema](https://json-schema.org/) files in the project, i.e. those with the '.schema.json' extension, and then runs [`jsonschema`](https://pypi.org/project/jsonschema/) on the matching json files. e.g. `config/models.json` is validated against `config/models.schema.json`.
 
 #### Inputs
 
