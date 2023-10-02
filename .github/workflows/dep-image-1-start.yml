@@ -13,18 +13,6 @@ on:
         type: string
         description: "A (coupled) model name (eg. access-om2, access-om3)"
         default: "all"
-  workflow_dispatch:
-    inputs:
-      spack-packages-version:
-        required: true
-        type: string
-        default: "main"
-        description: "Either a git tag or branch name for the ACCESS-NRI/spack_packages repository, which defaults to the main branch"
-      model:
-        required: true
-        type: string
-        description: "A (coupled) model name (eg. access-om2, access-om3)"
-        default: "all"
 
 jobs:
   generate-matrix:
