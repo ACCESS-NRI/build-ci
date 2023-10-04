@@ -33,7 +33,7 @@ jobs:
     name: Build build-${{ inputs.model }}-${{ inputs.compiler-name}}${{ inputs.compiler-version }}-${{ inputs.spack-packages-version }}
     needs:
       - setup-dependency-image
-    uses: access-nri/build-ci/.github/workflows/build-docker-image.yml@main
+    uses: access-nri/build-ci/.github/workflows/build-docker-image.yml@112-nirin-workflows
     with:
       container-registry: ghcr.io
       container-name: access-nri/build-${{ inputs.model}}-${{ inputs.compiler-name }}${{ inputs.compiler-version }}-${{ inputs.spack-packages-version }}

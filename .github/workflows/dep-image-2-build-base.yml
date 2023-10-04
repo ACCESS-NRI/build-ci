@@ -47,7 +47,7 @@ jobs:
     needs: 
       - base-spack-image-check
     if: needs.base-spack-image-check.outputs.no-image-exists
-    uses: access-nri/build-ci/.github/workflows/build-docker-image.yml@main
+    uses: access-nri/build-ci/.github/workflows/build-docker-image.yml@112-nirin-workflows
     with:
       container-registry: ghcr.io
       container-name: access-nri/base-spack-${{ inputs.compiler-name }}${{ inputs.compiler-version }}-${{ inputs.spack-packages-version }}
@@ -79,7 +79,7 @@ jobs:
       fail-fast: false
       matrix:
         model: ${{ fromJson(inputs.models) }}
-    uses: access-nri/build-ci/.github/workflows/dep-image-3-build.yml@main
+    uses: access-nri/build-ci/.github/workflows/dep-image-3-build.yml@112-nirin-workflows
     with:
       compiler-name: ${{ inputs.compiler-name }}
       compiler-package: ${{ inputs.compiler-package }}

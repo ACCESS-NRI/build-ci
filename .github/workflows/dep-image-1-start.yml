@@ -48,7 +48,7 @@ jobs:
       fail-fast: false
       matrix:
         compiler: ${{ fromJson(needs.generate-matrix.outputs.compilers) }}
-    uses: access-nri/build-ci/.github/workflows/dep-image-2-build-base.yml@main
+    uses: access-nri/build-ci/.github/workflows/dep-image-2-build-base.yml@112-nirin-workflows
     with:
       compiler-name: ${{ matrix.compiler.name }}
       compiler-package: ${{ matrix.compiler.package }}
