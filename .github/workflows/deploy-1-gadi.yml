@@ -1,0 +1,27 @@
+name: Deploy to Gadi
+on:
+  workflow_call:
+    # which is for PRs on branches main -> release (models)
+  workflow_dispatch:
+    inputs:
+      model:
+        type: string
+        required: true
+        default: access-om2
+        description: which model should be deployed
+jobs:
+  deploy-to-gadi:
+    name: Deploy to Gadi
+    runs-on: [self-hosted, Linux, x64]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Get Model
+        id: get-model
+        run: |
+          if [[ ${{ github.event_name }} == "workflow_dispatch" ]]; then
+            echo "model=${{ inputs.model }}" >> $GITHUB_OUTPUT
+          else
+            echo "model=${{ github.event.repository.name }}" >> $GITHUB_OUTPUT
+          fi
+      - name: Deploy
+        run: scp config/compilers.json svc-user@gadi.nci.org.au:/some/location/${{ steps.get-model.outputs.model }}/
