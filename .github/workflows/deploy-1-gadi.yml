@@ -1,4 +1,5 @@
 name: Deploy to Gadi
+concurrency: gadi
 on:
   workflow_call:
     # which is for PRs on branches main -> release (models)
@@ -10,18 +11,74 @@ on:
         default: access-om2
         description: which model should be deployed
 jobs:
-  deploy-to-gadi:
-    name: Deploy to Gadi
+  setup:
+    name: Setup Tasks
     runs-on: [self-hosted, Linux, x64]
+    environment: gadi deployment
+    outputs:
+      model: ${{ steps.get-model.outputs.model }}
+      version: ${{ steps.get-model-version.outputs.version }}
+      env-name: ${{ steps.get-env-name.outputs.env-name }}
     steps:
-      - uses: actions/checkout@v4
       - name: Get Model
         id: get-model
         run: |
-          if [[ ${{ github.event_name }} == "workflow_dispatch" ]]; then
+          if [[ "${{ github.event_name }}" = "workflow_call" ]]; then
             echo "model=${{ inputs.model }}" >> $GITHUB_OUTPUT
           else
-            echo "model=${{ github.event.repository.name }}" >> $GITHUB_OUTPUT
+            echo "model=access-om2" >> $GITHUB_OUTPUT
           fi
-      - name: Deploy
-        run: scp config/compilers.json svc-user@gadi.nci.org.au:/some/location/${{ steps.get-model.outputs.model }}/
+      - name: Get Model Version
+        id: get-model-version
+        run: echo "version=v1.0.0" >> $GITHUB_OUTPUT # TODO: needs to be a proper versioning system for access-om2/om3
+      - name: Set Spack Env Name String
+        id: get-env-name
+        # replace occurences of '.' with '_' in environment name as spack doesn't support '.'. Ex: 'access-om2-v1.0.0' -> 'access-om2-v1_0_0'.  
+        run: echo "env-name=$(echo '${{ steps.get-model.outputs.model }}-${{ steps.get-model-version.outputs.version }}' | tr '.' '_')" >> $GITHUB_OUTPUT
+  deploy-to-gadi:
+    name: Deploy to Gadi
+    runs-on: [self-hosted, Linux, x64]
+    environment: gadi deployment
+    needs:
+      - setup
+    steps:
+      - uses: actions/checkout@v4
+      - name: Copy spack.yaml
+        # TODO: where are we getting the up to date spack.yamls? 
+        run: rsync spack.yaml ${{ secrets.USER }}@${{ secrets.HOST_DATA }}:${{ vars.SPACK_YAML_LOCATION }}
+      - name: Deploy on gadi
+        # ssh into deployment environment, create and activate the env, install the spack.yaml. 
+        run: |
+          ssh ${{ secrets.USER}}@${{ secrets.HOST }} /bin/bash <<'EOT'
+          . ${{ vars.SPACK_LOCATION }}/share/spack/setup-env.sh
+          module load intel-compiler/2019.5.281
+          spack env create ${{ needs.setup.outputs.env-name }} ${{ vars.SPACK_YAML_LOCATION }}/spack.yaml
+          spack env activate ${{ needs.setup.outputs.env-name }}
+          spack -d install
+          module unload intel-compiler/2019.5.281
+          EOT
+  create-release:
+    name: Create Release
+    runs-on: [self-hosted, Linux, x64]
+    environment: gadi deployment
+    needs:
+      - setup
+      - deploy-to-gadi
+    permissions:
+      contents: write
+    steps:
+      - name: Get Release Metadata
+        run: |
+          rsync \
+            '${{ secrets.USER}}@${{ secrets.HOST_DATA }}:${{ vars.SPACK_LOCATION }}/var/spack/environments/${{ needs.setup.outputs.env-name }}/spack.*' \
+            ${{ vars.RELEASE_LOCATION }}/${{ needs.setup.outputs.env-name }}
+      - name: Create Release
+        uses: softprops/action-gh-release@v0.1.15
+        with:
+          body: "access-om2 ${{ needs.setup.outputs.version }} contains: mom5 vX, cice5 vY, libaccess-om2 vZ"
+          tag_name: ${{ needs.setup.outputs.version }}
+          name: ${{ needs.setup.outputs.model}} ${{ needs.setup.outputs.version }}
+          fail_on_unmatched_files: true
+          files: |
+            ${{ vars.RELEASE_LOCATION }}/${{ needs.setup.outputs.env-name }}/spack.yaml
+            ${{ vars.RELEASE_LOCATION }}/${{ needs.setup.outputs.env-name }}/spack.lock
