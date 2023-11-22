@@ -69,21 +69,33 @@ jobs:
       contents: read
       packages: write
   
-  setup-dependency-images:
+  dependency-images:
     name: Setup Dependency Images
     needs:
       - base-spack-image
     # running always() means it will run even if base-spack is skipped
     if: always()
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     strategy:
       fail-fast: false
       matrix:
         model: ${{ fromJson(inputs.models) }}
-    uses: access-nri/build-ci/.github/workflows/dep-image-3-build.yml@main
-    with:
-      compiler-name: ${{ inputs.compiler-name }}
-      compiler-package: ${{ inputs.compiler-package }}
-      compiler-version: ${{ inputs.compiler-version }}
-      spack-packages-version: ${{ inputs.spack-packages-version }}
-      model: ${{ matrix.model }}
+    steps:
+      - name: Get model components for ${{ matrix.model }}
+        id: get-model-components
+        run: echo "model-components=$(jq -cr '.["${{ matrix.model }}"]' config/models.json)" >> $GITHUB_OUTPUT
+      
+      - name: Build build-${{ matrix.model }}-${{ inputs.compiler-name}}${{ inputs.compiler-version }}-${{ inputs.spack-packages-version }}
+        uses: access-nri/actions/.github/actions/docker-build-push@main
+        with:
+          container-registry: ghcr.io
+          image-name: access-nri/build-${{ matrix.model}}-${{ inputs.compiler-name }}${{ inputs.compiler-version }}-${{ inputs.spack-packages-version }}
+          dockerfile-directory: containers
+          dockerfile-name: Dockerfile.dependency
+          build-args: |
+            "PACKAGE_NAMES=${{ steps.get-model-components.outputs.model-components }}"
+            "BASE_IMAGE=ghcr.io/access-nri/base-spack-${{ inputs.compiler-name }}${{ inputs.compiler-version }}-${{ inputs.spack-packages-version }}:latest"
       
