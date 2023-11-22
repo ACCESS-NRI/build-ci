@@ -24,7 +24,7 @@ Examples of this are [access-nri/cice5](https://github.com/ACCESS-NRI/cice5/blob
 
 ### JSON Lint Pipeline (json-*)
 
-This pipeline calls a reusable workflow (namely, [validate-json.yml](https://github.com/ACCESS-NRI/build-ci/blob/main/.github/workflows/validate-json.yml)) that checks that a given `*.json` file complies with an associated `*.schema.json` file. Right now it is only being used in the `build-ci` repo.
+This pipeline calls a reusable workflow (namely, [validate-json.yml](https://github.com/ACCESS-NRI/actions/blob/main/.github/workflows/validate-json.yml)) that checks that a given `*.json` file complies with an associated `*.schema.json` file. Right now it is only being used in the `build-ci` repo.
 
 ## Usage
 
