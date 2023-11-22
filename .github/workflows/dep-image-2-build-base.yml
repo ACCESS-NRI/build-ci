@@ -1,4 +1,4 @@
-name: Build Base Spack
+name: Build
 on:
   workflow_call:
     inputs:
@@ -17,9 +17,12 @@ on:
       models:
         description: a json-string array of all models to be built in a matrix strategy
         type: string
+permissions:
+  contents: read
+  packages: write
 jobs:
-  base-spack-image-check:
-    name: Check base-spack-${{ inputs.compiler-name }}${{ inputs.compiler-version }}-${{ inputs.spack-packages-version }}
+  base-spack:
+    name: Base Spack
     runs-on: ubuntu-latest
     outputs:
       no-image-exists: ${{ steps.no-image-exists.outputs.check }}
@@ -30,6 +33,7 @@ jobs:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      
       - name: Check for existing package
         id: no-image-exists
         # by default, actions use `bash -e {0}` (exit immediately on nonzero exit code), but `docker manifest` failing (aka, image doesn't exist) is perfectly valid. 
@@ -42,17 +46,8 @@ jobs:
             echo "check=true" >> $GITHUB_OUTPUT
           fi
 
-  base-spack-image:
-    name: Build base-spack-${{ inputs.compiler-name }}${{ inputs.compiler-version }}-${{ inputs.spack-packages-version }}
-    needs: 
-      - base-spack-image-check
-    if: needs.base-spack-image-check.outputs.no-image-exists
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-    steps:
-      - name: Build
+      - name: Build base-spack-${{ inputs.compiler-name }}${{ inputs.compiler-version }}-${{ inputs.spack-packages-version }}
+        if: steps.no-image-exists.outputs.check
         uses: access-nri/actions/.github/actions/docker-build-push@main
         with:
           container-registry: ghcr.io
@@ -72,11 +67,11 @@ jobs:
             access-nri.pub=${{ secrets.BUILDCACHE_KEY_PUBLIC }}
   
   dependency-images:
-    name: Setup Dependency Images
+    name: Dependency Images
     needs:
-      - base-spack-image
+      - base-spack
     # running always() means it will run even if base-spack is skipped
-    if: always()
+    if: '!cancelled()'
     runs-on: ubuntu-latest
     permissions:
       contents: read
