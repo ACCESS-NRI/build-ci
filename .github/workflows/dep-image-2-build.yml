@@ -24,8 +24,6 @@ jobs:
   base-spack:
     name: Base Spack
     runs-on: ubuntu-latest
-    outputs:
-      no-image-exists: ${{ steps.no-image-exists.outputs.check }}
     steps:
       - name: Log in to container registry
         uses: docker/login-action@v2
@@ -34,7 +32,7 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
       
-      - name: Check for existing package
+      - name: Check
         id: no-image-exists
         # by default, actions use `bash -e {0}` (exit immediately on nonzero exit code), but `docker manifest` failing (aka, image doesn't exist) is perfectly valid. 
         # overriding the shell to use bash without `-e` fixes this. 
@@ -70,12 +68,7 @@ jobs:
     name: Dependency Images
     needs:
       - base-spack
-    # running always() means it will run even if base-spack is skipped
-    if: '!cancelled()'
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
     strategy:
       fail-fast: false
       matrix:
