@@ -64,7 +64,7 @@ ARG COMPILER_NAME=intel
 ENV SPACK_ROOT=/opt/spack
 ENV GNUPGHOME=${SPACK_ROOT}/opt/spack/gpg
 ENV SPACK_ENV_ARCH=${SPACK_ARCH}
-ENV SPACK_PACKAGES_REPO_ROOT=/opt/spack_packages
+ENV SPACK_PACKAGES_REPO_ROOT=/opt/spack-packages
 ENV SPACK_CONFIG_REPO_ROOT=/opt/spack_config
 ENV SPACK_CONFIG_DIR=${SPACK_CONFIG_REPO_ROOT}/${SPACK_VERSION}/ci
 ENV SPACK_ENV_COMPILER_PACKAGE=${COMPILER_PACKAGE}
@@ -81,11 +81,11 @@ SHELL ["/bin/bash", "-c"]
 # Install spack
 RUN git clone -c feature.manyFiles=true https://github.com/spack/spack.git ${SPACK_ROOT} --branch ${SPACK_REPO_VERSION} --single-branch --depth=1
 
-# Install ACCESS-NRI's spack_packages repo
-RUN git clone  https://github.com/ACCESS-NRI/spack_packages.git ${SPACK_PACKAGES_REPO_ROOT} --branch ${SPACK_PACKAGES_REPO_VERSION}
+# Install ACCESS-NRI's spack-packages repo
+RUN git clone  https://github.com/ACCESS-NRI/spack-packages.git ${SPACK_PACKAGES_REPO_ROOT} --branch ${SPACK_PACKAGES_REPO_VERSION}
 
-# Install ACCESS-NRI's spack_config repo
-RUN git clone  https://github.com/ACCESS-NRI/spack_config.git ${SPACK_CONFIG_REPO_ROOT} --branch ${SPACK_CONFIG_REPO_VERSION}
+# Install ACCESS-NRI's spack-config repo
+RUN git clone  https://github.com/ACCESS-NRI/spack-config.git ${SPACK_CONFIG_REPO_ROOT} --branch ${SPACK_CONFIG_REPO_VERSION}
 
 RUN ln -s -r -v ${SPACK_CONFIG_DIR}/* ${SPACK_ROOT}/etc/spack/
 
