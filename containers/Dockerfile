@@ -4,6 +4,9 @@
 # Contains build targets: base-os, base-spack, ci, dev
 
 ################################################################################
+# This global ARG is used as the name of the 'ci' target base image
+ARG BASE_SPACK_IMAGE
+
 # NOTE: Keep an eye on:
 #       ${SPACK_ROOT}/share/spack/templates/container/rockylinux_8.dockerfile
 FROM rockylinux:8.8 as base-os
@@ -111,9 +114,16 @@ SHELL ["docker-shell"]
 # Install compilers
 RUN spack install ${SPACK_ENV_COMPILER_PACKAGE}@${SPACK_ENV_COMPILER_VERSION} arch=${SPACK_ENV_ARCH}
 
-
 ################################################################################
-FROM base-spack as ci
+FROM ${BASE_SPACK_IMAGE} as ci
+
+ARG PACKAGE_NAMES
+
+LABEL au.org.access-nri.ci.packages ${PACKAGE_NAMES}
+LABEL au.org.access-nri.ci.base-spack-image ${BASE_IMAGE}
+LABEL au.org.access-nri.ci.spack-repo-version ${SPACK_REPO_VERSION}
+LABEL au.org.access-nri.ci.spack-packages-repo-version ${SPACK_PACKAGES_REPO_VERSION}
+LABEL au.org.access-nri.ci.compiler ${SPACK_ENV_COMPILER_PACKAGE}@${SPACK_ENV_COMPILER_VERSION}
 
 # Set up ACCESS Spack buildcache
 RUN pip3 install --no-cache-dir boto3==1.23.10
@@ -134,6 +144,19 @@ RUN --mount=type=secret,id=access-nri.priv \
 RUN --mount=type=secret,id=access-nri.pub \
     spack gpg trust /run/secrets/access-nri.pub
 
+WORKDIR ${SPACK_ROOT}
+
+# Use Spack shell environment for subsequent RUN steps
+SHELL ["docker-shell"]
+
+COPY setup-spack-envs.sh .
+
+RUN chmod +x setup-spack-envs.sh \
+ && ./setup-spack-envs.sh "${PACKAGE_NAMES}" \
+ && spack gc -y
+
+# Push any uncached binaries to buildcache
+RUN spack -d buildcache create -a -m s3_buildcache $(spack find --json | jq --raw-output .[].name)
 
 ################################################################################
 FROM base-spack as dev

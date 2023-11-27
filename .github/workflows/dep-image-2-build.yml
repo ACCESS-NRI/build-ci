@@ -20,6 +20,9 @@ on:
 permissions:
   contents: read
   packages: write
+env:
+  BASE_SPACK_IMAGE_NAME: access-nri/base-spack-${{ inputs.compiler-name }}${{ inputs.compiler-version }}-${{ inputs.spack-packages-version }}
+  BASE_SPACK_IMAGE_URL: ghcr.io/access-nri/base-spack-${{ inputs.compiler-name }}${{ inputs.compiler-version }}-${{ inputs.spack-packages-version }}:latest
 jobs:
   base-spack:
     name: Base Spack
@@ -39,20 +42,19 @@ jobs:
         shell: bash {0}
         # in this `run` we attempt to check the existence of the given image with `docker manifest inspect`, and if it doesn't exist (exit code nonzero) we set the `no-image-exists` output to true
         run: |
-          docker manifest inspect ghcr.io/access-nri/base-spack-${{ inputs.compiler-name }}${{ inputs.compiler-version }}-${{ inputs.spack-packages-version }}:latest
+          docker manifest inspect ${{ env.BASE_SPACK_IMAGE_URL }}
           if [ $? -ne 0 ]; then
             echo "check=true" >> $GITHUB_OUTPUT
           fi
 
-      - name: Build base-spack-${{ inputs.compiler-name }}${{ inputs.compiler-version }}-${{ inputs.spack-packages-version }}
+      - name: Build ${{ env.BASE_SPACK_IMAGE_NAME }}
         if: steps.no-image-exists.outputs.check
         uses: access-nri/actions/.github/actions/docker-build-push@main
         with:
           container-registry: ghcr.io
-          image-name: access-nri/base-spack-${{ inputs.compiler-name }}${{ inputs.compiler-version }}-${{ inputs.spack-packages-version }}
+          image-name: ${{ env.BASE_SPACK_IMAGE_NAME }}
           dockerfile-directory: containers
-          dockerfile-name: Dockerfile.base-spack
-          target: "ci"
+          target: base-spack
           build-args: |
             SPACK_PACKAGES_REPO_VERSION=${{ inputs.spack-packages-version }}
             COMPILER_NAME=${{ inputs.compiler-name }}
@@ -73,18 +75,30 @@ jobs:
       fail-fast: false
       matrix:
         model: ${{ fromJson(inputs.models) }}
+    env:
+      DEPENDENCY_IMAGE_NAME: access-nri/build-${{ matrix.model }}-${{ inputs.compiler-name}}${{ inputs.compiler-version }}-${{ inputs.spack-packages-version }}
     steps:
       - name: Get model components for ${{ matrix.model }}
         id: get-model-components
         run: echo "model-components=$(jq -cr '.["${{ matrix.model }}"]' config/models.json)" >> $GITHUB_OUTPUT
 
-      - name: Build build-${{ matrix.model }}-${{ inputs.compiler-name}}${{ inputs.compiler-version }}-${{ inputs.spack-packages-version }}
+      - name: Log in to container registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ github.token }}
+
+      - name: Pull ${{ env.BASE_SPACK_IMAGE_NAME }}
+        run: docker pull ${{ env.BASE_SPACK_IMAGE_URL }}
+
+      - name: Build ${{ env.DEPENDENCY_IMAGE_NAME }}
         uses: access-nri/actions/.github/actions/docker-build-push@main
         with:
           container-registry: ghcr.io
-          image-name: access-nri/build-${{ matrix.model}}-${{ inputs.compiler-name }}${{ inputs.compiler-version }}-${{ inputs.spack-packages-version }}
+          image-name: ${{ env.DEPENDENCY_IMAGE_NAME }}
           dockerfile-directory: containers
-          dockerfile-name: Dockerfile.dependency
+          target: ci
           build-args: |
             PACKAGE_NAMES=${{ steps.get-model-components.outputs.model-components }}
-            BASE_IMAGE=ghcr.io/access-nri/base-spack-${{ inputs.compiler-name }}${{ inputs.compiler-version }}-${{ inputs.spack-packages-version }}:latest
+            BASE_SPACK_IMAGE=${{ env.BASE_SPACK_IMAGE_URL }}
