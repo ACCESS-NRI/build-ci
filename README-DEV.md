@@ -77,7 +77,7 @@ The rationale for this pipeline is the creation of a model-dependency docker ima
 As an overview, this workflow, given a `access-nri/spack-packages` repo version and coupled model(s):
 
 * Generates a staggered `compiler x model` matrix based on the [`compilers.json`](https://github.com/ACCESS-NRI/build-ci/blob/maine/config/compilers.json) and [`models.json`](https://github.com/ACCESS-NRI/build-ci/blob/main/config/models.json). This allows generation and testing of multiple different compiler and model image combinations in parallel.
-* Uses an existing `base-spack` docker image (or creates it if it doesn't exist) that contains an install of spack, `access-nri/spack_packages` and a given compiler.
+* Uses an existing `base-spack` docker image (or creates it if it doesn't exist) that contains an install of spack, `access-nri/spack-packages` and a given compiler.
 * Using the above `base-spack` image, creates a spack-based model-dependency docker image that separates each model (and it's components) into `spack env`s. This has all the dependencies of the model installed, but not the model itself.
 
 #### Pipeline Overview
@@ -139,7 +139,7 @@ dep-image-1-start.yml [compilers c1 c2]
 
 In this workflow, given the specs for a given compiler, a `spack-packages` version, and a list of models for a future `model` matrix strategy, we seek to:
 
-* Check that a suitable `base-spack` image doesn't already exists. This would be one that has the same compiler and same version of `spack_packages`.
+* Check that a suitable `base-spack` image doesn't already exists. This would be one that has the same compiler and same version of `spack-packages`.
 * If it doesn't exist, create and push it using the [`access-nri/actions docker-build-push` action](https://github.com/ACCESS-NRI/actions/tree/main/.github/actions/docker-build-push).
 * After those steps, create the aforementioned `model` matrix strategy for each of the models. At this point, the pipeline looks like this:
 
