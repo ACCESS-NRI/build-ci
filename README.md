@@ -10,7 +10,7 @@ This repository contains three overarching CI pipelines:
 
 ### Dependency Image Pipeline (dep-image-*)
 
-This pipeline creates Docker images that contain an install of `spack`, a version of the `access-nri/spack_packages` [repository](https://github.com/ACCESS-NRI/spack_packages), and a set of independent `spack env`s that contain all the dependencies for all the model components of a coupled model.
+This pipeline creates Docker images that contain an install of `spack`, a version of the `access-nri/spack-packages` [repository](https://github.com/ACCESS-NRI/spack-packages), and a set of independent `spack env`s that contain all the dependencies for all the model components of a coupled model.
 
 This allows the install of modified models (and model components) for quick CI testing, rather than having to install an entire dependency tree every time a PR is opened.
 
@@ -36,12 +36,12 @@ If you want to use the Model Test Pipeline go to the repo, then the `Actions` ta
 
 Model must meet these requirements:
 
-- Be [available as a spack package](https://github.com/ACCESS-NRI/spack_packages/tree/main/packages) in the [`access-nri/spack_packages` repo](https://github.com/ACCESS-NRI/spack_packages)
+- Be [available as a spack package](https://github.com/ACCESS-NRI/spack-packages/tree/main/packages) in the [`access-nri/spack-packages` repo](https://github.com/ACCESS-NRI/spack-packages)
 - Have an entry in [`config/models.json`](https://github.com/ACCESS-NRI/build-ci/blob/main/config/models.json) in this repo
 
 ### Create your own Dependency Images
 
-There is an associated `workflow_dispatch` trigger on [`dep-image-1-start.yml`](https://github.com/ACCESS-NRI/build-ci/blob/main/.github/workflows/dep-image-1-start.yml) that allows the creation of your own `base-spack` and `dependency` images. Just make sure that the `spack_packages version` tag exists in the `access-nri/spack_packages` repo.
+There is an associated `workflow_dispatch` trigger on [`dep-image-1-start.yml`](https://github.com/ACCESS-NRI/build-ci/blob/main/.github/workflows/dep-image-1-start.yml) that allows the creation of your own `base-spack` and `dependency` images. Just make sure that the `spack-packages version` tag exists in the `access-nri/spack-packages` repo.
 
 A [Web UI trigger](https://github.com/ACCESS-NRI/build-ci/actions/workflows/build-and-push-image-build.yml) is available.
 

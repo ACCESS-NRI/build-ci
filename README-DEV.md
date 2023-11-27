@@ -18,7 +18,7 @@ How they are used can be found in the [CI Run Through section](#ci-workflow-run-
 
 This pipeline has explicit inputs, defined in the [`on.workflow_call.inputs` section](https://github.com/ACCESS-NRI/build-ci/blob/1b998192946c364fb75040e6807e7143c9123527/.github/workflows/dep-image-1-start.yml#L5-L15):
 
-* `spack-packages-version`: A tag or branch of the `access-nri/spack_packages` [repository](https://github.com/ACCESS-NRI/spack_packages). This allows provenance of the build process of models.
+* `spack-packages-version`: A tag or branch of the `access-nri/spack-packages` [repository](https://github.com/ACCESS-NRI/spack-packages). This allows provenance of the build process of models.
 * `model`: a coupled model name (such as `access-om2` or `access-om3`) or `all` if we want to build dependency images for all coupled models defined in `config/models.json`.
 
 It also indirectly uses:
@@ -31,8 +31,8 @@ It also indirectly uses:
 
 This pipeline creates two docker image outputs:
 
-* `base-spack` Docker image: Of the form `base-spack-<compiler name><compiler version>-<spack_packages version>:latest`. A docker image that contains a `spack` install, `access-nri/spack_packages` repo at the specified version, and a site-wide compiler for spack to use to build dependencies. An example of this package is [`base-spack-intel2021.2.0-main`](https://github.com/ACCESS-NRI/build-ci/pkgs/container/base-spack-intel2021.2.0-main).
-* `dependency` Docker image: Of the form `build-<coupled model>-<compiler name><compiler version>-<spack_packages version>:latest`: A docker image based on the above `base-spack` image, that contains all the model components dependencies (separated by `spack env`s), but not the models themselves. The models are added on top of the install in a different pipeline, negating the need for a costly install of the dependencies again (in most cases). An example of this package is [`build-access-om3-intel2021.2.0-main`](https://github.com/orgs/ACCESS-NRI/packages/container/package/build-access-om3-intel2021.2.0-main).
+* `base-spack` Docker image: Of the form `base-spack-<compiler name><compiler version>-<spack-packages version>:latest`. A docker image that contains a `spack` install, `access-nri/spack-packages` repo at the specified version, and a site-wide compiler for spack to use to build dependencies. An example of this package is [`base-spack-intel2021.2.0-main`](https://github.com/ACCESS-NRI/build-ci/pkgs/container/base-spack-intel2021.2.0-main).
+* `dependency` Docker image: Of the form `build-<coupled model>-<compiler name><compiler version>-<spack-packages version>:latest`: A docker image based on the above `base-spack` image, that contains all the model components dependencies (separated by `spack env`s), but not the models themselves. The models are added on top of the install in a different pipeline, negating the need for a costly install of the dependencies again (in most cases). An example of this package is [`build-access-om3-intel2021.2.0-main`](https://github.com/orgs/ACCESS-NRI/packages/container/package/build-access-om3-intel2021.2.0-main).
 
 ### Model Test Pipeline
 
@@ -42,7 +42,7 @@ There are no explicit inputs to this workflow. The information required is infer
 
 However, there are indirect inputs into this pipeline:
 
-* Appropriate `dependency` Docker images of the form: `ghcr.io/access-nri/build-<coupled model>-<compiler name><compiler version>-<spack_packages version>:latest`.
+* Appropriate `dependency` Docker images of the form: `ghcr.io/access-nri/build-<coupled model>-<compiler name><compiler version>-<spack-packages version>:latest`.
 * [`config/compilers.json`](https://github.com/ACCESS-NRI/build-ci/blob/main/config/compilers.json): This is a data structure containing all the compilers we want to test against.
 * [`config/models.json`](https://github.com/ACCESS-NRI/build-ci/blob/main/config/models.json): This is a data structure containing all the coupled models (and their associated model components) that we want to test against.
 
@@ -74,10 +74,10 @@ There are no specific outputs from this pipeline. Only the normal output to the 
 
 The rationale for this pipeline is the creation of a model-dependency docker image. This image contains spack, the `spack env`s, and the dependencies for the install of a model, but not the model itself. This allows modified models/model components to be 'dropped in' to the dependency image and installed quickly, without needing to install the dependencies again.
 
-As an overview, this workflow, given a `access-nri/spack_packages` repo version and coupled model(s):
+As an overview, this workflow, given a `access-nri/spack-packages` repo version and coupled model(s):
 
 * Generates a staggered `compiler x model` matrix based on the [`compilers.json`](https://github.com/ACCESS-NRI/build-ci/blob/maine/config/compilers.json) and [`models.json`](https://github.com/ACCESS-NRI/build-ci/blob/main/config/models.json). This allows generation and testing of multiple different compiler and model image combinations in parallel.
-* Uses an existing `base-spack` docker image (or creates it if it doesn't exist) that contains an install of spack, `access-nri/spack_packages` and a given compiler.
+* Uses an existing `base-spack` docker image (or creates it if it doesn't exist) that contains an install of spack, `access-nri/spack-packages` and a given compiler.
 * Using the above `base-spack` image, creates a spack-based model-dependency docker image that separates each model (and it's components) into `spack env`s. This has all the dependencies of the model installed, but not the model itself.
 
 #### Pipeline Overview
@@ -137,9 +137,9 @@ dep-image-1-start.yml [compilers c1 c2]
 
 ##### Creation of `base-spack` and `dependency` images (dep-image-2-build.yml)
 
-In this workflow, given the specs for a given compiler, a `spack_packages` version, and a list of models for a future `model` matrix strategy, we seek to:
+In this workflow, given the specs for a given compiler, a `spack-packages` version, and a list of models for a future `model` matrix strategy, we seek to:
 
-* Check that a suitable `base-spack` image doesn't already exists. This would be one that has the same compiler and same version of `spack_packages`.
+* Check that a suitable `base-spack` image doesn't already exists. This would be one that has the same compiler and same version of `spack-packages`.
 * If it doesn't exist, create and push it using the [`access-nri/actions docker-build-push` action](https://github.com/ACCESS-NRI/actions/tree/main/.github/actions/docker-build-push).
 * After those steps, create the aforementioned `model` matrix strategy for each of the models. At this point, the pipeline looks like this:
 
@@ -182,11 +182,11 @@ This workflow seeks to build upon the Dependency Image Pipeline as explained abo
 
 Model repositories that implement the [`model-build-test-ci.yml`](https://github.com/ACCESS-NRI/.github/blob/main/workflow-templates/model-build-test-ci.yml) starter workflow (such as the [access-nri/MOM5](https://github.com/ACCESS-NRI/MOM5/blob/master/.github/workflows/model-build-test-ci.yml) repo) will call `build-ci`s [`model-1-build.yml`](https://github.com/ACCESS-NRI/build-ci/blob/main/.github/workflows/model-1-build.yml) workflow.
 
-This workflow begins by inferring the 'appropriate dependency image' based on a number of factors, mostly coming from the name of the dependency image (which is of the form `build-<coupled model>-<compiler name><compiler version>-<spack_packages version>:latest`).
+This workflow begins by inferring the 'appropriate dependency image' based on a number of factors, mostly coming from the name of the dependency image (which is of the form `build-<coupled model>-<compiler name><compiler version>-<spack-packages version>:latest`).
 
 In order to find:
 
-* `spack_packages version`: In the [`setup-spack-packages`](https://github.com/ACCESS-NRI/build-ci/blob/main/.github/workflows/model-1-build.yml#L8-L26) job, we take the latest tagged version of the `access-nri/spack_packages` repo.
+* `spack-packages version`: In the [`setup-spack-packages`](https://github.com/ACCESS-NRI/build-ci/blob/main/.github/workflows/model-1-build.yml#L8-L26) job, we take the latest tagged version of the `access-nri/spack-packages` repo.
 * `coupled model`: In the [`setup-model`](https://github.com/ACCESS-NRI/build-ci/blob/main/.github/workflows/model-1-build.yml#L28-L37) and [`setup-build-ci`](https://github.com/ACCESS-NRI/build-ci/blob/main/.github/workflows/model-1-build.yml#L39-L63) jobs, we use the name of the calling repository (eg. `cice5`) and `build-ci`s [`config/models.json`](https://github.com/ACCESS-NRI/build-ci/blob/main/config/models.json) to infer the overarching `coupled model` name.
 * `compiler name`/`compiler version`: In the [`setup-build-ci`](https://github.com/ACCESS-NRI/build-ci/blob/main/.github/workflows/model-1-build.yml#L39-L63) job, we use all compilers from the [`config/compilers.json`](https://github.com/ACCESS-NRI/build-ci/blob/main/config/compilers.json) file. This would mean that another matrix strategy would be in order.
 

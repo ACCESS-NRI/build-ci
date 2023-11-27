@@ -5,24 +5,24 @@ on:
 
 jobs:
   setup-spack-packages:
-    name: Info from spack_packages
+    name: Info from spack-packages
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.get-version.outputs.version }}
     steps:
       - uses: actions/checkout@v3
         with:
-          repository: access-nri/spack_packages
+          repository: access-nri/spack-packages
           ref: main
           fetch-tags: true
       - name: Fetch history for main
-        # By default, actions/checkout only checks out `--depth=1` (the tip of the main branch). 
+        # By default, actions/checkout only checks out `--depth=1` (the tip of the main branch).
         # Even when we fetch tags the history is fragmented and usually isn't traversable from HEAD with `git describe --tags`.
-        # We fetch the entirety of the main branch history to be able to do the next step. 
+        # We fetch the entirety of the main branch history to be able to do the next step.
         run: git fetch --unshallow
-      - name: Get latest spack_packages tags
+      - name: Get latest spack-packages tags
         id: get-version
-        # This command traverses `main` to find the last `git tag` and suppresses the 'long form' of tags (that have a bunch of commit metadata). 
+        # This command traverses `main` to find the last `git tag` and suppresses the 'long form' of tags (that have a bunch of commit metadata).
         run: echo "version=$(git describe --tags --abbrev=0)" >> $GITHUB_OUTPUT
 
   setup-model:
@@ -35,7 +35,7 @@ jobs:
         id: get-package-name
         # for the cases where the repo name is in uppercase but the package name is lowercase (eg. access-nri/MOM5)
         run: echo "package=$(echo ${{ github.event.repository.name }} | tr [:upper:] [:lower:])" >> $GITHUB_OUTPUT
-      
+
   setup-build-ci:
     name: Info from build-ci
     runs-on: ubuntu-latest
@@ -56,7 +56,7 @@ jobs:
       # model-components are associated with an overarching model (for example, cice5 is associated with access-om2), this uses models.json to find the associated model
       run: |
         model=$(jq -cr 'to_entries[] | select(.value | contains(["${{ needs.setup-model.outputs.package-name }}"])) | .key' config/models.json)
-        if [ -z "$model" ]; then 
+        if [ -z "$model" ]; then
           exit 1
         else
           echo "model=$model" >> $GITHUB_OUTPUT
@@ -89,13 +89,13 @@ jobs:
         else
           echo "GH_REF=${{ github.ref_name }})" >> $GITHUB_ENV
         fi
-    
+
     - name: Activate environment
       run: spack env activate ${{ needs.setup-model.outputs.package-name }}
-    
+
     - name: Build package via spack
       run: spack -d install --add --only package --fail-fast --no-checksum ${{ needs.setup-model.outputs.package-name }}@=$GH_REF%${{ matrix.compiler.name }}@${{ matrix.compiler.version }}
-    
+
     - name: Generate lockfile
       run: |
         cd $SPACK_ROOT/var/spack/environments/${{ needs.setup-model.outputs.package-name }}
@@ -110,10 +110,10 @@ jobs:
 
     - name: Upload lockfiles
       uses: actions/upload-artifact@v3
-      with: 
+      with:
         name: lockfile-output
         path: $SPACK_ROOT/var/spack/environments/${{ needs.setup-model.outputs.package-name }}/${{ needs.setup-model.outputs.package-name }}.*.spack.lock
-        
+
 
     # Install and launch interactive debugging on build failure
     - name: Install tmate on failure

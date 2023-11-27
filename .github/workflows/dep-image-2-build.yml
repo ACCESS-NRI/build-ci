@@ -3,7 +3,7 @@ on:
   workflow_call:
     inputs:
       spack-packages-version:
-        description: the tag/branch of the access-nri/spack_packages repo to use
+        description: the tag/branch of the access-nri/spack-packages repo to use
         type: string
       compiler-name:
         description: the short name of the compiler
