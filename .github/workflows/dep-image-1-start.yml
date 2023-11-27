@@ -7,7 +7,7 @@ on:
         required: true
         type: string
         default: "main"
-        description: "Either a git tag or branch name for the ACCESS-NRI/spack_packages repository, which defaults to the main branch"
+        description: "Either a git tag or branch name for the ACCESS-NRI/spack-packages repository, which defaults to the main branch"
       model:
         required: true
         type: string
@@ -39,7 +39,7 @@ jobs:
       - name: Determine compilers to build
         id: get-compiler
         run: echo "compilers=$(jq -c . config/compilers.json)" >> $GITHUB_OUTPUT
-  
+
   dependency-image-workflow:
     name: Create Dependency Image
     needs:
@@ -48,14 +48,14 @@ jobs:
       fail-fast: false
       matrix:
         compiler: ${{ fromJson(needs.generate-matrix.outputs.compilers) }}
-    uses: access-nri/build-ci/.github/workflows/dep-image-2-build-base.yml@main
+    uses: access-nri/build-ci/.github/workflows/dep-image-2-build.yml@main
     with:
       compiler-name: ${{ matrix.compiler.name }}
       compiler-package: ${{ matrix.compiler.package }}
       compiler-version: ${{ matrix.compiler.version }}
       spack-packages-version: ${{ inputs.spack-packages-version }}
       models: ${{ needs.generate-matrix.outputs.models }}
-    permissions: 
+    permissions:
       packages: write
       contents: read
     secrets: inherit
