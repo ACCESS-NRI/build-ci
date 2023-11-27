@@ -1,0 +1,90 @@
+name: Build
+on:
+  workflow_call:
+    inputs:
+      spack-packages-version:
+        description: the tag/branch of the access-nri/spack_packages repo to use
+        type: string
+      compiler-name:
+        description: the short name of the compiler
+        type: string
+      compiler-package:
+        description: the spack-specific package name of the compiler
+        type: string
+      compiler-version:
+        description: the spack-specific package version of the compiler
+        type: string
+      models:
+        description: a json-string array of all models to be built in a matrix strategy
+        type: string
+permissions:
+  contents: read
+  packages: write
+jobs:
+  base-spack:
+    name: Base Spack
+    runs-on: ubuntu-latest
+    steps:
+      - name: Log in to container registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check
+        id: no-image-exists
+        # by default, actions use `bash -e {0}` (exit immediately on nonzero exit code), but `docker manifest` failing (aka, image doesn't exist) is perfectly valid.
+        # overriding the shell to use bash without `-e` fixes this.
+        shell: bash {0}
+        # in this `run` we attempt to check the existence of the given image with `docker manifest inspect`, and if it doesn't exist (exit code nonzero) we set the `no-image-exists` output to true
+        run: |
+          docker manifest inspect ghcr.io/access-nri/base-spack-${{ inputs.compiler-name }}${{ inputs.compiler-version }}-${{ inputs.spack-packages-version }}:latest
+          if [ $? -ne 0 ]; then
+            echo "check=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Build base-spack-${{ inputs.compiler-name }}${{ inputs.compiler-version }}-${{ inputs.spack-packages-version }}
+        if: steps.no-image-exists.outputs.check
+        uses: access-nri/actions/.github/actions/docker-build-push@main
+        with:
+          container-registry: ghcr.io
+          image-name: access-nri/base-spack-${{ inputs.compiler-name }}${{ inputs.compiler-version }}-${{ inputs.spack-packages-version }}
+          dockerfile-directory: containers
+          dockerfile-name: Dockerfile.base-spack
+          target: "ci"
+          build-args: |
+            SPACK_PACKAGES_REPO_VERSION=${{ inputs.spack-packages-version }}
+            COMPILER_NAME=${{ inputs.compiler-name }}
+            COMPILER_PACKAGE=${{ inputs.compiler-package }}
+            COMPILER_VERSION=${{ inputs.compiler-version }}
+          build-secrets: |
+            S3_ACCESS_KEY_ID=${{ secrets.S3_ACCESS_KEY_ID }}
+            S3_ACCESS_KEY_SECRET=${{ secrets.S3_ACCESS_KEY_SECRET }}
+            access-nri.priv=${{ secrets.BUILDCACHE_KEY_PRIVATE }}
+            access-nri.pub=${{ secrets.BUILDCACHE_KEY_PUBLIC }}
+
+  dependency-images:
+    name: Dependency Images
+    needs:
+      - base-spack
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        model: ${{ fromJson(inputs.models) }}
+    steps:
+      - name: Get model components for ${{ matrix.model }}
+        id: get-model-components
+        run: echo "model-components=$(jq -cr '.["${{ matrix.model }}"]' config/models.json)" >> $GITHUB_OUTPUT
+
+      - name: Build build-${{ matrix.model }}-${{ inputs.compiler-name}}${{ inputs.compiler-version }}-${{ inputs.spack-packages-version }}
+        uses: access-nri/actions/.github/actions/docker-build-push@main
+        with:
+          container-registry: ghcr.io
+          image-name: access-nri/build-${{ matrix.model}}-${{ inputs.compiler-name }}${{ inputs.compiler-version }}-${{ inputs.spack-packages-version }}
+          dockerfile-directory: containers
+          dockerfile-name: Dockerfile.dependency
+          build-args: |
+            PACKAGE_NAMES=${{ steps.get-model-components.outputs.model-components }}
+            BASE_IMAGE=ghcr.io/access-nri/base-spack-${{ inputs.compiler-name }}${{ inputs.compiler-version }}-${{ inputs.spack-packages-version }}:latest

@@ -4,7 +4,7 @@ This documentation is intended to give a rationale for design decisions, and a m
 
 This repository contains three main pipelines:
 
-* Dependency Image Pipeline: uses `dep-image-1-start.yml`, `dep-image-2-build-base.yml`, `dep-image-3-build.yml` and `build-docker-image.yml` workflows.
+* Dependency Image Pipeline: uses `dep-image-1-start.yml` and `dep-image-2-build.yml` workflows.
 * Model Test Pipeline: uses `model-1-build.yml` workflow.
 * JSON Validate Pipeline: uses `json-1-validate.yml` workflow.
 
@@ -76,7 +76,7 @@ The rationale for this pipeline is the creation of a model-dependency docker ima
 
 As an overview, this workflow, given a `access-nri/spack_packages` repo version and coupled model(s):
 
-* Generates a staggered `compiler x model` matrix based on the [`compilers.json`](https://github.com/ACCESS-NRI/build-ci/blob/maine/config/compilers.json) and [`models.json`](https://github.com/ACCESS-NRI/build-ci/blob/main/config/models.json). This allows generation and testing of multiple different compiler and model image combinations in parallel.  
+* Generates a staggered `compiler x model` matrix based on the [`compilers.json`](https://github.com/ACCESS-NRI/build-ci/blob/maine/config/compilers.json) and [`models.json`](https://github.com/ACCESS-NRI/build-ci/blob/main/config/models.json). This allows generation and testing of multiple different compiler and model image combinations in parallel.
 * Uses an existing `base-spack` docker image (or creates it if it doesn't exist) that contains an install of spack, `access-nri/spack_packages` and a given compiler.
 * Using the above `base-spack` image, creates a spack-based model-dependency docker image that separates each model (and it's components) into `spack env`s. This has all the dependencies of the model installed, but not the model itself.
 
@@ -93,7 +93,7 @@ workflow.yml [component comp1 comp2 comp3]
 
 In the above diagram, the first line means that we initially call `workflow.yml`. Within that workflow, we have a matrix strategy in which we call `another-workflow.yml` with each part of the `component` matrix in parallel (with these components being `comp1`, `comp2` and `comp3`).
 
-In the example we will be using for this pipeline, we have a compiler matrix with two compilers (`c1, c2`) and a model matrix with two (coupled) models (`m1, m2`). 
+In the example we will be using for this pipeline, we have a compiler matrix with two compilers (`c1, c2`) and a model matrix with two (coupled) models (`m1, m2`).
 
 ##### The Beginning (dep-image-1-start.yml)
 
@@ -116,7 +116,7 @@ Imagine we have a `compiler x model` matrix with 2 compilers `c1, c2` and two mo
                     |- [c2, m2] --- base-spack-c2 image --- dep-c2-m2 image
 ```
 
-The two copies of `base-spack-c1` and `base-spack-c2` images are created in parallel, which duplicates effort and makes the cache unusable. Instead, if we stagger the creation of the matrix, as noted below:  
+The two copies of `base-spack-c1` and `base-spack-c2` images are created in parallel, which duplicates effort and makes the cache unusable. Instead, if we stagger the creation of the matrix, as noted below:
 
 ```txt
 [compiler] --- [c1] --- base-spack-c1 image --- [model] --- [m1] --- dep-c1-m1 image
@@ -127,55 +127,51 @@ The two copies of `base-spack-c1` and `base-spack-c2` images are created in para
 
 We instead only create one copy of `base-spack-c1` and `base-spack-c2`, leveraging the various caches we use.
 
-After the `compiler` matrix is created, we call the `dep-image-2-build-base.yml` workflow on each of the compilers, parallelizing the pipeline like so:
+After the `compiler` matrix is created, we call the `dep-image-2-build.yml` workflow on each of the compilers, parallelizing the pipeline like so:
 
 ```txt
 dep-image-1-start.yml [compilers c1 c2]
-    |- [c1] dep-image-2-build-base.yml
-    |- [c2] dep-image-2-build-base.yml 
+    |- [c1] dep-image-2-build.yml
+    |- [c2] dep-image-2-build.yml
 ```
 
-##### Creation of `base-spack` and setup of dependency image (dep-image-2-build-base.yml)
+##### Creation of `base-spack` and `dependency` images (dep-image-2-build.yml)
 
 In this workflow, given the specs for a given compiler, a `spack_packages` version, and a list of models for a future `model` matrix strategy, we seek to:
 
 * Check that a suitable `base-spack` image doesn't already exists. This would be one that has the same compiler and same version of `spack_packages`.
-* If it doesn't exist, create and push it using the reusable [`build-docker-image.yml`](https://github.com/ACCESS-NRI/build-ci/blob/main/.github/workflows/build-docker-image.yml) workflow.
-* After those steps, create the aforementioned `model` matrix strategy, running the [`dep-image-3-build.yml`](https://github.com/ACCESS-NRI/build-ci/blob/main/.github/workflows/dep-image-3-build.yml) workflow for each of the models. At this point, the pipeline looks like this:
+* If it doesn't exist, create and push it using the [`access-nri/actions docker-build-push` action](https://github.com/ACCESS-NRI/actions/tree/main/.github/actions/docker-build-push).
+* After those steps, create the aforementioned `model` matrix strategy for each of the models. At this point, the pipeline looks like this:
 
 ```txt
 dep-image-1-start.yml [compilers c1 c2]
-    |- [c1] dep-image-2-build-base.yml
-    |   |- build-docker-image.yml (base-spack-c1)
-    |   |- dep-image-3-build.yml [models m1 m2]
-    |- [c2] dep-image-2-build-base.yml
-        |- build-docker-image.yml (base-spack-c2)
-        |- dep-image-3-build.yml [models m1 m2]
+    |- [c1] dep-image-2-build.yml
+    |   |- access-nri/actions docker-build-push (base-spack-c1)
+    |   |- dependency-image [models m1 m2]
+    |- [c2] dep-image-2-build.yml
+        |- access-nri/actions docker-build-push (base-spack-c2)
+        |- dependency-image [models m1 m2]
 ```
 
-##### Creation of Dependency Image (dep-image-3-build.yml)
-
-Finally, with the `base-spack` image created, and the models that need to be built turned into a matrix strategy, we can create the dependency image. At this stage, we have as inputs: a given compiler spec, a `spack_packages` version, and the name of a coupled model, e.g. `access-om2`, that we want turned into a dependency image. We have all the information necessary for this now.  
-
-In the `dep-image-3-build.yml` workflow, we:
+In the `dependency-image` job, we:
 
 * Get the associated model components of our coupled model from the [`config/models.json`](https://github.com/ACCESS-NRI/build-ci/blob/main/config/models.json) file.
-* Build and push the dependency image given the existing `base-spack` image as a base, and the list of model components from the previous job, using the reusable [`build-docker-image.yml`](https://github.com/ACCESS-NRI/build-ci/blob/main/.github/workflows/build-docker-image.yml) workflow.
+* Build and push the dependency image given the existing `base-spack` image as a base, and the list of model components from the previous job, using the [`access-nri/actions docker-build-push` action](https://github.com/ACCESS-NRI/actions/tree/main/.github/actions/docker-build-push).
 
 This leads to a final pipeline looking like the following:
 
 ```txt
 dep-image-1-start.yml [compilers c1 c2]
-    |- [c1] dep-image-2-build-base.yml
-    |   |- build-docker-image.yml (base-spack-c1)
-    |   |- dep-image-3-build.yml [models m1 m2]
-    |       |- [m1] build-docker-image.yml (dep-image-c1-m1) 
-    |       |- [m2] build-docker-image.yml (dep-image-c1-m2) 
-    |- [c2] dep-image-2-build-base.yml 
-    |   |- build-docker-image.yml (base-spack-c2)
-    |   |- dep-image-3-build.yml [models m1 m2]
-    |       |- [m1] build-docker-image.yml (dep-image-c2-m1) 
-    |       |- [m2] build-docker-image.yml (dep-image-c2-m2) 
+    |- [c1] dep-image-2-build.yml
+    |   |- access-nri/actions docker-build-push (base-spack-c1)
+    |   |- dependency-image [models m1 m2]
+    |       |- [m1] access-nri/actions docker-build-push (dep-image-c1-m1)
+    |       |- [m2] access-nri/actions docker-build-push (dep-image-c1-m2)
+    |- [c2] dep-image-2-build-base.yml
+    |   |- access-nri/actions docker-build-push (base-spack-c2)
+    |   |- dependency-image [models m1 m2]
+    |       |- [m1] access-nri/actions docker-build-push (dep-image-c2-m1)
+    |       |- [m2] access-nri/actions docker-build-push (dep-image-c2-m2)
 ```
 
 ### Model Test Pipeline
@@ -201,9 +197,3 @@ We then use those containers to upload the original `spack.lock` files (also kno
 ### JSON Validator Pipeline
 
 This is a relatively simple pipeline (found in [`json-1-validate.yml`](https://github.com/ACCESS-NRI/build-ci/blob/main/.github/workflows/json-1-validate.yml)) that looks for `*.schema.json` files in a `config` directory and matches them up with their associated `*.json` files and tests that they comply with the given schema.
-
-## Reusable Workflows
-
-### build-docker-image.yml
-
-[`build-docker-image.yml`](https://github.com/ACCESS-NRI/build-ci/blob/main/.github/workflows/build-docker-image.yml) is the most used reusable workflow. This workflow builds, caches, and pushes a given Dockerfile to a given container registry. Build args and build secrets can also be added.
