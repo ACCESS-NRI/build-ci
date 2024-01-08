@@ -78,7 +78,7 @@ jobs:
 
       - name: Get model components for ${{ matrix.model }}
         id: get-model-components
-        run: echo "model-components=$(jq -cr '.["${{ matrix.model }}"]' config/models.json)" >> $GITHUB_OUTPUT
+        run: echo "model-components=$(jq -cr '.["${{ matrix.model }}"]|join(" ")' config/models.json)" >> $GITHUB_OUTPUT
 
       - name: Build build-${{ matrix.model }}-${{ inputs.compiler-name}}${{ inputs.compiler-version }}-${{ inputs.spack-packages-version }}
         uses: access-nri/actions/.github/actions/docker-build-push@main
