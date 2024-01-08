@@ -16,9 +16,12 @@ SHELL ["docker-shell"]
 
 COPY setup-spack-envs.sh .
 
-RUN chmod +x setup-spack-envs.sh \ 
+RUN chmod +x setup-spack-envs.sh \
  && ./setup-spack-envs.sh "${PACKAGE_NAMES}" \
  && spack gc -y
 
 # Push any uncached binaries to buildcache
 RUN spack -d buildcache create -a -m s3_buildcache $(spack find --json | jq --raw-output .[].name)
+
+ENTRYPOINT ["/bin/bash", "/opt/spack/share/spack/docker/entrypoint.bash"]
+CMD ["interactive-shell"]
