@@ -87,11 +87,11 @@ jobs:
         if [[ "${{ github.event_name }}" == "pull_request" ]]; then
           echo "GH_REF=${{ github.head_ref }}" >> $GITHUB_ENV
         else
-          echo "GH_REF=${{ github.ref_name }})" >> $GITHUB_ENV
+          echo "GH_REF=${{ github.ref_name }}" >> $GITHUB_ENV
         fi
 
     - name: Activate spack
-      run: . ./share/spack/setup-env.sh
+      run: . $SPACK_ROOT/share/spack/setup-env.sh
 
     - name: Activate environment
       run: spack env activate ${{ needs.setup-model.outputs.package-name }}
