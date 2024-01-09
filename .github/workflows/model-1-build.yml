@@ -90,6 +90,9 @@ jobs:
           echo "GH_REF=${{ github.ref_name }})" >> $GITHUB_ENV
         fi
 
+    - name: Activate spack
+      run: . ./share/spack/setup-env.sh
+
     - name: Activate environment
       run: spack env activate ${{ needs.setup-model.outputs.package-name }}
 
