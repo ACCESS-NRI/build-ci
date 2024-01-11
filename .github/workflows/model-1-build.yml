@@ -117,6 +117,10 @@ jobs:
     - name: Generate force-concretized lockfile
       if: failure()
       run: |
+        . $SPACK_ROOT/share/spack/setup-env.sh
+        spack load ${{ matrix.compiler.package }}@${{ matrix.compiler.version }}
+        spack compiler find
+        spack env activate ${{ env.PACKAGE_NAME }}
         spack concretize --force
         cp ${{ env.SPACK_YAML_LOCATION }}/spack.lock /lockfiles/force.spack.lock
 
