@@ -74,12 +74,18 @@ jobs:
         compiler: ${{ fromJson(needs.setup-build-ci.outputs.compilers) }}
     permissions:
       packages: read
+    env:
+      PACKAGE_NAME: ${{ needs.setup-model.outputs.package-name }}
+      SPACK_YAML_LOCATION: $SPACK_ROOT/var/spack/environments/${{ needs.setup-model.outputs.package-name }}
 
     container:
       image: ghcr.io/access-nri/build-${{ needs.setup-build-ci.outputs.model }}-${{ matrix.compiler.name }}${{ matrix.compiler.version }}-${{ needs.setup-spack-packages.outputs.version }}:latest
       credentials:
         username: ${{ github.repository_owner }}
         password: ${{ secrets.GITHUB_TOKEN }}
+      options: --interactive --tty
+      volumes:
+        - /lockfiles:/lockfiles
 
     steps:
     - name: Get correct ref
@@ -90,49 +96,34 @@ jobs:
           echo "GH_REF=${{ github.ref_name }}" >> $GITHUB_ENV
         fi
 
-    - name: Activate spack
-      run: . $SPACK_ROOT/share/spack/setup-env.sh
-
-    - name: Activate environment
-      run: spack env activate ${{ needs.setup-model.outputs.package-name }}
-
-    - name: Build package via spack
-      run: spack -d install --add --only package --fail-fast --no-checksum ${{ needs.setup-model.outputs.package-name }}@=$GH_REF%${{ matrix.compiler.name }}@${{ matrix.compiler.version }}
-
-    - name: Generate lockfile
+    - name: Build ${{ env.PACKAGE_NAME }} via spack
       run: |
-        cd $SPACK_ROOT/var/spack/environments/${{ needs.setup-model.outputs.package-name }}
-        cp spack.lock ${{ needs.setup-model.outputs.package-name }}.original.spack.lock
+        . $SPACK_ROOT/share/spack/setup-env.sh
+        spack load ${{ matrix.compiler.package }}@${{ matrix.compiler.version }}
+        spack compiler find
+        spack env activate ${{ env.PACKAGE_NAME }}
+        spack find --show-concretized --long
+        cp ${{ env.SPACK_YAML_LOCATION }}/spack.yaml /lockfiles/generic.spack.yaml
+        cp ${{ env.SPACK_YAML_LOCATION }}/spack.lock /lockfiles/generic.spack.lock
+        echo "------------------------------------------------------------------------------"
+        spack change --match-spec ${{ env.PACKAGE_NAME }} ${{ env.PACKAGE_NAME }}@git.$GH_REF%intel@2021.2.0 arch=linux-rocky8-x86_64
+        spack concretize --reuse
+        spack find --show-concretized --long
+        cp ${{ env.SPACK_YAML_LOCATION }}/spack.yaml /lockfiles/current.spack.yaml
+        cp ${{ env.SPACK_YAML_LOCATION }}/spack.lock /lockfiles/current.spack.lock
+        echo "------------------------------------------------------------------------------"
+        spack install
 
     - name: Generate force-concretized lockfile
       if: failure()
       run: |
-        cd $SPACK_ROOT/var/spack/environments/${{ needs.setup-model.outputs.package-name }}
-        spack -d concretize --force
-        cp spack.lock ${{ needs.setup-model.outputs.package-name }}.force.spack.lock
+        spack concretize --force
+        cp ${{ env.SPACK_YAML_LOCATION }}/spack.lock /lockfiles/force.spack.lock
 
     - name: Upload lockfiles
+      if: always()
       uses: actions/upload-artifact@v3
       with:
-        name: lockfile-output
-        path: $SPACK_ROOT/var/spack/environments/${{ needs.setup-model.outputs.package-name }}/${{ needs.setup-model.outputs.package-name }}.*.spack.lock
-
-
-    # Install and launch interactive debugging on build failure
-    - name: Install tmate on failure
-      run: |
-        dnf -y install epel-release
-        dnf -y install libevent-devel ncurses-devel msgpack-devel libssh-devel
-        git clone https://github.com/tmate-io/tmate.git
-        cd tmate
-        ./autogen.sh
-        ./configure
-        make
-        make install
-      if: ${{ failure() }}
-
-    - name: Debug with tmate on failure
-      uses: mxschmitt/action-tmate@v3
-      if: ${{ failure() }}
-      with:
-        install-dependencies: false
+        name: ${{ env.PACKAGE_NAME }}
+        path: /lockfiles/*.spack.*
+        if-no-files-found: error
