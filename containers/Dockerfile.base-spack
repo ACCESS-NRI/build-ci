@@ -138,12 +138,15 @@ RUN --mount=type=secret,id=access-nri.pub \
 ################################################################################
 FROM base-spack as dev
 
+ARG MPI_NAME=openmpi
+ARG MPI_VERSION=4.0.2
+
 RUN spack load ${COMPILER_PACKAGE}@${COMPILER_VERSION} \
  && spack compiler find
 
 RUN spack install cmake%${COMPILER_NAME}@${COMPILER_VERSION} \
     gmake%${COMPILER_NAME}@${COMPILER_VERSION} \
-    openmpi@4.0.2%${COMPILER_NAME}@${COMPILER_VERSION} \
+    ${MPI_NAME}@${MPI_VERSION}%${COMPILER_NAME}@${COMPILER_VERSION} \
     arch=${SPACK_ENV_ARCH}
 
 ENTRYPOINT ["/bin/bash", "/opt/spack/share/spack/docker/entrypoint.bash"]
