@@ -35,6 +35,7 @@ RUN dnf update -y \
     make \
     patch \
     patchutils \
+    perl \
     pkgconf \
     pkgconf-m4 \
     pkgconf-pkg-config \
