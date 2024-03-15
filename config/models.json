@@ -1,4 +1,5 @@
 {
     "access-om2": ["libaccessom2", "mom5", "cice5", "oasis3-mct"],
-    "access-om3": ["access-om3"]
+    "access-om3": ["access-om3"],
+    "cable": ["cable"]
 }
