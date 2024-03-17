@@ -3,5 +3,10 @@
     "name": "intel",
     "package": "intel-oneapi-compilers",
     "version": "2021.2.0"
+  },
+  {
+    "name": "intel",
+    "package": "intel-oneapi-compilers",
+    "version": "2021.4.0"
   }
 ]
