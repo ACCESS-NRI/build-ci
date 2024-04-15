@@ -53,6 +53,7 @@ RUN dnf update -y \
 ################################################################################
 FROM base-os as base-spack
 
+ARG SPACK_GIT_URL=https://github.com/ACCESS-NRI/spack.git
 ARG SPACK_VERSION=v0.20
 ARG SPACK_REPO_VERSION=releases/${SPACK_VERSION}
 ARG SPACK_PACKAGES_REPO_VERSION=main
@@ -80,7 +81,7 @@ LABEL au.org.access-nri.image.arch ${SPACK_ENV_ARCH}
 SHELL ["/bin/bash", "-c"]
 
 # Install spack
-RUN git clone -c feature.manyFiles=true https://github.com/spack/spack.git ${SPACK_ROOT} --branch ${SPACK_REPO_VERSION} --single-branch --depth=1
+RUN git clone -c feature.manyFiles=true ${SPACK_GIT_URL} ${SPACK_ROOT} --branch ${SPACK_REPO_VERSION} --single-branch --depth=1
 
 # Install ACCESS-NRI's spack-packages repo
 RUN git clone  https://github.com/ACCESS-NRI/spack-packages.git ${SPACK_PACKAGES_REPO_ROOT} --branch ${SPACK_PACKAGES_REPO_VERSION}
