@@ -1,21 +1,9 @@
 ### Building Docker containers for local testing
 
-Ensure the following environment variables are populated:
+To build:
 
-- S3_ACCESS_KEY_ID
-- S3_ACCESS_KEY_SECRET
-- BUILDCACHE_KEY_PRIV_PATH
-- BUILDCACHE_KEY_PUB_PATH
+    docker build -f Dockerfile.base-spack -t <name>:<version> --target dev --no-cache --progress=plain .
 
-Then run:
+To run:
 
-    ./build_dockerfile.base-spack.sh
-    ./build_dockerfile.build.sh
-
-To run interactively:
-
-    docker run -it build
-
-To test build:
-
-    spack -d install --only package --no-checksum mom5%intel
+    docker run -it --rm <name>:<version>
