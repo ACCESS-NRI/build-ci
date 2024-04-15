@@ -9,7 +9,7 @@ LABEL au.org.access-nri.ci.packages ${PACKAGE_NAMES}
 LABEL au.org.access-nri.ci.base-spack-image ${BASE_IMAGE}
 LABEL au.org.access-nri.ci.spack-repo-version ${SPACK_REPO_VERSION}
 LABEL au.org.access-nri.ci.spack-packages-repo-version ${SPACK_PACKAGES_REPO_VERSION}
-LABEL au.org.access-nri.ci.compiler ${SPACK_ENV_COMPILER_PACKAGE}@${SPACK_ENV_COMPILER_VERSION}
+LABEL au.org.access-nri.ci.compiler ${ENV_COMPILER_NAME}@${ENV_COMPILER_VERSION}
 
 # Use Spack shell environment for subsequent RUN steps
 SHELL ["docker-shell"]
