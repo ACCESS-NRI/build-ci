@@ -7,7 +7,12 @@ on:
         required: true
         type: string
         default: "main"
-        description: "Either a git tag or branch name for the ACCESS-NRI/spack-packages repository, which defaults to the main branch"
+        description: "Either a git tag or branch name for the ACCESS-NRI/spack-packages repository"
+      spack-config-version:
+        required: true
+        type: string
+        default: "main"
+        description: "Either a git tag or branch name for the ACCESS-NRI/spack-config repository"
       model:
         required: true
         type: string
@@ -52,8 +57,10 @@ jobs:
     with:
       compiler-name: ${{ matrix.compiler.name }}
       compiler-package: ${{ matrix.compiler.package }}
+      compiler-package-version: ${{ matrix.compiler.package-version }}
       compiler-version: ${{ matrix.compiler.version }}
       spack-packages-version: ${{ inputs.spack-packages-version }}
+      spack-config-version: ${{ inputs.spack-config-version }}
       models: ${{ needs.generate-matrix.outputs.models }}
     permissions:
       packages: write
