@@ -83,7 +83,7 @@ jobs:
       SPACK_YAML_LOCATION: $SPACK_ROOT/var/spack/environments/${{ needs.setup-model.outputs.package-name }}
 
     container:
-      image: ghcr.io/access-nri/build-${{ needs.setup-build-ci.outputs.model }}-${{ matrix.compiler.name }}${{ matrix.compiler.version }}-${{ needs.setup-spack-packages.outputs.version }}:latest
+      image: ghcr.io/access-nri/build-${{ needs.setup-build-ci.outputs.model }}-${{ matrix.compiler.COMPILER_NAME }}${{ matrix.compiler.COMPILER_VERSION }}-${{ needs.setup-spack-packages.outputs.version }}:latest
       credentials:
         username: ${{ github.repository_owner }}
         password: ${{ secrets.GITHUB_TOKEN }}
@@ -103,14 +103,14 @@ jobs:
     - name: Build ${{ env.PACKAGE_NAME }} via spack
       run: |
         . $SPACK_ROOT/../spack-config/spack-enable.bash
-        spack load ${{ matrix.compiler.package }}@${{ matrix.compiler.version }}
+        spack load ${{ matrix.compiler.COMPILER_PKG_NAME }}@${{ matrix.compiler.COMPILER_PKG_VERSION }}
         spack compiler find
         spack env activate ${{ env.PACKAGE_NAME }}
         spack find --show-concretized --long
         cp ${{ env.SPACK_YAML_LOCATION }}/spack.yaml /lockfiles/generic.spack.yaml
         cp ${{ env.SPACK_YAML_LOCATION }}/spack.lock /lockfiles/generic.spack.lock
         echo "------------------------------------------------------------------------------"
-        spack change --match-spec ${{ env.PACKAGE_NAME }} ${{ env.PACKAGE_NAME }}@git.$GH_REF%${{ matrix.compiler.name }}@${{ matrix.compiler.version }} arch=$ENV_SPACK_ARCH
+        spack change --match-spec ${{ env.PACKAGE_NAME }} ${{ env.PACKAGE_NAME }}@git.$GH_REF%${{ matrix.compiler.COMPILER_NAME }}@${{ matrix.compiler.COMPILER_VERSION }} arch=$ENV_SPACK_ARCH
         spack concretize --reuse
         spack find --show-concretized --long
         cp ${{ env.SPACK_YAML_LOCATION }}/spack.yaml /lockfiles/current.spack.yaml
@@ -121,8 +121,8 @@ jobs:
     - name: Generate force-concretized lockfile
       if: failure()
       run: |
-        . $SPACK_ROOT/share/spack/setup-env.sh
-        spack load ${{ matrix.compiler.package }}@${{ matrix.compiler.version }}
+        . $SPACK_ROOT/../spack-config/spack-enable.bash
+        spack load ${{ matrix.compiler.COMPILER_PKG_NAME }}@${{ matrix.compiler.COMPILER_PKG_VERSION }}
         spack compiler find
         spack env activate ${{ env.PACKAGE_NAME }}
         spack concretize --force
