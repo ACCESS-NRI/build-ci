@@ -1,8 +1,8 @@
 [
   {
-    "name": "intel",
-    "package": "intel-oneapi-compilers-classic",
-    "package-version": "2021.6.0",
-    "version": "2021.10.0"
+    "COMPILER_NAME": "intel",
+    "COMPILER_VERSION": "2021.10.0",
+    "COMPILER_PKG_NAME": "intel-oneapi-compilers-classic",
+    "COMPILER_PKG_VERSION": "2021.6.0"
   }
 ]

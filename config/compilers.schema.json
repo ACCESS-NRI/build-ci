@@ -6,20 +6,20 @@
     "items": {
         "type": "object",
         "properties": {
-            "name": {
+            "COMPILER_NAME": {
                 "type": "string"
             },
-            "package": {
+            "COMPILER_VERSION": {
                 "type": "string"
             },
-            "package-version": {
+            "COMPILER_PKG_NAME": {
                 "type": "string"
             },
-            "version": {
+            "COMPILER_PKG_VERSION": {
                 "type": "string"
             }
         },
-        "required": [ "name", "package", "package-version", "version" ],
+        "required": [ "COMPILER_NAME", "COMPILER_VERSION", "COMPILER_PKG_NAME", "COMPILER_PKG_VERSION" ],
         "additionalProperties": false
     }
 }

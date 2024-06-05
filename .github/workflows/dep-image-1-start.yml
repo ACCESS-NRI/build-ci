@@ -55,10 +55,10 @@ jobs:
         compiler: ${{ fromJson(needs.generate-matrix.outputs.compilers) }}
     uses: access-nri/build-ci/.github/workflows/dep-image-2-build.yml@main
     with:
-      compiler-name: ${{ matrix.compiler.name }}
-      compiler-package: ${{ matrix.compiler.package }}
-      compiler-package-version: ${{ matrix.compiler.package-version }}
-      compiler-version: ${{ matrix.compiler.version }}
+      compiler-name: ${{ matrix.compiler.COMPILER_NAME }}
+      compiler-package: ${{ matrix.compiler.COMPILER_PKG_NAME }}
+      compiler-package-version: ${{ matrix.compiler.COMPILER_PKG_VERSION }}
+      compiler-version: ${{ matrix.compiler.COMPILER_VERSION }}
       spack-packages-version: ${{ inputs.spack-packages-version }}
       spack-config-version: ${{ inputs.spack-config-version }}
       models: ${{ needs.generate-matrix.outputs.models }}
