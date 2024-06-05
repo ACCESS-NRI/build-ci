@@ -12,11 +12,14 @@
             "package": {
                 "type": "string"
             },
+            "package-version": {
+                "type": "string"
+            },
             "version": {
                 "type": "string"
             }
         },
-        "required": [ "name", "package", "version" ],
+        "required": [ "name", "package", "package-version", "version" ],
         "additionalProperties": false
     }
 }
