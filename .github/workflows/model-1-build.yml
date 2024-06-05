@@ -102,7 +102,7 @@ jobs:
 
     - name: Build ${{ env.PACKAGE_NAME }} via spack
       run: |
-        . $SPACK_ROOT/share/spack/setup-env.sh
+        . $SPACK_ROOT/../spack-config/spack-enable.bash
         spack load ${{ matrix.compiler.package }}@${{ matrix.compiler.version }}
         spack compiler find
         spack env activate ${{ env.PACKAGE_NAME }}
