@@ -59,6 +59,7 @@ ARG SPACK_REPO_VERSION=releases/${SPACK_VERSION}
 ARG SPACK_PACKAGES_REPO_VERSION=main
 ARG SPACK_CONFIG_REPO_VERSION=main
 ARG SPACK_TARGET=x86_64
+ARG SPACK_CONFIG_DIR=/opt/spack-config/${SPACK_VERSION}/ci
 ARG COMPILER_PKG_NAME=intel-oneapi-compilers
 ARG COMPILER_PKG_VERSION=2021.2.0
 ARG COMPILER_NAME=intel
@@ -67,9 +68,6 @@ ARG COMPILER_VERSION=2021.2.0
 ENV SPACK_ROOT=/opt/spack
 ENV GNUPGHOME=${SPACK_ROOT}/opt/spack/gpg
 ENV ENV_SPACK_TARGET=${SPACK_TARGET}
-ENV SPACK_PACKAGES_REPO_ROOT=/opt/spack-packages
-ENV SPACK_CONFIG_REPO_ROOT=/opt/spack-config
-ENV SPACK_CONFIG_DIR=${SPACK_CONFIG_REPO_ROOT}/${SPACK_VERSION}/ci
 ENV ENV_COMPILER_PKG_NAME=${COMPILER_PKG_NAME}
 ENV ENV_COMPILER_PKG_VERSION=${COMPILER_PKG_VERSION}
 ENV ENV_COMPILER_NAME=${COMPILER_NAME}
@@ -77,7 +75,8 @@ ENV ENV_COMPILER_VERSION=${COMPILER_VERSION}
 
 LABEL au.org.access-nri.image.spack-repo-version ${SPACK_REPO_VERSION}
 LABEL au.org.access-nri.image.spack-packages-repo-version ${SPACK_PACKAGES_REPO_VERSION}
-LABEL au.org.access-nri.image.compiler ${ENV_COMPILER_NAME}@${ENV_COMPILER_VERSION}
+LABEL au.org.access-nri.image.spack-config-repo-version ${SPACK_CONFIG_REPO_VERSION}
+LABEL au.org.access-nri.image.compiler ${COMPILER_NAME}@${COMPILER_VERSION}
 LABEL au.org.access-nri.image.target ${ENV_SPACK_TARGET}
 
 SHELL ["/bin/bash", "-c"]
@@ -86,10 +85,10 @@ SHELL ["/bin/bash", "-c"]
 RUN git clone -c feature.manyFiles=true ${SPACK_GIT_URL} ${SPACK_ROOT} --branch ${SPACK_REPO_VERSION} --single-branch --depth=1
 
 # Install ACCESS-NRI's spack-packages repo
-RUN git clone  https://github.com/ACCESS-NRI/spack-packages.git ${SPACK_PACKAGES_REPO_ROOT} --branch ${SPACK_PACKAGES_REPO_VERSION}
+RUN git clone  https://github.com/ACCESS-NRI/spack-packages.git /opt/spack-packages --branch ${SPACK_PACKAGES_REPO_VERSION}
 
 # Install ACCESS-NRI's spack-config repo
-RUN git clone  https://github.com/ACCESS-NRI/spack-config.git ${SPACK_CONFIG_REPO_ROOT} --branch ${SPACK_CONFIG_REPO_VERSION}
+RUN git clone  https://github.com/ACCESS-NRI/spack-config.git /opt/spack-config --branch ${SPACK_CONFIG_REPO_VERSION}
 
 # Exit with ENOENT 2 "No such file or directory", if the directory does not
 # exist
@@ -115,7 +114,7 @@ SHELL ["docker-shell"]
 # i.e. the first time they are needed and can’t be found.
 
 # Install compilers
-RUN spack install ${ENV_COMPILER_PKG_NAME}@${ENV_COMPILER_PKG_VERSION} target=${ENV_SPACK_TARGET}
+RUN spack install ${COMPILER_PKG_NAME}@${COMPILER_PKG_VERSION} target=${SPACK_TARGET}
 
 
 ################################################################################
@@ -151,10 +150,10 @@ RUN spack load ${COMPILER_PKG_NAME}@${COMPILER_PKG_VERSION} \
  && spack compiler find
 
 RUN spack install \
-    cmake%${ENV_COMPILER_NAME}@${ENV_COMPILER_VERSION} target=${ENV_SPACK_TARGET} \
-    gmake%${ENV_COMPILER_NAME}@${ENV_COMPILER_VERSION} target=${ENV_SPACK_TARGET} \
-    ${MPI_NAME}@${MPI_VERSION}%${ENV_COMPILER_NAME}@${ENV_COMPILER_VERSION} \
-    target=${ENV_SPACK_TARGET}
+    cmake%${COMPILER_NAME}@${COMPILER_VERSION} target=${SPACK_TARGET} \
+    gmake%${COMPILER_NAME}@${COMPILER_VERSION} target=${SPACK_TARGET} \
+    ${MPI_NAME}@${MPI_VERSION}%${COMPILER_NAME}@${COMPILER_VERSION} \
+    target=${SPACK_TARGET}
 
 ENTRYPOINT ["/bin/bash", "/opt/spack/share/spack/docker/entrypoint.bash"]
 CMD ["interactive-shell"]
