@@ -20,7 +20,8 @@ RUN chmod +x setup-spack-envs.sh \
  && ./setup-spack-envs.sh "${PACKAGE_NAMES}"
 
 # Push any uncached binaries to buildcache
-RUN spack -d buildcache push --allow-root s3_buildcache $(spack find --json | jq --raw-output .[].name)
+RUN spack -d buildcache push --allow-root s3_buildcache
+
 
 # NOTE: We do not use an ENTRYPOINT as would be expected by a spack-based image (i.e. to call
 # $SPACK_ROOT/share/spack/docker/entrypoint.bash) because GitHub Actions overrides the Dockerfile-defined
