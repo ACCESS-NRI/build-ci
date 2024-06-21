@@ -11,5 +11,7 @@ for PACKAGE in ${PACKAGES}; do
   spack load ${ENV_COMPILER_PKG_NAME}@${ENV_COMPILER_PKG_VERSION} arch=${ENV_SPACK_ARCH}
   spack compiler find --scope env:${PACKAGE}
   spack -d install -j 4 --add --only dependencies --fail-fast ${PACKAGE}%${ENV_COMPILER_NAME}@${ENV_COMPILER_VERSION} arch=${ENV_SPACK_ARCH}
+  # Push any uncached binaries to buildcache
+  spack -d buildcache push --allow-root s3_buildcache
   spack env deactivate
 done
