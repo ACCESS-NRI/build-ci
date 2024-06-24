@@ -12,6 +12,6 @@ for PACKAGE in ${PACKAGES}; do
   spack compiler find --scope env:${PACKAGE}
   spack -d install -j 4 --add --only dependencies --fail-fast ${PACKAGE}%${ENV_COMPILER_NAME}@${ENV_COMPILER_VERSION} arch=${ENV_SPACK_ARCH}
   # Push any uncached binaries to buildcache
-  spack -d buildcache push --allow-root s3_buildcache
+  spack -d buildcache push s3_buildcache "$(spack find --json | jq --raw-output '.[] | (.name + "/" + .hash)')"
   spack env deactivate
 done
