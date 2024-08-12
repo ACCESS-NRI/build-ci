@@ -110,7 +110,7 @@ jobs:
         cp ${{ env.SPACK_YAML_LOCATION }}/spack.yaml /lockfiles/generic.spack.yaml
         cp ${{ env.SPACK_YAML_LOCATION }}/spack.lock /lockfiles/generic.spack.lock
         echo "------------------------------------------------------------------------------"
-        spack change --match-spec ${{ env.PACKAGE_NAME }} ${{ env.PACKAGE_NAME }}@git.$GH_REF%${{ matrix.compiler.COMPILER_NAME }}@${{ matrix.compiler.COMPILER_VERSION }} arch=$ENV_SPACK_ARCH
+        spack change --match-spec ${{ env.PACKAGE_NAME }} ${{ env.PACKAGE_NAME }}@git.$GH_REF%${{ matrix.compiler.COMPILER_NAME }}@${{ matrix.compiler.COMPILER_VERSION }} target=$ENV_SPACK_TARGET
         spack concretize --reuse
         spack find --show-concretized --long
         cp ${{ env.SPACK_YAML_LOCATION }}/spack.yaml /lockfiles/current.spack.yaml
