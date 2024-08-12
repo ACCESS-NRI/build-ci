@@ -6,7 +6,7 @@
 ################################################################################
 # NOTE: Keep an eye on:
 #       ${SPACK_ROOT}/share/spack/templates/container/rockylinux_8.dockerfile
-FROM rockylinux:8.9 as base-os
+FROM rockylinux/rockylinux:8.10 as base-os
 
 # csh currently required for some build scripts e.g. MOM5
 RUN dnf update -y \
