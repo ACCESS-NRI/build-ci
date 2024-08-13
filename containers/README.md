@@ -6,9 +6,11 @@
 
 ## How to build Docker images
 
-To build:
+To build an image with defaults:
 
     docker build -f Dockerfile.base-spack -t <name>:<version> --target dev --no-cache --progress=plain .
+
+To build an image with specific versions of `spack`, `spack-packages` and `spack-config`:
 
     docker build -f Dockerfile.base-spack -t spack-dev:v0.20 --target dev --build-arg SPACK_VERSION=v0.20 --build-arg SPACK_PACKAGES_REPO_VERSION=2024.03.22 --build-arg SPACK_CONFIG_REPO_VERSION=2024.03.22 --no-cache --progress=plain .
 
