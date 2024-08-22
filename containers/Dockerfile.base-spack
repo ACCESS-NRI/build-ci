@@ -73,6 +73,12 @@ ENV ENV_COMPILER_PKG_VERSION=${COMPILER_PKG_VERSION}
 ENV ENV_COMPILER_NAME=${COMPILER_NAME}
 ENV ENV_COMPILER_VERSION=${COMPILER_VERSION}
 
+# TODO: Ideally we want spack-enable.bash to be the only source of these
+#       definitions. See if spack-enable.bash can be used instead.
+# NOTE: In the meantime, keep in-sync with spack-config/spack-enable.bash
+ENV SPACK_DISABLE_LOCAL_CONFIG="true"
+ENV SPACK_USER_CACHE_PATH=${SPACK_ROOT}/..
+
 LABEL au.org.access-nri.image.spack-repo-version ${SPACK_REPO_VERSION}
 LABEL au.org.access-nri.image.spack-packages-repo-version ${SPACK_PACKAGES_REPO_VERSION}
 LABEL au.org.access-nri.image.spack-config-repo-version ${SPACK_CONFIG_REPO_VERSION}
