@@ -80,7 +80,7 @@ jobs:
       packages: read
     env:
       PACKAGE_NAME: ${{ needs.setup-model.outputs.package-name }}
-      SPACK_YAML_LOCATION: $SPACK_ROOT/var/spack/environments/${{ needs.setup-model.outputs.package-name }}
+      SPACK_YAML_LOCATION: $SPACK_ROOT/../environments/${{ needs.setup-model.outputs.package-name }}
 
     container:
       image: ghcr.io/access-nri/build-${{ needs.setup-build-ci.outputs.model }}-${{ matrix.compiler.COMPILER_NAME }}${{ matrix.compiler.COMPILER_VERSION }}-${{ needs.setup-spack-packages.outputs.version }}:latest
