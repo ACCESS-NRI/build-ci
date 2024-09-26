@@ -88,7 +88,7 @@ LABEL au.org.access-nri.image.target ${ENV_SPACK_TARGET}
 SHELL ["/bin/bash", "-c"]
 
 # Install spack
-RUN git clone -c feature.manyFiles=true ${SPACK_GIT_URL} ${SPACK_ROOT} --branch ${SPACK_REPO_VERSION} --single-branch --depth=1
+RUN git clone -c feature.manyFiles=true ${SPACK_GIT_URL} ${SPACK_ROOT} --branch ${SPACK_REPO_VERSION} --single-branch --depth=100
 
 # Install ACCESS-NRI's spack-packages repo
 RUN git clone  https://github.com/ACCESS-NRI/spack-packages.git /opt/spack-packages --branch ${SPACK_PACKAGES_REPO_VERSION}
