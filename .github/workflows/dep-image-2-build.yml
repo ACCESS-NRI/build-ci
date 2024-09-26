@@ -53,7 +53,7 @@ jobs:
 
       - name: Build base-spack-${{ inputs.compiler-name }}${{ inputs.compiler-version }}-${{ inputs.spack-packages-version }}
         if: steps.no-image-exists.outputs.check
-        uses: access-nri/actions/.github/actions/docker-build-push@main
+        uses: access-nri/actions/.github/actions/docker-build-push@170-intermittent-push-fail
         with:
           container-registry: ghcr.io
           image-name: access-nri/base-spack-${{ inputs.compiler-name }}${{ inputs.compiler-version }}-${{ inputs.spack-packages-version }}
@@ -90,7 +90,7 @@ jobs:
         run: echo "model-components=$(jq -cr '.["${{ matrix.model }}"]|join(" ")' config/models.json)" >> $GITHUB_OUTPUT
 
       - name: Build build-${{ matrix.model }}-${{ inputs.compiler-name}}${{ inputs.compiler-version }}-${{ inputs.spack-packages-version }}
-        uses: access-nri/actions/.github/actions/docker-build-push@main
+        uses: access-nri/actions/.github/actions/docker-build-push@170-intermittent-push-fail
         with:
           container-registry: ghcr.io
           image-name: access-nri/build-${{ matrix.model}}-${{ inputs.compiler-name }}${{ inputs.compiler-version }}-${{ inputs.spack-packages-version }}
