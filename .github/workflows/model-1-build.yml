@@ -2,7 +2,19 @@ name: Build package
 
 on:
   workflow_call:
-
+    inputs:
+      rhs-branch:
+        type: string
+        required: false
+        description: |
+          For packages that specify build options based on branch, which branch to use.
+          In a '@git.LHS=RHS' version spec, this is the RHS.
+      variants:
+        type: string
+        required: false
+        description: |
+          For packages that need non-default variants applied, which variants to use.
+          These can be a space-separated list of '~variant/+variant/-variants/name=value' variants.
 jobs:
   setup-spack-packages:
     name: Info from spack-packages
@@ -110,7 +122,7 @@ jobs:
         cp ${{ env.SPACK_YAML_LOCATION }}/spack.yaml /lockfiles/generic.spack.yaml
         cp ${{ env.SPACK_YAML_LOCATION }}/spack.lock /lockfiles/generic.spack.lock
         echo "------------------------------------------------------------------------------"
-        spack change --match-spec ${{ env.PACKAGE_NAME }} ${{ env.PACKAGE_NAME }}@git.$GH_REF%${{ matrix.compiler.COMPILER_NAME }}@${{ matrix.compiler.COMPILER_VERSION }} target=$ENV_SPACK_TARGET
+        spack change --match-spec ${{ env.PACKAGE_NAME }} ${{ env.PACKAGE_NAME }}@git.$GH_REF${{ inputs.rhs-branch != '' && format('={0}', inputs.rhs-branch) || '' }} %${{ matrix.compiler.COMPILER_NAME }}@${{ matrix.compiler.COMPILER_VERSION }} ${{ inputs.variants }} target=$ENV_SPACK_TARGET
         spack concretize --reuse
         spack find --show-concretized --long
         cp ${{ env.SPACK_YAML_LOCATION }}/spack.yaml /lockfiles/current.spack.yaml
