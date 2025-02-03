@@ -1,12 +1,18 @@
-# Copyright 2023 ACCESS-NRI and contributors. See the top-level COPYRIGHT file for details.
+# Copyright 2023-2025 ACCESS-NRI and contributors. See the top-level COPYRIGHT file for details.
 # SPDX-License-Identifier: Apache-2.0
 #
-# Contains build targets: base-os, base-spack, ci, dev
+# Contains build targets: base-os-rocky, base-os-suse, base-spack, ci, dev
+
+################################################################################
+# OS = {rocky,suse}
+ARG OS=rocky
+# e.g. docker build -f Dockerfile.base-spack --build-arg OS=suse -t spack-dev-suse:1 --target dev --no-cache --progress=plain .
+
 
 ################################################################################
 # NOTE: Keep an eye on:
 #       ${SPACK_ROOT}/share/spack/templates/container/rockylinux_8.dockerfile
-FROM rockylinux/rockylinux:8.10 as base-os
+FROM rockylinux/rockylinux:8.10 as base-os-rocky
 
 # csh currently required for some build scripts e.g. MOM5
 RUN dnf update -y \
@@ -51,7 +57,49 @@ RUN dnf update -y \
 
 
 ################################################################################
-FROM base-os as base-spack
+FROM opensuse/leap:15.5 as base-os-suse
+
+# csh currently required for some build scripts e.g. MOM5
+RUN zypper install -y \
+    autoconf \
+    automake \
+    binutils \
+    bison \
+    bzip2 \
+    flex \
+    curl \
+    file \
+    findutils \
+    gcc \
+    gcc-c++ \
+    gcc-fortran \
+    git \
+    glibc-devel \
+    jq \
+    libtool \
+    hg \
+    hostname \
+    iproute \
+    make \
+    patch \
+    patchutils \
+    perl \
+    pkgconf \
+    python3 \
+    python3-pip \
+    python3-setuptools \
+    unzip \
+    xz \
+    zstd \
+    gzip \
+    gpg2 \
+    subversion \
+    tcsh \
+    vim
+
+
+################################################################################
+FROM base-os-$OS as base-spack
 
 ARG SPACK_GIT_URL=https://github.com/ACCESS-NRI/spack.git
 ARG SPACK_VERSION=v0.22
