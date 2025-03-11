@@ -1,0 +1,20 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "Compilers",
+    "description": "A list of compilers/packages in speclist format that are installed in the upstream container.",
+    "type": "object",
+    "properties": {
+        "compilers": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            }
+        },
+        "packages": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            }
+        }
+    }
+}

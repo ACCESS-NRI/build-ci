@@ -1,0 +1,11 @@
+{
+    "$schema": "./packages.schema.json",
+    "packages": [
+        "gmake%intel@2021.2.0 target=x86_64",
+        "cmake%intel@2021.2.0 target=x86_64",
+        "openmpi@4.0.2%intel@2021.2.0 target=x86_64"
+    ],
+    "compilers": [
+        "intel-oneapi-compilers@2021.2.0 target=x86_64"
+    ]
+}

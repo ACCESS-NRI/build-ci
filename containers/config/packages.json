@@ -1,0 +1,10 @@
+{
+    "$schema": "./packages.schema.json",
+    "packages": [
+
+    ],
+    "compilers": [
+        "intel-oneapi-compilers@2021.2.0 target=x86_64",
+        "intel-oneapi-compilers@2021.4.0 target=x86_64"
+    ]
+}
