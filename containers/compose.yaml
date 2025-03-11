@@ -1,0 +1,34 @@
+name: Spack Instance
+services:
+  upstream:
+    container_name: Upstream
+    image: access-nri/build-ci:upstream-rocky
+    tty: true
+    build:
+      context: .
+      target: upstream
+      args:
+        OS: rocky
+        SPACK_VERSION: v0.22
+        SPACK_CONFIG_DIR: /opt/spack-config/v0.22/ci-upstream
+    volumes:
+      - upstream:/opt/upstream:rw
+
+  runner:
+    container_name: Runner
+    image: access-nri/build-ci:runner-rocky
+    tty: true
+    depends_on:
+    - upstream
+    build:
+      context: .
+      target: runner
+      args:
+        OS: rocky
+        SPACK_VERSION: v0.22
+        SPACK_CONFIG_DIR: /opt/spack-config/v0.22/ci-runner
+    volumes:
+      - upstream:/opt/upstream:ro
+
+volumes:
+  upstream:
