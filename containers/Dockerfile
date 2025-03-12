@@ -15,6 +15,7 @@ ARG OS=rocky
 FROM rockylinux/rockylinux:8.10 AS base-os-rocky
 
 # csh currently required for some build scripts e.g. MOM5
+# yq required for spack manifest modification
 RUN dnf update -y \
  && dnf -y install \
     autoconf \
@@ -53,8 +54,9 @@ RUN dnf update -y \
     xz \
     zstd \
  && rm -rf /var/cache/dnf \
- && dnf clean all
-
+ && dnf clean all \
+ && curl -L https://github.com/mikefarah/yq/releases/download/v4.45.1/yq_linux_amd64 -o /usr/bin/yq \
+ && chmod +x /usr/bin/yq
 
 ################################################################################
 FROM opensuse/leap:15.5 AS base-os-suse
@@ -95,10 +97,9 @@ RUN zypper install -y \
     gpg2 \
     subversion \
     tcsh \
-    vim
-
-
-
+    vim \
+ && curl -L https://github.com/mikefarah/yq/releases/download/v4.45.1/yq_linux_amd64 -o /usr/bin/yq \
+ && chmod +x /usr/bin/yq
 
 ################################################################################
 FROM base-os-$OS AS base-spack
