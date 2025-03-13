@@ -1,6 +1,11 @@
 #!/bin/bash
 
-# !!! This is not an executable! Source this file !!!
+if [ "${BASH_SOURCE[0]}" -ef "$0" ]
+then
+    echo "This script is meant to be sourced, not executed"
+    echo "Usage: . ${BASH_SOURCE[0]}"
+    exit 1
+fi
 
 # This script enables spack as normal, but also loads and finds the installed
 # compilers defined in the build-ci containers/config/packages.json file.
