@@ -171,7 +171,7 @@ FROM base-spack AS upstream
 # Install compilers
 RUN <<EOF
 jq -cr '.compilers[]' "${ENV_PACKAGES_JSON_FILE}" | while read compiler; do
-  spack install $compiler
+  spack install $compiler || exit
   spack load $compiler
   spack compiler find
 done
