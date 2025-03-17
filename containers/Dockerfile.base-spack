@@ -139,17 +139,19 @@ LABEL au.org.access-nri.image.target ${ENV_SPACK_TARGET}
 SHELL ["/bin/bash", "-c"]
 
 # Install spack
-RUN git clone -c feature.manyFiles=true ${SPACK_GIT_URL} ${SPACK_ROOT} --branch ${SPACK_REPO_VERSION}
+RUN <<EOF
+git clone -c feature.manyFiles=true ${SPACK_GIT_URL} ${SPACK_ROOT} --branch ${SPACK_REPO_VERSION}
 
 # Install ACCESS-NRI's spack-packages repo
-RUN git clone  https://github.com/ACCESS-NRI/spack-packages.git /opt/spack-packages --branch ${SPACK_PACKAGES_REPO_VERSION}
+git clone  https://github.com/ACCESS-NRI/spack-packages.git /opt/spack-packages --branch ${SPACK_PACKAGES_REPO_VERSION}
 
 # Install ACCESS-NRI's spack-config repo
-RUN git clone  https://github.com/ACCESS-NRI/spack-config.git /opt/spack-config --branch ${SPACK_CONFIG_REPO_VERSION}
+git clone  https://github.com/ACCESS-NRI/spack-config.git /opt/spack-config --branch ${SPACK_CONFIG_REPO_VERSION}
 
 # Exit with ENOENT 2 "No such file or directory", if the directory does not
 # exist
-RUN if [ -d "${SPACK_CONFIG_DIR}" ]; then ln -s -r -v ${SPACK_CONFIG_DIR}/* ${SPACK_ROOT}/etc/spack/; else echo "${SPACK_CONFIG_DIR} does not exist!"; exit 2; fi
+if [ -d "${SPACK_CONFIG_DIR}" ]; then ln -s -r -v ${SPACK_CONFIG_DIR}/* ${SPACK_ROOT}/etc/spack/; else echo "${SPACK_CONFIG_DIR} does not exist!"; exit 2; fi
+EOF
 
 # Enables setting Spack setup type via SHELL command
 # docker-shell:      Use for build RUN steps
@@ -171,7 +173,10 @@ SHELL ["docker-shell"]
 # i.e. the first time they are needed and can’t be found.
 
 # Install compilers
-RUN spack install ${COMPILER_PKG_NAME}@${COMPILER_PKG_VERSION} target=${SPACK_TARGET}
+RUN <<EOF
+spack install ${COMPILER_PKG_NAME}@${COMPILER_PKG_VERSION} target=${SPACK_TARGET}
+spack clean --downloads
+EOF
 
 
 ################################################################################
@@ -203,18 +208,22 @@ FROM base-spack as dev
 ARG MPI_NAME=openmpi
 ARG MPI_VERSION=4.1.5
 
-RUN spack load ${COMPILER_PKG_NAME}@${COMPILER_PKG_VERSION} \
+RUN <<EOF
+spack load ${COMPILER_PKG_NAME}@${COMPILER_PKG_VERSION} \
  && spack compiler find
 
-RUN spack install \
+spack install \
     gmake %${COMPILER_NAME}@${COMPILER_VERSION} target=${SPACK_TARGET}
 
-RUN spack install \
+spack install \
     cmake %${COMPILER_NAME}@${COMPILER_VERSION} target=${SPACK_TARGET}
 
-RUN spack install \
+spack install \
     ${MPI_NAME}@${MPI_VERSION} %${COMPILER_NAME}@${COMPILER_VERSION} \
     target=${SPACK_TARGET}
+
+spack clean --downloads
+EOF
 
 ENTRYPOINT ["/bin/bash", "/opt/spack/share/spack/docker/entrypoint.bash"]
 CMD ["interactive-shell"]
