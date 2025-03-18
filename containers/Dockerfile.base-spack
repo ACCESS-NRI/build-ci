@@ -60,7 +60,9 @@ RUN dnf update -y \
 FROM opensuse/leap:15.5 as base-os-suse
 
 # csh currently required for some build scripts e.g. MOM5
-RUN zypper install -y \
+RUN zypper ref \
+&&  zypper update -y \
+&&  zypper install -y \
     autoconf \
     automake \
     binutils \
@@ -95,7 +97,8 @@ RUN zypper install -y \
     gpg2 \
     subversion \
     tcsh \
-    vim
+    vim \
+&&  zypper clean
 
 
 ################################################################################
