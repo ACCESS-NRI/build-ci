@@ -168,19 +168,18 @@ SHELL ["docker-shell"]
 # Install compilers and other common packages
 FROM base-spack AS upstream
 
-# Install compilers
+# Install compilers and low-level, common packages
 RUN <<EOF
 jq -cr '.compilers[]' "${ENV_PACKAGES_JSON_FILE}" | while read compiler; do
   spack install $compiler || exit
   spack load $compiler
   spack compiler find
 done
+jq -cr '.packages[]' "${ENV_PACKAGES_JSON_FILE}" | while read package; do
+  spack install $package
+done
+spack clean --downloads
 EOF
-
-# Install low-level, common packages
-RUN if [ -n "$(jq '.packages[]' "${ENV_PACKAGES_JSON_FILE}")" ]; then \
-      spack install $(jq -cr '.packages | join(" ")' ${ENV_PACKAGES_JSON_FILE}); \
-    fi
 
 ################################################################################
 FROM base-spack AS runner
