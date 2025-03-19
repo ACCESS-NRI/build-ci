@@ -4,13 +4,14 @@ name: Spack Instance
 # to reduce duplication in the file
 x-common-args: &common-args
   OS: rocky
-  SPACK_VERSION: v0.22-latest-oneapi
+  SPACK_VERSION: v0.22
   SOURCE_PACKAGES_JSON_FILE: config/packages.json
 
 services:
   upstream:
     container_name: Upstream
     image: access-nri/build-ci:upstream-rocky
+    tty: true
     build:
       context: .
       target: upstream
