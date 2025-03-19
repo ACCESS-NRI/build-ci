@@ -4,7 +4,7 @@ name: Spack Instance
 # to reduce duplication in the file
 x-common-args: &common-args
   OS: rocky
-  SPACK_VERSION: v0.22-latest-oneapi
+  SPACK_VERSION: v0.22
   SPACK_CONFIG_REPO_VERSION: 2025.03.0
   SOURCE_PACKAGES_JSON_FILE: config/dev.packages.json
 
