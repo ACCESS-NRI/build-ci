@@ -181,7 +181,7 @@ jq -cr '.compilers[]' "${ENV_PACKAGES_JSON_FILE}" | while read compiler; do
   spack compiler find
 done
 jq -cr '.packages[]' "${ENV_PACKAGES_JSON_FILE}" | while read package; do
-  spack install $package
+  spack install --fresh $package
 done
 spack clean --downloads
 EOF
