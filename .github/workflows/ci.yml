@@ -114,6 +114,7 @@ jobs:
 
       - name: Install spack environment
         id: install
+        # FIXME: Find an elegant way to install compiler packages if requested ones do not exist: see ACCESS-NRI/build-ci#199
         run: |
           spack env activate --create --prompt --envfile ${{ inputs.spack-manifest-path }}
 
