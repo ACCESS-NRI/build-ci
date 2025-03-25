@@ -1,0 +1,129 @@
+name: CI
+run-name: CI Test ${{ github.repository }} at ${{ github.event.number }} (${{ github.sha }})
+on:
+  workflow_call:
+    inputs:
+      spack-manifest-path:
+        required: true
+        type: string
+        description: |
+          A file path in the caller model component repository that contains the spack manifest to install.
+          For example: .github/build/manifests/access-om2.spack.yaml.
+      spack-config-ref:
+        required: false
+        type: string
+        default: main
+        description: |
+          The branch, tag, or commit SHA of the access-nri/spack-config repository to use.
+          For example: main, 2025.03.0, 7ey2uy2.
+      spack-packages-ref:
+        required: false
+        type: string
+        default: main
+        description: |
+          The branch, tag, or commit SHA of the access-nri/spack-packages repository to use.
+          For example: main, 2025.03.0, 7ey2uy2.
+      spack-ref:
+        required: false
+        type: string
+        default: main
+        description: |
+          The branch, tag, or commit SHA of the access-nri/spack repository to use.
+          For example: develop, releases/0.22, 7ey2uy2.
+      pytest-test-markers:
+        required: false
+        type: string
+        description: |
+          A string of pytest markers to use to filter tests in the caller model component repository's .github/build/tests directory.
+          For example: "not slow and not mpi".
+      allow-ssh-into-spack-install:
+        required: false
+        type: boolean
+        default: false
+        description: |
+          Enable the actor of the workflow to SSH into the container where the spack packages have been installed.
+          This is useful for gathering post-install information before the container is destroyed.
+          This will also make the workflow wait until the actor SSHs into the container, or it times out, before continuing.
+    outputs:
+      spec-concretization-graph:
+        value: ${{jobs.spack-install-and-test.outputs.spec-concretization-graph }}
+        description: |
+          A visual representation of the dependencies and constraints of the spack manifest file installed.
+      # test-artifact-url:
+      #   value: ${{}}
+      #   description: |
+      #     The URL of the pytest result artifact.
+jobs:
+  spack-install-and-test:
+    name: Install and Test
+    runs-on: self-hosted  # FIXME: This will be the group of self-hosted runners for build-ci
+    container:
+      image: ghcr.io/access-nri/spack-ci:runner-rocky  # FIXME: Determine image name, and if it has to be rebuilt during this stage of ci
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GHCR_PASSWORD }}  # FIXME: Set appropriate PAT
+      volumes:
+        - upstream:/opt/upstream:ro  # FIXME: Validate connection via container -> runner -> upstream pod
+    outputs:
+      spec-concretization-graph: ${{ steps.install.outputs.spec }}
+      # test-artifact-url: ${{ steps.test.outputs.artifact-url }}
+    steps:
+      - name: Update spack-package version
+        # FIXME: Verify if environment variables defined in the container are accessible in the if condition
+        if: env.SPACK_REPO_VERSION != inputs.spack-packages-ref
+        run: |
+          git -C $SPACK_ROOT/../spack-packages fetch
+          git -C $SPACK_ROOT/../spack-packages checkout origin/$SPACK_REPO_VERSION
+
+      - name: Update spack-config version
+        if: env.SPACK_CONFIG_REPO_VERSION != inputs.spack-config-ref
+        id: spack-config-update
+        run: |
+          git -C $SPACK_ROOT/../spack-config fetch
+          git -C $SPACK_ROOT/../spack-config checkout origin/$SPACK_CONFIG_REPO_VERSION
+
+      - name: Update spack version
+        if: env.SPACK_VERSION != inputs.spack-ref
+        id: spack-update
+        run: |
+          git -C $SPACK_ROOT fetch
+          git -C $SPACK_ROOT checkout origin/$SPACK_VERSION
+
+      - name: Relink spack-config to spack
+        if: steps.spack-config-update.conclusion == 'success' || steps.spack-update.conclusion == 'success'
+        run: ln --symbolic --relative --verbose --force ${SPACK_CONFIG_DIR}/* ${SPACK_ROOT}/etc/spack/
+
+      - name: Checkout ${{ github.repository }}
+        uses: actions/checkout@v4
+
+      - name: Enable ci version of spack
+        run: . $SPACK_CONFIG_DIR/ci-spack-enable.bash
+
+      - name: Install spack environment
+        id: install
+        run: |
+          spack env activate --create --prompt --envfile ${{ inputs.spack-manifest-path }}
+
+          echo "spec<<EOF" >> $GITHUB_OUTPUT
+          echo "$(spack spec)" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+          spack --debug install --fail-fast --fresh
+
+      - name: Setup tmate session
+        if: inputs.allow-ssh-into-spack-install == 'true'
+        uses: mxschmitt/action-tmate@e5c7151931ca95bad1c6f4190c730ecf8c7dde48  # v3.19
+        with:
+          # sudo is not accessible in this container
+          sudo: false
+          # allow future steps to run without awaiting tmate session close
+          detached: true
+          # Only allow actor to access the tmate session
+          limit-access-to-actor: true
+
+      # TODO: Add pytest infrastructure
+      # - name: Run pytests
+      #   id: test
+      #   run: |
+      #     python -m pytest -v -m "${{ inputs.pytest-test-markers }}" --junitxml=pytest.xml
+      #     echo "pytest=$(cat pytest.xml)" >> $GITHUB_OUTPUT
