@@ -58,7 +58,7 @@ jobs:
     name: Install and Test
     runs-on: self-hosted  # FIXME: This will be the group of self-hosted runners for build-ci
     container:
-      image: ghcr.io/access-nri/spack-ci:runner-rocky  # FIXME: Determine image name, and if it has to be rebuilt during this stage of ci
+      image: ghcr.io/access-nri/spack-ci:runner-rocky
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GHCR_PASSWORD }}  # FIXME: Set appropriate PAT
@@ -68,26 +68,39 @@ jobs:
       spec-concretization-graph: ${{ steps.install.outputs.spec }}
       # test-artifact-url: ${{ steps.test.outputs.artifact-url }}
     steps:
-      - name: Update spack-package version
-        # FIXME: Verify if environment variables defined in the container are accessible in the if condition
-        if: env.SPACK_REPO_VERSION != inputs.spack-packages-ref
+      - name: Export environment variables into GitHub Actions format
+        # Environment variables inside containers are not accessible in the `env` context,
+        # a context which would be used in future conditional steps.
+        # This step exports important container environment variables as outputs.
+        id: env
         run: |
-          git -C $SPACK_ROOT/../spack-packages fetch
-          git -C $SPACK_ROOT/../spack-packages checkout origin/$SPACK_REPO_VERSION
+          echo "SPACK_ROOT=$SPACK_ROOT" >> $GITHUB_OUTPUT
+          echo "SPACK_VERSION=$SPACK_VERSION" >> $GITHUB_OUTPUT
+          echo "SPACK_CONFIG_REPO_VERSION=$SPACK_CONFIG_REPO_VERSION" >> $GITHUB_OUTPUT
+          echo "SPACK_PACKAGES_REPO_VERSION=$SPACK_PACKAGES_REPO_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Update spack-package version
+        if: steps.env.outputs.SPACK_PACKAGES_REPO_VERSION != inputs.spack-packages-ref
+        uses: ./.github/actions/git-checkout-updated-ref
+        with:
+          repository-path: ${{ steps.env.outputs.SPACK_ROOT }}/../spack-packages
+          ref: ${{ inputs.spack-packages-ref }}
 
       - name: Update spack-config version
-        if: env.SPACK_CONFIG_REPO_VERSION != inputs.spack-config-ref
+        if: steps.env.outputs.SPACK_CONFIG_REPO_VERSION != inputs.spack-config-ref
         id: spack-config-update
-        run: |
-          git -C $SPACK_ROOT/../spack-config fetch
-          git -C $SPACK_ROOT/../spack-config checkout origin/$SPACK_CONFIG_REPO_VERSION
+        uses: ./.github/actions/git-checkout-updated-ref
+        with:
+          repository-path: ${{ steps.env.outputs.SPACK_ROOT }}/../spack-config
+          ref: ${{ inputs.spack-config-ref }}
 
       - name: Update spack version
-        if: env.SPACK_VERSION != inputs.spack-ref
+        if: steps.env.outputs.SPACK_VERSION != inputs.spack-ref
         id: spack-update
-        run: |
-          git -C $SPACK_ROOT fetch
-          git -C $SPACK_ROOT checkout origin/$SPACK_VERSION
+        uses: ./.github/actions/git-checkout-updated-ref
+        with:
+          repository-path: ${{ steps.env.outputs.SPACK_ROOT }}
+          ref: ${{ inputs.spack-ref }}
 
       - name: Relink spack-config to spack
         if: steps.spack-config-update.conclusion == 'success' || steps.spack-update.conclusion == 'success'
