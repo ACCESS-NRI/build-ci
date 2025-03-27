@@ -12,7 +12,7 @@ on:
       ref:
         required: false
         type: string
-        default: ${{ github.ref }}
+        default: ${{ github.sha }}
         description: |
           The branch, tag, or commit SHA of the caller model component repository.
           For example: main, 2025.03.0, 7ey2uy2.
