@@ -9,6 +9,12 @@ on:
         description: |
           A file path in the caller model component repository that contains the spack manifest to install.
           For example: .github/build/manifests/access-om2.spack.yaml.
+      spack-compiler-manifest-path:
+        required: false
+        type: string
+        description: |
+          A file path in the caller model component repository that contains the spack manifest to install local compilers not in the upstream.
+          For example: .github/build/manifests/compilers.spack.yaml.
       ref:
         required: false
         type: string
@@ -147,6 +153,19 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: ${{ inputs.ref }}
+
+      - name: Manifest - Install Compilers Locally
+        # Some compilers may not be available upstream, so we install them locally in a separate spack.yaml
+        if: inputs.spack-compiler-manifest-path != ''
+        run: |
+          spack env activate compilers --create --prompt --envfile ${{ inputs.spack-compiler-manifest-path }}
+          spack --debug install --fail-fast
+          spack env deactivate
+          yq '.spack.specs[]' ${{ inputs.spack-compiler-manifest-path }} | while read compiler; do
+            spack load $compiler
+          done
+          spack compiler find
+          spack compiler list
 
       - name: Manifest - Replace usages of __REF__ with ${{ inputs.ref }}
         # This means that the caller manifest files can remain unchanged, but still vary based on the ref
