@@ -72,6 +72,10 @@ on:
         value: ${{ jobs.spack-install-and-test.outputs.sha }}
         description: |
           The SHA of the caller model component repository checked out.
+      spack-files-artifact-url:
+        value: ${{ jobs.spack-install-and-test.outputs.spack-files-artifact-url }}
+        description: |
+          The URL of the spack manifest and lock files artifact.
       # test-artifact-url:
       #   value: ${{}}
       #   description: |
@@ -93,6 +97,7 @@ jobs:
       spack-config-sha: ${{ steps.spack-config-update.outputs.sha }}
       spack-packages-sha: ${{ steps.spack-packages-update.outputs.sha }}
       sha: ${{ steps.checkout.outputs.commit }}
+      spack-files-artifact-url: ${{ steps.upload.outputs.artifact-url }}
       # test-artifact-url: ${{ steps.test.outputs.artifact-url }}
     steps:
       - name: Export environment variables into GitHub Actions format
@@ -158,6 +163,15 @@ jobs:
           echo "EOF" >> $GITHUB_OUTPUT
 
           spack --debug install --fail-fast --fresh
+
+      - name: Manifest - Upload
+        id: upload
+        # Upload spack manifest and lock files
+        uses: actions/upload-artifact@v4
+        with:
+          name: spack-files-${{ job.container.id }}
+          path: ${{ steps.env.outputs.SPACK_ROOT }}/environments/default/spack.*
+          if-no-files-found: error
 
       - name: Setup tmate session
         if: inputs.allow-ssh-into-spack-install == 'true'
