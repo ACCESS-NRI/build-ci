@@ -1,0 +1,12 @@
+spack:
+  specs:
+  - gmake%intel@2021.10.0 target=x86_64
+  - cmake%intel@2021.10.0 target=x86_64
+  - openmpi@4.1.5%intel@2021.10.0 target=x86_64
+
+  - gmake%oneapi@2025.0.4 target=x86_64
+  - cmake%oneapi@2025.0.4 target=x86_64
+  - openmpi@4.1.5%oneapi@2025.0.4 target=x86_64
+  view: false
+  concretizer:
+    unify: false
