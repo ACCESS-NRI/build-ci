@@ -163,8 +163,8 @@ jobs:
           spack env deactivate
           yq '.spack.specs[]' ${{ inputs.spack-compiler-manifest-path }} | while read compiler; do
             spack load $compiler
+            spack compiler find
           done
-          spack compiler find
           spack compiler list
 
       - name: Manifest - Replace usages of __REF__ with ${{ inputs.ref }}
