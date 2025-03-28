@@ -117,12 +117,12 @@ jobs:
         # Environment variables inside containers are not accessible in the `env` context,
         # a context which would be used in future conditional steps.
         # This step exports important container environment variables as outputs.
+        # And yes, this loop echoes name-of-var=value-of-var!
         id: env
         run: |
-          echo "SPACK_ROOT=$SPACK_ROOT" >> $GITHUB_OUTPUT
-          echo "SPACK_VERSION=$SPACK_VERSION" >> $GITHUB_OUTPUT
-          echo "SPACK_CONFIG_REPO_VERSION=$SPACK_CONFIG_REPO_VERSION" >> $GITHUB_OUTPUT
-          echo "SPACK_PACKAGES_REPO_VERSION=$SPACK_PACKAGES_REPO_VERSION" >> $GITHUB_OUTPUT
+          for var in SPACK_ROOT SPACK_VERSION SPACK_CONFIG_REPO_VERSION SPACK_PACKAGES_REPO_VERSION; do
+            echo "$var=${!var}" >> $GITHUB_OUTPUT
+          done
 
       - name: Update spack-package version
         if: steps.env.outputs.SPACK_PACKAGES_REPO_VERSION != inputs.spack-packages-ref
