@@ -7,8 +7,15 @@ on:
         required: true
         type: string
         description: |
-          A file path in the caller model component repository that contains the spack manifest to install.
-          For example: .github/build/manifests/access-om2.spack.yaml.
+          A file path in the caller model component repository that contains the spack manifest template to install.
+          For example: .github/build/manifests/template/access-om2.spack.yaml.j2.
+      spack-manifest-data-path:
+        required: false
+        type: string
+        description: |
+          An optional file path in the caller model component repository that contains data to fill in the spack manifest jinja template.
+          This doesn't include {{ pr }}, which is filled in automatically.
+          For example: .github/build/manifests/data/access-om2.spack.yaml.j2.json.
       spack-compiler-manifest-path:
         required: false
         type: string
@@ -167,15 +174,28 @@ jobs:
           done
           spack compiler list
 
-      - name: Manifest - Replace usages of __REF__ with ${{ inputs.ref }}
-        # This means that the caller manifest files can remain unchanged, but still vary based on the ref
-        run: sed -i "s/__REF__/${{ inputs.ref }}/g" ${{ inputs.spack-manifest-path }}
+      - name: Manifest - Pip install jinja-cli for templating
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Manifest - Replace jinja template variables
+        # This means that the caller manifest files can remain unchanged, but still vary based on the {{ pr }}
+        # Additional data can be provided to fill in the jinja template through the `spack-manifest-data-path` input
+        id: jinja-templated
+        run: |
+          templated_manifest_path=$(dirname ${{ inputs.spack-manifest-path }})/$(basename ${{ inputs.spack-manifest-path }} .j2)
+          jinja \
+            -D pr ${{ inputs.ref }} \
+            ${{ inputs.spack-manifest-data-path != '' && format('-d {0}', inputs.spack-manifest-data-path) || '' }} \
+            > $templated_manifest_path
+
+          echo "spack-manifest-path=$templated_manifest_path" >> $GITHUB_OUTPUT
 
       - name: Manifest - Install
         id: install
-        # FIXME: Find an elegant way to install compiler packages if requested ones do not exist: see ACCESS-NRI/build-ci#199
         run: |
-          spack env activate --create --prompt --envfile ${{ inputs.spack-manifest-path }}
+          spack env activate --create --prompt --envfile ${{ steps.jinja-templated.outputs.spack-manifest-path }}
 
           echo "spec<<EOF" >> $GITHUB_OUTPUT
           echo "$(spack spec)" >> $GITHUB_OUTPUT
