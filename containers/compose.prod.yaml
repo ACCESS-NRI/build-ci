@@ -5,9 +5,8 @@ name: Spack Instance
 x-common-args: &common-args
   OS: rocky
   SPACK_VERSION: v0.22
-  SPACK_CONFIG_REPO_VERSION: 2025.03.0
-  SOURCE_PACKAGES_JSON_FILE: config/dev.packages.json
-
+  SOURCE_COMPILERS_SPACK_MANIFEST: upstream/prod/compilers.spack.yaml
+  SOURCE_PACKAGES_SPACK_MANIFEST: upstream/prod/packages.spack.yaml
 services:
   upstream:
     container_name: Upstream
@@ -20,7 +19,7 @@ services:
         <<: *common-args
         SPACK_CONFIG_DIR: /opt/spack-config/v0.22/ci-upstream
     volumes:
-      - dev-upstream:/opt/upstream:rw
+      - upstream:/opt/upstream:rw
 
   runner:
     container_name: Runner
@@ -35,7 +34,7 @@ services:
         <<: *common-args
         SPACK_CONFIG_DIR: /opt/spack-config/v0.22/ci-runner
     volumes:
-      - dev-upstream:/opt/upstream:ro
+      - upstream:/opt/upstream:ro
 
 volumes:
-  dev-upstream:
+  upstream:
