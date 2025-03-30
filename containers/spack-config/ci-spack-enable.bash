@@ -8,19 +8,17 @@ then
 fi
 
 # This script enables spack as normal, but also loads and finds the installed
-# compilers defined in the build-ci containers/config/packages.json file.
+# compilers defined in the build-ci containers/upstream/*/compilers.spack.yaml file.
 
-# See ACCESS-NRI/build-cd: containers/config/[dev.]packages.json
-upstream_packages_file="${ENV_PACKAGES_JSON_FILE:-/opt/packages.json}"
+# See ACCESS-NRI/build-cd: containers/upstream/[dev|prod]/compilers.spack.yaml
+upstream_packages_file="${ENV_COMPILERS_SPACK_MANIFEST:-/opt/compilers.spack.yaml}"
 
 # shellcheck source=/dev/null
 . "$(dirname "${BASH_SOURCE[0]}")/spack-enable.bash"
 
 echo "Loading compilers from $upstream_packages_file..."
-# shellcheck disable=SC2046
-spack load $(jq -cr '.compilers | join(" ")' "$upstream_packages_file") || exit
+yq '.spack.specs[]' "$upstream_packages_file" | while read -r compiler; do
+  spack load "$compiler" || exit
+  spack compiler find
+done
 echo "Compilers loaded."
-
-echo "Finding compilers..."
-spack compiler find || exit
-echo "Compilers found."
