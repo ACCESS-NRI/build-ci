@@ -177,7 +177,7 @@ jobs:
       - name: Manifest - Pip install jinja-cli for templating
         uses: actions/setup-python@v5
         with:
-          python-version: '3.13'
+          python-version: '3.11'
 
       - name: Manifest - Replace jinja template variables
         # This means that the caller manifest files can remain unchanged, but still vary based on the {{ pr }}
@@ -186,8 +186,9 @@ jobs:
         run: |
           templated_manifest_path=$(dirname ${{ inputs.spack-manifest-path }})/$(basename ${{ inputs.spack-manifest-path }} .j2)
           jinja \
-            -D pr ${{ inputs.ref }} \
-            ${{ inputs.spack-manifest-data-path != '' && format('-d {0}', inputs.spack-manifest-data-path) || '' }} \
+            --define pr ${{ inputs.ref }} \
+            ${{ inputs.spack-manifest-data-path != '' && format('--data {0}', inputs.spack-manifest-data-path) || '' }} \
+            ${{ inputs.spack-manifest-path}} \
             > $templated_manifest_path
 
           echo "spack-manifest-path=$templated_manifest_path" >> $GITHUB_OUTPUT
