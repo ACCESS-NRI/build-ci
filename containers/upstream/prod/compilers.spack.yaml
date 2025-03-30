@@ -1,0 +1,9 @@
+# This spack manifest installs compilers in the upstream image for use in local spack installations.
+# This is installed before packages.spack.yaml to ensure that the compilers are available for package installation.
+spack:
+  specs:
+  - intel-oneapi-compilers@2023.2.4 target=x86_64
+  - intel-oneapi-compilers@2025.0.4 target=x86_64
+  view: false
+  concretizer:
+    unify: false
