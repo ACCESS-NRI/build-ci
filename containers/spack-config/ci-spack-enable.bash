@@ -11,13 +11,13 @@ fi
 # compilers defined in the build-ci containers/upstream/*/compilers.spack.yaml file.
 
 # See ACCESS-NRI/build-cd: containers/upstream/[dev|prod]/compilers.spack.yaml
-upstream_packages_file="${ENV_COMPILERS_SPACK_MANIFEST:-/opt/compilers.spack.yaml}"
+upstream_compilers_file="${ENV_COMPILERS_SPACK_MANIFEST:-/opt/compilers.spack.yaml}"
 
 # shellcheck source=/dev/null
 . "$(dirname "${BASH_SOURCE[0]}")/spack-enable.bash"
 
-echo "Loading compilers from $upstream_packages_file..."
-yq '.spack.specs[]' "$upstream_packages_file" | while read -r compiler; do
+echo "Loading compilers from $upstream_compilers_file..."
+yq '.spack.specs[]' "$upstream_compilers_file" | while read -r compiler; do
   spack load "$compiler" || exit
   spack compiler find
 done
