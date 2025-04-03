@@ -2,9 +2,10 @@ spack:
   definitions:
     # List of packages to install in the upstream spack
     - packages:
-      - gmake
-      - cmake
-      - openmpi
+      - gmake@4.4.1
+      - cmake@3.24.4
+      - openmpi@4.1.5
+      - openmpi@5.0.7
 
     # Compilers to install the packages
     - compilers:
@@ -22,6 +23,7 @@ spack:
     - [$targets]
   # Further specs can be installed in the usual way below, eg:
   # - gmake%intel@2021.10.0 target=x86_64
+  - python@3.11.7 %gcc@8.5.0 target=x86_64
   view: false  # No view required as these upstream packages are not loaded by users
   concretizer:
     unify: false  # No need to unify because there are combinations of the same package
