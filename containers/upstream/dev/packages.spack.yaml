@@ -2,9 +2,10 @@ spack:
   definitions:
     # List of packages to install in the upstream spack
     - packages:
-      - gmake
-      - cmake
-      - openmpi
+      - gmake@4.4.1
+      - cmake@3.24.4
+      - openmpi@4.1.5
+      - openmpi@5.0.7
 
     # Compilers to install the packages
     - compilers:
