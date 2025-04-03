@@ -176,7 +176,7 @@ RUN <<EOF
 echo "Installing compilers"
 spack env activate compilers --create --envfile ${ENV_COMPILERS_SPACK_MANIFEST}
 spack spec
-spack --debug install --fail-fast || exit
+spack install --fail-fast || exit
 spack env deactivate
 yq '.spack.specs[]' "${ENV_COMPILERS_SPACK_MANIFEST}" | while read compiler; do
   echo "Loading compiler: $compiler"
@@ -186,7 +186,7 @@ done
 
 echo "Installing common packages"
 spack env activate packages --create --envfile ${ENV_PACKAGES_SPACK_MANIFEST}
-spack --debug install --fail-fast || exit
+spack install --fail-fast || exit
 spack env deactivate
 
 spack clean --downloads
