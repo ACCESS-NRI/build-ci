@@ -111,12 +111,14 @@ ARG SPACK_PACKAGES_REPO_VERSION=main
 ARG SPACK_CONFIG_REPO_VERSION=main
 ARG SPACK_TARGET=x86_64
 ARG SPACK_CONFIG_DIR=/opt/spack-config/${SPACK_VERSION}/ci
-ARG SOURCE_PACKAGES_JSON_FILE=config/packages.json
+ARG SOURCE_COMPILERS_SPACK_MANIFEST=upstream/prod/compilers.spack.yaml
+ARG SOURCE_PACKAGES_SPACK_MANIFEST=upstream/prod/packages.spack.yaml
 
 ENV SPACK_ROOT=/opt/spack
 ENV GNUPGHOME=${SPACK_ROOT}/opt/spack/gpg
 ENV ENV_SPACK_TARGET=${SPACK_TARGET}
-ENV ENV_PACKAGES_JSON_FILE=/opt/packages.json
+ENV ENV_COMPILERS_SPACK_MANIFEST=/opt/compilers.spack.yaml
+ENV ENV_PACKAGES_SPACK_MANIFEST=/opt/packages.spack.yaml
 
 # TODO: Ideally we want spack-enable.bash to be the only source of these
 #       definitions. See if spack-enable.bash can be used instead.
@@ -155,7 +157,8 @@ RUN ln -s ${SPACK_ROOT}/share/spack/docker/entrypoint.bash \
     ln -s ${SPACK_ROOT}/share/spack/docker/entrypoint.bash \
     /usr/local/bin/spack-env
 
-COPY ${SOURCE_PACKAGES_JSON_FILE} ${ENV_PACKAGES_JSON_FILE}
+COPY ${SOURCE_COMPILERS_SPACK_MANIFEST} ${ENV_COMPILERS_SPACK_MANIFEST}
+COPY ${SOURCE_PACKAGES_SPACK_MANIFEST} ${ENV_PACKAGES_SPACK_MANIFEST}
 
 # Setup Spack environment for subsequent RUN steps
 SHELL ["docker-shell"]
@@ -170,14 +173,22 @@ FROM base-spack AS upstream
 
 # Install compilers and low-level, common packages
 RUN <<EOF
-jq -cr '.compilers[]' "${ENV_PACKAGES_JSON_FILE}" | while read compiler; do
-  spack install $compiler || exit
+echo "Installing compilers"
+spack env activate compilers --create --envfile ${ENV_COMPILERS_SPACK_MANIFEST}
+spack spec
+spack install --fail-fast || exit
+spack env deactivate
+yq '.spack.specs[]' "${ENV_COMPILERS_SPACK_MANIFEST}" | while read compiler; do
+  echo "Loading compiler: $compiler"
   spack load $compiler
   spack compiler find
 done
-jq -cr '.packages[]' "${ENV_PACKAGES_JSON_FILE}" | while read package; do
-  spack install --fresh $package
-done
+
+echo "Installing common packages"
+spack env activate packages --create --envfile ${ENV_PACKAGES_SPACK_MANIFEST}
+spack install --fail-fast || exit
+spack env deactivate
+
 spack clean --downloads
 EOF
 
