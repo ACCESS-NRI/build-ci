@@ -96,7 +96,7 @@ on:
 jobs:
   spack-install-and-test:
     name: Install and Test
-    runs-on: self-hosted  # FIXME: This will be the group of self-hosted runners for build-ci
+    runs-on: test-build-ci-runners  # FIXME: This will be the group of self-hosted runners for build-ci
     container:
       image: ghcr.io/access-nri/build-ci:runner-rocky
       credentials:
