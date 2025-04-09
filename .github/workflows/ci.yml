@@ -100,9 +100,6 @@ jobs:
       group: test-build-ci # FIXME: This will be the group of self-hosted runners for build-ci
     container:
       image: ghcr.io/access-nri/build-ci:runner-rocky
-      credentials:
-        username: ${{ github.actor }}
-        password: ${{ secrets.GHCR_PASSWORD }}  # FIXME: Set appropriate PAT
       volumes:
         - upstream:/opt/upstream:ro  # FIXME: Validate connection via container -> runner -> upstream pod
     outputs:
