@@ -123,15 +123,20 @@ ENV ENV_SPACK_TARGET=${SPACK_TARGET}
 ENV ENV_COMPILERS_SPACK_MANIFEST=/opt/compilers.spack.yaml
 ENV ENV_PACKAGES_SPACK_MANIFEST=/opt/packages.spack.yaml
 
+# Export the repo versions for comparison in the runner target
+ENV SPACK_PACKAGES_REPO_VERSION=${SPACK_PACKAGES_REPO_VERSION}
+ENV SPACK_CONFIG_REPO_VERSION=${SPACK_CONFIG_REPO_VERSION}
+ENV SPACK_REPO_VERSION=${SPACK_REPO_VERSION}
+
 # TODO: Ideally we want spack-enable.bash to be the only source of these
 #       definitions. See if spack-enable.bash can be used instead.
 # NOTE: In the meantime, keep in-sync with spack-config/spack-enable.bash
 ENV SPACK_DISABLE_LOCAL_CONFIG="true"
 ENV SPACK_USER_CACHE_PATH=${SPACK_ROOT}/..
 
-LABEL au.org.access-nri.image.spack-repo-version ${SPACK_REPO_VERSION}
-LABEL au.org.access-nri.image.spack-packages-repo-version ${SPACK_PACKAGES_REPO_VERSION}
-LABEL au.org.access-nri.image.spack-config-repo-version ${SPACK_CONFIG_REPO_VERSION}
+LABEL au.org.access-nri.image.spack-repo-version=${SPACK_REPO_VERSION}
+LABEL au.org.access-nri.image.spack-packages-repo-version=${SPACK_PACKAGES_REPO_VERSION}
+LABEL au.org.access-nri.image.spack-config-repo-version=${SPACK_CONFIG_REPO_VERSION}
 
 SHELL ["/bin/bash", "-c"]
 
@@ -176,6 +181,8 @@ SHELL ["docker-shell"]
 # Install compilers and other common packages
 FROM base-spack AS upstream
 
+LABEL org.opencontainers.image.source=https://github.com/ACCESS-NRI/build-ci
+
 # Install compilers and low-level, common packages
 RUN <<EOF
 echo "Installing compilers"
@@ -199,6 +206,8 @@ EOF
 
 ################################################################################
 FROM base-spack AS runner
+
+LABEL org.opencontainers.image.source=https://github.com/ACCESS-NRI/build-ci
 
 # Set up ACCESS Spack buildcache
 RUN pip3 install --no-cache-dir boto3==1.23.10
