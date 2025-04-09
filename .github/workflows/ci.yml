@@ -125,7 +125,7 @@ jobs:
       - name: Update spack-package version
         if: steps.env.outputs.SPACK_PACKAGES_REPO_VERSION != inputs.spack-packages-ref
         id: spack-packages-update
-        uses: ./.github/actions/git-checkout-updated-ref
+        uses: access-nri/build-ci/.github/actions/git-checkout-updated-ref@build-ci-2.0
         with:
           repository-path: ${{ steps.env.outputs.SPACK_ROOT }}/../spack-packages
           ref: ${{ inputs.spack-packages-ref }}
@@ -133,7 +133,7 @@ jobs:
       - name: Update spack-config version
         if: steps.env.outputs.SPACK_CONFIG_REPO_VERSION != inputs.spack-config-ref
         id: spack-config-update
-        uses: ./.github/actions/git-checkout-updated-ref
+        uses: access-nri/build-ci/.github/actions/git-checkout-updated-ref@build-ci-2.0
         with:
           repository-path: ${{ steps.env.outputs.SPACK_ROOT }}/../spack-config
           ref: ${{ inputs.spack-config-ref }}
@@ -141,7 +141,7 @@ jobs:
       - name: Update spack version
         if: steps.env.outputs.SPACK_VERSION != inputs.spack-ref
         id: spack-update
-        uses: ./.github/actions/git-checkout-updated-ref
+        uses: access-nri/build-ci/.github/actions/git-checkout-updated-ref@build-ci-2.0
         with:
           repository-path: ${{ steps.env.outputs.SPACK_ROOT }}
           ref: ${{ inputs.spack-ref }}
