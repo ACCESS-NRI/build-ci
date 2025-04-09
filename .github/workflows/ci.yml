@@ -118,7 +118,7 @@ jobs:
         # And yes, this loop echoes name-of-var=value-of-var!
         id: env
         run: |
-          for var in SPACK_ROOT SPACK_VERSION SPACK_CONFIG_REPO_VERSION SPACK_PACKAGES_REPO_VERSION; do
+          for var in SPACK_ROOT SPACK_CONFIG_DIR SPACK_REPO_VERSION SPACK_CONFIG_REPO_VERSION SPACK_PACKAGES_REPO_VERSION; do
             echo "$var=${!var}" >> $GITHUB_OUTPUT
           done
 
@@ -139,7 +139,7 @@ jobs:
           ref: ${{ inputs.spack-config-ref }}
 
       - name: Update spack version
-        if: steps.env.outputs.SPACK_VERSION != inputs.spack-ref
+        if: steps.env.outputs.SPACK_REPO_VERSION != inputs.spack-ref
         id: spack-update
         uses: access-nri/build-ci/.github/actions/git-checkout-updated-ref@build-ci-2.0
         with:
@@ -148,10 +148,10 @@ jobs:
 
       - name: Relink spack-config to spack
         if: steps.spack-config-update.conclusion == 'success' || steps.spack-update.conclusion == 'success'
-        run: ln --symbolic --relative --verbose --force ${SPACK_CONFIG_DIR}/* ${SPACK_ROOT}/etc/spack/
+        run: ln --symbolic --relative --verbose --force ${{ steps.env.outputs.SPACK_CONFIG_DIR }}/* ${{ steps.env.outputs.SPACK_ROOT }}/etc/spack/
 
       - name: Spack - Enable
-        run: . $SPACK_CONFIG_DIR/ci-spack-enable.bash
+        run: . ${{ steps.env.outputs.SPACK_ROOT }}/../spack-config/ci-spack-enable.bash
 
       - name: Manifest - Checkout ${{ github.repository }}
         id: checkout

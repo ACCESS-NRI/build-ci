@@ -128,6 +128,9 @@ ENV SPACK_PACKAGES_REPO_VERSION=${SPACK_PACKAGES_REPO_VERSION}
 ENV SPACK_CONFIG_REPO_VERSION=${SPACK_CONFIG_REPO_VERSION}
 ENV SPACK_REPO_VERSION=${SPACK_REPO_VERSION}
 
+# Export the spack config directory for the runner target
+ENV SPACK_CONFIG_DIR=${SPACK_CONFIG_DIR}
+
 # TODO: Ideally we want spack-enable.bash to be the only source of these
 #       definitions. See if spack-enable.bash can be used instead.
 # NOTE: In the meantime, keep in-sync with spack-config/spack-enable.bash
