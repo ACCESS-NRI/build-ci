@@ -101,7 +101,7 @@ jobs:
     container:
       image: ghcr.io/access-nri/build-ci-runner:rocky
       volumes:
-        - upstream:/opt/upstream:ro  # FIXME: Validate connection via container -> runner -> upstream pod
+        - /opt/upstream:/opt/upstream:ro  # FIXME: Validate connection via container -> runner -> upstream pod
     outputs:
       spec-concretization-graph: ${{ steps.install.outputs.spec }}
       spack-sha: ${{ steps.spack-update.outputs.sha }}
