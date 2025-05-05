@@ -178,6 +178,9 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Manifest - Install jinja-cli
+        run: pip install jinja-cli==1.2.2
+
       - name: Manifest - Replace jinja template variables
         # This means that the caller manifest files can remain unchanged, but still vary based on the {{ pr }}
         # Additional data can be provided to fill in the jinja template through the `spack-manifest-data-path` input
