@@ -1,6 +1,6 @@
 {
     "access-om2": ["libaccessom2", "mom5", "cice5", "oasis3-mct"],
-    "access-om3": ["access-om3"],
+    "access-om3": ["access3", "access3-share", "access-cice", "access-mom6", "access-ww3", "access-generic-tracers"],
     "access-esm1.5": ["dummygrib", "cice4"],
     "cable": ["cable"]
 }
