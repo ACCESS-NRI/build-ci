@@ -104,6 +104,7 @@ jobs:
         - /opt/upstream:/opt/upstream:ro  # FIXME: Validate connection via container -> runner -> upstream pod
         - /opt/release:/opt/release:rw
         - /opt/stage:/tmp/root/spack-stage:rw
+        - /opt/sourcecache:/opt/sourcecache:rw
     outputs:
       spec-concretization-graph: ${{ steps.install.outputs.spec }}
       spack-sha: ${{ steps.spack-update.outputs.sha }}
