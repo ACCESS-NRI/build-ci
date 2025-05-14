@@ -156,7 +156,9 @@ jobs:
         run: ln --symbolic --relative --verbose --force ${{ steps.env.outputs.SPACK_CONFIG_DIR }}/* ${{ steps.env.outputs.SPACK_ROOT }}/etc/spack/
 
       - name: Spack - Initial Enable + Compiler Load
-        run: . ${{ steps.env.outputs.SPACK_ROOT }}/../spack-config/ci-spack-enable.bash
+        run: |
+          . ${{ steps.env.outputs.SPACK_ROOT }}/../spack-config/ci-spack-enable.bash
+          spack find
 
       - name: Manifest - Checkout ${{ github.repository }}
         id: checkout
