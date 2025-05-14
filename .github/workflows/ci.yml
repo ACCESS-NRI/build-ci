@@ -173,10 +173,11 @@ jobs:
           done
           spack compiler list
 
-      - name: Manifest - Pip install jinja-cli for templating
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
+      ## May not need to setup python when the docker image contains python to begin with
+      # - name: Manifest - Pip install jinja-cli for templating
+      #   uses: actions/setup-python@v5
+      #   with:
+      #     python-version: '3.11'
 
       - name: Manifest - Install jinja-cli
         run: pip install jinja-cli==1.2.2
