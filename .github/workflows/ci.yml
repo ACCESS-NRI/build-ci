@@ -124,6 +124,8 @@ jobs:
             echo "$var=${!var}" >> $GITHUB_OUTPUT
           done
 
+          echo "spack-env-dir=$SPACK_ROOT/../environments" >> $GITHUB_OUTPUT
+
       - name: Update spack-package version
         if: steps.env.outputs.SPACK_PACKAGES_REPO_VERSION != inputs.spack-packages-ref
         id: spack-packages-update
@@ -220,7 +222,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: spack-files-${{ job.container.id }}
-          path: ${{ steps.env.outputs.SPACK_ROOT }}/../environments/default/spack.*
+          path: ${{ steps.env.outputs.spack-env-dir }}/default/spack.*
           if-no-files-found: error
 
       - name: Setup tmate session
