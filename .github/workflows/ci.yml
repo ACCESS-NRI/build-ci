@@ -220,7 +220,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: spack-files-${{ job.container.id }}
-          path: ${{ steps.env.outputs.SPACK_ROOT }}/environments/default/spack.*
+          path: ${{ steps.env.outputs.SPACK_ROOT }}/../environments/default/spack.*
           if-no-files-found: error
 
       - name: Setup tmate session
