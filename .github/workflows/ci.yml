@@ -124,7 +124,8 @@ jobs:
             echo "$var=${!var}" >> $GITHUB_OUTPUT
           done
 
-          echo "spack-env-dir=$SPACK_ROOT/../environments" >> $GITHUB_OUTPUT
+          # The upload step later requires a non-relative path, hence the realpath
+          echo "spack-env-dir=$(realpath $SPACK_ROOT/../environments)" >> $GITHUB_OUTPUT
 
       - name: Update spack-package version
         if: steps.env.outputs.SPACK_PACKAGES_REPO_VERSION != inputs.spack-packages-ref
