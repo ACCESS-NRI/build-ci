@@ -192,7 +192,10 @@ jobs:
             --define pr ${{ inputs.ref }} \
             ${{ inputs.spack-manifest-data-path != '' && format('--data {0}', inputs.spack-manifest-data-path) || '' }} \
             ${{ inputs.spack-manifest-path}} \
-            > $templated_manifest_path
+            > $
+
+          echo "Templated manifest at $templated_manifest_path is:"
+          cat $templated_manifest_path
 
           echo "spack-manifest-path=$templated_manifest_path" >> $GITHUB_OUTPUT
 
