@@ -201,6 +201,7 @@ jobs:
         run: |
           . ${{ steps.env.outputs.SPACK_ROOT }}/../spack-config/ci-spack-enable.bash
           spack env activate --create --prompt --envfile ${{ steps.jinja-templated.outputs.spack-manifest-path }}
+          spack -d install --fail-fast --fresh
 
           echo "spec<<EOF" >> $GITHUB_OUTPUT
           echo "$(spack spec)" >> $GITHUB_OUTPUT
