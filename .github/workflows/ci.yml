@@ -25,7 +25,9 @@ on:
       ref:
         required: false
         type: string
-        default: ${{ github.sha }}
+        # Since the github.sha for a pull request is the commit SHA of the merge commit (which
+        # doesn't exist in the caller model component repository), we will instead use the PR HEAD SHA.
+        default: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
         description: |
           The branch, tag, or commit SHA of the caller model component repository.
           For example: main, 2025.03.0, 7ey2uy2.
