@@ -192,7 +192,7 @@ jobs:
             --define pr ${{ inputs.ref }} \
             ${{ inputs.spack-manifest-data-path != '' && format('--data {0}', inputs.spack-manifest-data-path) || '' }} \
             ${{ inputs.spack-manifest-path}} \
-            > $
+            > $templated_manifest_path
 
           echo "Templated manifest at $templated_manifest_path is:"
           cat $templated_manifest_path
@@ -203,8 +203,8 @@ jobs:
         id: install
         run: |
           . ${{ steps.env.outputs.SPACK_ROOT }}/../spack-config/ci-spack-enable.bash
-          spack env activate --create --prompt --envfile ${{ steps.jinja-templated.outputs.spack-manifest-path }}
-          spack -d install --fail-fast --fresh
+          spack env create --prompt default ${{ steps.jinja-templated.outputs.spack-manifest-path }}
+          spack env activate
 
           echo "spec<<EOF" >> $GITHUB_OUTPUT
           echo "$(spack spec)" >> $GITHUB_OUTPUT
