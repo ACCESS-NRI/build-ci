@@ -217,7 +217,7 @@ jobs:
           echo "$(spack spec)" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
-          spack --debug install --fail-fast --fresh
+          spack --debug install --fail-fast
 
       - name: Manifest - Upload
         id: upload
