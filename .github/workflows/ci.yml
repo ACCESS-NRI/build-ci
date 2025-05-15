@@ -99,11 +99,11 @@ jobs:
   spack-install-and-test:
     name: Install and Test
     runs-on:
-      group: test-build-ci # FIXME: This will be the group of self-hosted runners for build-ci
+      group: build-ci
     container:
       image: ghcr.io/access-nri/build-ci-runner:rocky
       volumes:
-        - /opt/upstream:/opt/upstream:ro  # FIXME: Validate connection via container -> runner -> upstream pod
+        - /opt/upstream:/opt/upstream:ro
     outputs:
       spec-concretization-graph: ${{ steps.install.outputs.spec }}
       spack-sha: ${{ steps.spack-update.outputs.sha }}
