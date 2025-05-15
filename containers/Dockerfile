@@ -212,6 +212,14 @@ FROM base-spack AS runner
 
 LABEL org.opencontainers.image.source=https://github.com/ACCESS-NRI/build-ci
 
+# Install tmate on the runner for remote access during workflows via mxschmitt/action-tmate
+RUN <<EOF
+curl -L https://github.com/tmate-io/tmate/releases/download/2.4.0/tmate-2.4.0-static-linux-amd64.tar.xz -o static-tmate.tar.xz
+tar -xvf static-tmate.tar.xz --strip-components=1
+mv tmate /usr/local/bin/tmate
+rm -rf static-tmate.tar.xz
+EOF
+
 # Set up ACCESS Spack buildcache
 RUN pip3 install --no-cache-dir boto3==1.23.10
 RUN spack gpg init
