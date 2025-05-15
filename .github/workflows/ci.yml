@@ -180,12 +180,6 @@ jobs:
           done
           spack compiler list
 
-      ## May not need to setup python when the docker image contains python to begin with
-      # - name: Manifest - Pip install jinja-cli for templating
-      #   uses: actions/setup-python@v5
-      #   with:
-      #     python-version: '3.11'
-
       - name: Manifest - Install jinja-cli
         run: python3 -m pip install jinja-cli==1.2.2
 
@@ -229,7 +223,7 @@ jobs:
           if-no-files-found: error
 
       - name: Setup tmate session
-        if: inputs.allow-ssh-into-spack-install == 'true'
+        if: inputs.allow-ssh-into-spack-install
         uses: mxschmitt/action-tmate@e5c7151931ca95bad1c6f4190c730ecf8c7dde48  # v3.19
         with:
           # sudo is not accessible in this container
