@@ -232,7 +232,7 @@ jobs:
           detached: true
           # Only allow actor to access the tmate session
           limit-access-to-actor: true
-          # FIXME: Test what happens
+          # Our runner container has tmate pre-installed
           install-dependencies: false
 
       # TODO: Add pytest infrastructure
