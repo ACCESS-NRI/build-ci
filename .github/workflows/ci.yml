@@ -232,6 +232,8 @@ jobs:
           detached: true
           # Only allow actor to access the tmate session
           limit-access-to-actor: true
+          # FIXME: Test what happens
+          install-dependencies: false
 
       # TODO: Add pytest infrastructure
       # - name: Run pytests
