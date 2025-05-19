@@ -165,6 +165,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: ${{ inputs.ref }}
+          submodules: recursive
 
       - name: Manifest - Install Compilers Locally
         # Some compilers may not be available upstream, so we install them locally in a separate spack.yaml
