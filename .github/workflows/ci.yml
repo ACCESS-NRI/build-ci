@@ -48,7 +48,7 @@ on:
       spack-ref:
         required: false
         type: string
-        default: main
+        default: releases/v0.22
         description: |
           The branch, tag, or commit SHA of the access-nri/spack repository to use.
           For example: develop, releases/0.22, 7ey2uy2.
