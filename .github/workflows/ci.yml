@@ -227,7 +227,7 @@ jobs:
         # Only create the session if the spack installation was attempted, and we want a tmate session
         if: >-
           always() &&
-          (steps.install.conclusion == 'failed' || steps.install.conclusion == 'success') &&
+          (steps.install.conclusion == 'failure' || steps.install.conclusion == 'success') &&
           inputs.allow-ssh-into-spack-install
         id: tmate
         uses: mxschmitt/action-tmate@e5c7151931ca95bad1c6f4190c730ecf8c7dde48  # v3.19
