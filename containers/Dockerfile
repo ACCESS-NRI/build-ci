@@ -221,8 +221,7 @@ rm -rf static-tmate.tar.xz
 EOF
 
 # Set up ACCESS Spack buildcache
-RUN pip3 install --no-cache-dir boto3==1.23.10
-RUN spack gpg init
+RUN spack mirror add --autopush --unsigned runner_set_buildcache /opt/runner_set_buildcache
 
 # We copy, but don't source this file here, because it relies on the upstream volume being set up
 COPY spack-config/ci-spack-enable.bash ${SPACK_ROOT}/../spack-config/ci-spack-enable.bash
@@ -232,18 +231,3 @@ EOF
 
 ENTRYPOINT ["/bin/bash", "/opt/spack/share/spack/docker/entrypoint.bash"]
 CMD ["interactive-shell"]
-
-# Add buildcache mirror
-# RUN --mount=type=secret,id=S3_ACCESS_KEY_ID \
-#     --mount=type=secret,id=S3_ACCESS_KEY_SECRET \
-#     spack mirror add \
-#     --s3-access-key-id $(cat /run/secrets/S3_ACCESS_KEY_ID) \
-#     --s3-access-key-secret $(cat /run/secrets/S3_ACCESS_KEY_SECRET) \
-#     s3_buildcache \
-#     s3://access-nri-spack-cache
-
-# # Import buildcache keys
-# RUN --mount=type=secret,id=access-nri.priv \
-#     spack gpg trust /run/secrets/access-nri.priv
-# RUN --mount=type=secret,id=access-nri.pub \
-#     spack gpg trust /run/secrets/access-nri.pub
