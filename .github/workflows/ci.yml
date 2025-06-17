@@ -104,6 +104,7 @@ jobs:
       image: ghcr.io/access-nri/build-ci-runner:rocky
       volumes:
         - /opt/upstream:/opt/upstream:ro
+        - /opt/runner_set_buildcache:/opt/runner_set_buildcache:rw
     outputs:
       spec-concretization-graph: ${{ steps.install.outputs.spec }}
       spack-sha: ${{ steps.spack-update.outputs.sha }}
