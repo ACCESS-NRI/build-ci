@@ -129,7 +129,6 @@ jobs:
           echo "spack-env-dir=$(realpath $SPACK_ROOT/../environments)" >> $GITHUB_OUTPUT
 
       - name: Update spack-package version
-        if: steps.env.outputs.SPACK_PACKAGES_REPO_VERSION != inputs.spack-packages-ref
         id: spack-packages-update
         uses: access-nri/build-ci/.github/actions/git-checkout-updated-ref@build-ci-2.0
         with:
@@ -137,7 +136,6 @@ jobs:
           ref: ${{ inputs.spack-packages-ref }}
 
       - name: Update spack-config version
-        if: steps.env.outputs.SPACK_CONFIG_REPO_VERSION != inputs.spack-config-ref
         id: spack-config-update
         uses: access-nri/build-ci/.github/actions/git-checkout-updated-ref@build-ci-2.0
         with:
@@ -145,7 +143,6 @@ jobs:
           ref: ${{ inputs.spack-config-ref }}
 
       - name: Update spack version
-        if: steps.env.outputs.SPACK_REPO_VERSION != inputs.spack-ref
         id: spack-update
         uses: access-nri/build-ci/.github/actions/git-checkout-updated-ref@build-ci-2.0
         with:
@@ -153,7 +150,7 @@ jobs:
           ref: ${{ inputs.spack-ref }}
 
       - name: Relink spack-config to spack
-        if: steps.spack-config-update.conclusion == 'success' || steps.spack-update.conclusion == 'success'
+        if: steps.spack-config-update.outputs.updated == 'true' || steps.spack-update.outputs.updated == 'true'
         run: ln --symbolic --relative --verbose --force ${{ steps.env.outputs.SPACK_CONFIG_DIR }}/* ${{ steps.env.outputs.SPACK_ROOT }}/etc/spack/
 
       - name: Spack - Initial Enable + Compiler Load

@@ -14,6 +14,7 @@ Action that updates an existing repository, and checks out the updated ref.
 | Name | Type | Description | Example |
 | ---- | ---- | ----------- | ------- |
 | `sha` | `string` (sha) | The SHA of the checked out ref | `"5a1cdc4e4617fcd6ba1cccf1cd0432b5631983be"` |
+| `updated` | `string` (boolean) | Whether there was actually an update to the ref | `"true"` or `"false"` |
 
 ## Examples
 
