@@ -22,6 +22,7 @@ services:
         SPACK_CONFIG_DIR: /opt/spack-config/v0.22/ci-upstream
     volumes:
       - dev-upstream:/opt/upstream:rw
+      - dev-buildcache:/opt/runner_set_buildcache:rw
 
   runner:
     container_name: Runner
@@ -37,6 +38,8 @@ services:
         SPACK_CONFIG_DIR: /opt/spack-config/v0.22/ci-runner
     volumes:
       - dev-upstream:/opt/upstream:ro
+      - dev-buildcache:/opt/runner_set_buildcache:rw
 
 volumes:
   dev-upstream:
+  dev-buildcache:
