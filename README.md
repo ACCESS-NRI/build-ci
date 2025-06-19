@@ -2,49 +2,60 @@
 
 A central repository for reusable CI compilation testing workflows and containers used across ACCESS-NRI supported projects.
 
-This repository is also responsible for building Docker images used for CI compilation testing.
+## Repositories Serviced By `build-ci`
+
+These are repositories that use the `component` tag, which can be given by either this [search url](https://github.com/search?q=org%3AACCESS-NRI%20topic%3Acomponent&type=repositories) or through `gh` with `gh search repos --owner access-nri -- topic:component`.
 
 ## Overview
 
-This repository contains three overarching CI pipelines:
+This repository contains reusable workflows used as common entrypoints into a model component build and test pipeline. See the [Entrypoint Workflows section](#using-the-entrypoint-workflows) for more information.
 
-### Dependency Image Pipeline (dep-image-*)
+This repository also contains the resources required to build images that are used by the CI infrastructure in `ACCESS-NRI/build-ci-k8s-infra`, as well as local builds via `docker compose`. More information on this section can be found in it's own [dedicated README.md](./containers/README.md).
 
-This pipeline creates Docker images that contain an install of `spack`, a version of the `access-nri/spack-packages` [repository](https://github.com/ACCESS-NRI/spack-packages), and a set of independent `spack env`s that contain all the dependencies for all the model components of a coupled model.
+## Using The Entrypoint Workflows
 
-This allows the install of modified models (and model components) for quick CI testing, rather than having to install an entire dependency tree every time a PR is opened.
+Generally, the [`ci.yml`](./.github/workflows/ci.yml) workflow can be used by any model component repository, it just requires using the reusable workflow from this repository.
 
-These Dependency Images are in the [`build-ci` repo](https://github.com/orgs/ACCESS-NRI/packages?tab=packages&q=build-).
+> [!NOTE]
+> Before a model component repository workflow is able to run on the `build-ci` runners, the repository must be included in the allowlist for the `build-ci` runner group. Ask an ACCESS-NRI GitHub Administrator to add the model component repository.
 
-### Model Test Pipeline (model-*)
+The list of inputs are in the above workflow file, but at it's simplest it only requires a path to a spack manifest relative to the model component repository root. For example:
 
-This pipeline is called by any model repo that uses the `model-build-test-ci.yml` starter workflow. It uses the images mentioned above to test the installability of modified models (usually created via PRs) quickly.
+```yaml
+jobs:
+  build:
+    uses: access-nri/build-ci/.github/workflows/ci.yml@v2  # Note that the workflows will only be picked up by the runner if they are from @vX refs!
+    with:
+      spack-manifest-path: .github/build-ci/manifests/spack.yaml
+```
 
-Examples of this are [access-nri/cice5](https://github.com/ACCESS-NRI/cice5/blob/master/.github/workflows/model-build-test-ci.yml) and [access-nri/mom5](https://github.com/ACCESS-NRI/MOM5/blob/master/.github/workflows/model-build-test-ci.yml)
+This workflow has also been created with GitHub-Actions-level parallelism in mind, so feel free to matrix the builds as required:
 
-### JSON Lint Pipeline (json-*)
+```yaml
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        file:
+          - .github/build-ci/manifests/access-om2.spack.yaml
+          - .github/build-ci/manifests/access-esm1p5.spack.yaml
+    uses: access-nri/build-ci/.github/workflows/ci.yml@v2
+    with:
+      spack-manifest-path: ${{ matrix.file }}
+      spack-packages-ref: 2025.06.000
+      ssh-into-spack-install: true
+```
 
-This pipeline calls a reusable workflow (namely, [validate-json.yml](https://github.com/ACCESS-NRI/actions/blob/main/.github/workflows/validate-json.yml)) that checks that a given `*.json` file complies with an associated `*.schema.json` file. Right now it is only being used in the `build-ci` repo.
+## Developing The Entrypoint Workflows
 
-## Usage
+Similar to `build-cd`, we version the workflows using [SemVer](https://semver.org/) - specifically, we have protected branch references for the major versions (`v2`, `v3`, etc), and tags for minor and patch updates to the entrypoint workflows (`v2.0.0`, `v2.1.0`. `v2.1.2`). Users of the entrypoint workflows are free to use either reference for their invocations.
 
-### For Model repositories
+For developers of the workflow, we consider the following:
 
-If you want to use the Model Test Pipeline go to the repo, then the `Actions` tab, then the `New Workflow` button. You should see a section of starter workflows by ACCESS-NRI. Simply add the `Model Build Test Workflow`, and next time there is a PR on that repo, it will test for installability. Note your model must meet the requirements below
+* Major version updates are when there are changes to existing entrypoint workflow inputs; the addition of new, required inputs; new, required secrets/variables; or significant changes to core workflow functionality.
+* Minor version updates are when there are new, optional entrypoint workflow inputs or new features in line with core workflow functionality.
+* Patch version updates are when there are bugfixes to the workflow.
 
-#### Requirements
-
-Model must meet these requirements:
-
-- Be [available as a spack package](https://github.com/ACCESS-NRI/spack-packages/tree/main/packages) in the [`access-nri/spack-packages` repo](https://github.com/ACCESS-NRI/spack-packages)
-- Have an entry in [`config/models.json`](https://github.com/ACCESS-NRI/build-ci/blob/main/config/models.json) in this repo
-
-### Create your own Dependency Images
-
-There is an associated `workflow_dispatch` trigger on [`dep-image-1-start.yml`](https://github.com/ACCESS-NRI/build-ci/blob/main/.github/workflows/dep-image-1-start.yml) that allows the creation of your own `base-spack` and `dependency` images. Just make sure that the `spack-packages version` tag exists in the `access-nri/spack-packages` repo.
-
-A [Web UI trigger](https://github.com/ACCESS-NRI/build-ci/actions/workflows/build-and-push-image-build.yml) is available.
-
-## More information
-
-For more of a dev-focussed look at the CI pipeline, see [`README-DEV.md`](https://github.com/ACCESS-NRI/build-ci/blob/main/README-DEV.md).
+> [!IMPORTANT]
+> When there is a new major version, a new protected branch will need to be created that the proposed changes will be merged into. Furthermore, one will need to update the default branch to the new major version. Finally, the new major version ref will have to be added to the workflow allowlist in the `build-ci` runner group, so the runners will accept jobs from that version of the workflow.
