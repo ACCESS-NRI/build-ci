@@ -37,7 +37,9 @@ jobs:
       - name: Get latest spack-packages tags
         id: get-version
         # This command traverses `main` to find the last `git tag` and suppresses the 'long form' of tags (that have a bunch of commit metadata).
-        run: echo "version=$(git describe --tags --abbrev=0)" >> $GITHUB_OUTPUT
+        # FIXME: We stall the version of spack-packages to a specific version due to the removal of spack-packages hooks, before the update to build-ci-2.0
+        # run: echo "version=$(git describe --tags --abbrev=0)" >> $GITHUB_OUTPUT
+        run: echo "version=2025.06.000" >> $GITHUB_OUTPUT
 
   setup-model:
     name: Info from ${{ github.repository }}
