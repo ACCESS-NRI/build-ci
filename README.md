@@ -4,22 +4,24 @@ A central repository for reusable CI compilation testing workflows and container
 
 ## Repositories Serviced By `build-ci`
 
-These are repositories that use the `component` tag, which can be given by either this [search url](https://github.com/search?q=org%3AACCESS-NRI%20topic%3Acomponent&type=repositories) or through `gh` with `gh search repos --owner access-nri -- topic:component`.
+These are repositories that use the `component` tag, which can be given by either this [search url](https://github.com/search?q=org%3AACCESS-NRI%20topic%3Acomponent&type=repositories) or through `gh` with `gh search repos --owner access-nri --include-forks -- topic:component`.
 
 ## Overview
 
 This repository contains reusable workflows used as common entrypoints into a model component build and test pipeline. See the [Entrypoint Workflows section](#using-the-entrypoint-workflows) for more information.
 
-This repository also contains the resources required to build images that are used by the CI infrastructure in `ACCESS-NRI/build-ci-k8s-infra`, as well as local builds via `docker compose`. More information on this section can be found in it's own [dedicated README.md](./containers/README.md).
+This repository also contains the resources required to build images that are used by the CI infrastructure in `ACCESS-NRI/build-ci-k8s-infra` (which is private), as well as local builds via `docker compose`. More information on this section can be found in it's own [dedicated README.md](./containers/README.md).
 
-## Using The Entrypoint Workflows
+## Usage
+
+### Using The Entrypoint Workflows
 
 Generally, the [`ci.yml`](./.github/workflows/ci.yml) workflow can be used by any model component repository in the ACCESS-NRI organisation, it just requires using the reusable workflow from this repository.
 
 > [!NOTE]
 > Before a model component repository workflow is able to run on the `build-ci` runners, the repository must be included in the allowlist for the `build-ci` runner group. Ask an ACCESS-NRI GitHub Administrator to add the model component repository.
 
-The list of inputs are in the above workflow file, but at it's simplest it only requires a path to a spack manifest relative to the model component repository root. For example:
+The list of inputs are in the above workflow file, but at it's simplest it only requires a path to a jinja-templatable spack manifest relative to the model component repository root (more on that in the [Writing Spack Manifests section](#writing-spack-manifests)). For example:
 
 ```yaml
 jobs:
@@ -47,9 +49,30 @@ jobs:
       ssh-into-spack-install: true
 ```
 
-## Developing The Entrypoint Workflows
+### Writing Spack Manifests
 
-Similar to `build-cd`, we version the workflows using [SemVer](https://semver.org/) - specifically, we have protected branch references for the major versions (`v2`, `v3`, etc), and tags for minor and patch updates to the entrypoint workflows (`v2.0.0`, `v2.1.0`. `v2.1.2`). Users of the entrypoint workflows are free to use either reference for their invocations.
+Spack [manifest files](https://spack.readthedocs.io/en/latest/environments.html) are a way to define versions, dependencies (and dependents) and configuration information for software. In this case - model components, and what models they are part of.
+
+The manifest files have almost no restrictions - but in order to build the component at the git ref given by the workflow input `inputs.ref` (which for pull requests is the HEAD of the source branch), one must use the version `@git.{{ ref }}` for the model component.
+
+The double-bracket syntax is unique and not spack specific - the manifest files are actually Jinja templates, in which `{{ ref }}` is replaced by `inputs.ref` at build-time. Additional template variables can be defined through data files that are ingested via the `inputs.spack-manifest-data-path` entrypoint workflow input. You can add the `.j2` suffix to the spack manifest file name, but it isn't required.
+
+A minimal example of a spack manifest file that builds a full model ([`access-om2`](https://github.com/ACCESS-NRI/ACCESS-OM2)) using the repositories model component ([`mom5`](github.com/ACCESS-NRI/MOM5)) is below:
+
+```yaml
+spack:
+  specs:
+    - access-om2 ^mom5@git.{{ ref }}=access-om2 %intel@2021.10.0 target=x86_64
+  view: true
+  concretizer:
+    unify: false
+```
+
+## Development
+
+### Developing The Entrypoint Workflows
+
+Similar to `build-cd`, we version the workflows using [SemVer](https://semver.org/) - specifically, we have protected branch references for the major versions (`v2`, `v3`, etc), and tags for minor and patch updates to the entrypoint workflows (`v2.0.0`, `v2.1.0`. `v2.1.2`). Users of the entrypoint workflows are free to use either reference for their invocations, but it's recommended to use major version branch references to pick up bug fixes and features, without breaking changes.
 
 For developers of the workflow, we consider the following:
 
