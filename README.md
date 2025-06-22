@@ -14,7 +14,7 @@ This repository also contains the resources required to build images that are us
 
 ## Using The Entrypoint Workflows
 
-Generally, the [`ci.yml`](./.github/workflows/ci.yml) workflow can be used by any model component repository, it just requires using the reusable workflow from this repository.
+Generally, the [`ci.yml`](./.github/workflows/ci.yml) workflow can be used by any model component repository in the ACCESS-NRI organisation, it just requires using the reusable workflow from this repository.
 
 > [!NOTE]
 > Before a model component repository workflow is able to run on the `build-ci` runners, the repository must be included in the allowlist for the `build-ci` runner group. Ask an ACCESS-NRI GitHub Administrator to add the model component repository.
