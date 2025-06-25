@@ -226,8 +226,5 @@ RUN spack mirror add --autopush --unsigned runner_set_buildcache /opt/runner_set
 # We copy, but don't source this file here, because it relies on the upstream volume being set up
 COPY spack-config/ci-spack-enable.bash ${SPACK_ROOT}/../spack-config/ci-spack-enable.bash
 
-spack clean --downloads
-EOF
-
 ENTRYPOINT ["/bin/bash", "/opt/spack/share/spack/docker/entrypoint.bash"]
 CMD ["interactive-shell"]
