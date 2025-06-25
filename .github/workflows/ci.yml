@@ -66,6 +66,11 @@ on:
           Enable the actor of the workflow to SSH into the container where the spack packages have been installed.
           This is useful for gathering post-install information before the container is destroyed.
           This will also make the workflow wait until the actor SSHs into the container, or it times out, before continuing.
+    secrets:
+      spack-install-command-pat:
+        required: false
+        description: |
+          An optional GitHub PAT to use for the spack install command, for access to potentially private repositories.
     outputs:
       spec-concretization-graph:
         value: ${{jobs.spack-install-and-test.outputs.spec-concretization-graph }}
@@ -201,6 +206,10 @@ jobs:
 
       - name: Manifest - Install
         id: install
+        env:
+          GIT_CONFIG_COUNT: 1
+          GIT_CONFIG_KEY_0: url.https://git:${{ secrets.spack-install-command-pat || secrets.GITHUB_TOKEN }}@github.com/.insteadOf
+          GIT_CONFIG_VALUE_0: https://github.com/
         run: |
           . ${{ steps.env.outputs.SPACK_ROOT }}/../spack-config/ci-spack-enable.bash
           spack env create default ${{ steps.jinja-templated.outputs.spack-manifest-path }}
