@@ -21,7 +21,7 @@ Generally, the [`ci.yml`](./.github/workflows/ci.yml) workflow can be used by an
 > [!NOTE]
 > Before a model component repository workflow is able to run on the `build-ci` runners, the repository must be included in the allowlist for the `build-ci` runner group. Ask an ACCESS-NRI GitHub Administrator to add the model component repository.
 
-The list of inputs are in the above workflow file, but at it's simplest it only requires a path to a jinja-templatable spack manifest relative to the model component repository root (more on that in the [Writing Spack Manifests section](#writing-spack-manifests)). For example:
+The list of inputs are in the above workflow file and explained in the workflow-specific [`README.md`](./.github/workflows/README.md), but at it's simplest it only requires a path to a jinja-templatable spack manifest relative to the model component repository root (more on that in the [Writing Spack Manifests section](#writing-spack-manifests)). For example:
 
 ```yaml
 jobs:
@@ -67,6 +67,8 @@ spack:
   concretizer:
     unify: false
 ```
+
+More information on this can be found in the [Entrypoint workflow README.md](./.github/workflows/README.md#jinja-templates-and-data)
 
 ## Development
 
