@@ -51,6 +51,7 @@ RUN dnf update -y \
     python3-setuptools \
     svn \
     unzip \
+    which \
     xz \
     zstd \
  && rm -rf /var/cache/dnf \
