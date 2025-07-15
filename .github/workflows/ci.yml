@@ -207,8 +207,10 @@ jobs:
       - name: Manifest - Install
         id: install
         env:
+          # This is needed to ensure that the spack install command can access private repositories - we replace all HTTPS git URLs with the PAT
+          # We set the git config via environment variables, so that the PATs are not persisted in the container
           GIT_CONFIG_COUNT: 1
-          GIT_CONFIG_KEY_0: url.https://git:${{ secrets.spack-install-command-pat || secrets.GITHUB_TOKEN }}@github.com/.insteadOf
+          GIT_CONFIG_KEY_0: url.https://oauth2:${{ secrets.spack-install-command-pat || secrets.GITHUB_TOKEN }}@github.com/.insteadOf
           GIT_CONFIG_VALUE_0: https://github.com/
         run: |
           . ${{ steps.env.outputs.SPACK_ROOT }}/../spack-config/ci-spack-enable.bash
