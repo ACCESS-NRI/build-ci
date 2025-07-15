@@ -12,7 +12,7 @@ Finally, there is a `spack-config` folder that contains a customised [spack-enab
 
 ## How to build `spack` for testing
 
-You can spack in a similar way to `build-ci`, with it's own upstream `spack` used for compilers and common packages. This is also suitable for developers to test. Run the following Docker Compose commands:
+You can use spack in a similar way to `build-ci`, with it's own upstream `spack` used for compilers and common packages. This is also suitable for developers to test. Run the following Docker Compose commands:
 
 ```bash
 COMPOSE_BAKE=1 docker compose -f containers/compose.dev.yaml build

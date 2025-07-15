@@ -55,7 +55,7 @@ Spack [manifest files](https://spack.readthedocs.io/en/latest/environments.html)
 
 The manifest files have almost no restrictions - but in order to build the component at the git ref given by the workflow input `inputs.ref` (which for pull requests is the HEAD of the source branch), one must use the version `@git.{{ ref }}` for the model component.
 
-The double-bracket syntax is unique and not spack specific - the manifest files are actually Jinja templates, in which `{{ ref }}` is replaced by `inputs.ref` at build-time. Additional template variables can be defined through data files that are ingested via the `inputs.spack-manifest-data-path` entrypoint workflow input. You can add the `.j2` suffix to the spack manifest file name, but it isn't required.
+The double-bracket syntax is unique and not spack specific - the manifest files are actually [Jinja](https://palletsprojects.com/projects/jinja/) templates, in which `{{ ref }}` is replaced by `inputs.ref` at build-time. Additional template variables can be defined through data files that are ingested via the `inputs.spack-manifest-data-path` entrypoint workflow input. You can add the `.j2` suffix to the spack manifest file name, but it isn't required.
 
 A minimal example of a spack manifest file that builds a full model ([`access-om2`](https://github.com/ACCESS-NRI/ACCESS-OM2)) using the repositories model component ([`mom5`](github.com/ACCESS-NRI/MOM5)) is below:
 
