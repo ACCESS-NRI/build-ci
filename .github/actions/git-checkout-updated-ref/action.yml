@@ -1,0 +1,53 @@
+name: Checkout Ref
+description: Updates and checks out a given ref for an existing repository
+inputs:
+  repository-path:
+    description: 'The path to the repository to update and check out the ref'
+    required: true
+    default: '.'
+  ref:
+    description: 'The git ref to check out'
+    required: true
+outputs:
+  sha:
+    description: 'The SHA of the checked out ref'
+    value: ${{ steps.update.outputs.sha }}
+  updated:
+    description: 'Whether the repository was updated'
+    value: ${{ steps.post-update.outputs.updated }}
+runs:
+  using: composite
+  steps:
+    - name: Get initial SHA
+      id: initial
+      working-directory: ${{ inputs.repository-path }}
+      shell: bash
+      run: echo "sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
+
+    - shell: bash
+      id: update
+      working-directory: ${{ inputs.repository-path }}
+      run: |
+        git fetch --all --tags
+
+        if git ls-remote --exit-code --heads origin ${{ inputs.ref }}; then  # If the ref is a branch
+          echo "Checking out the branch ${{ inputs.ref }} at the latest commit"
+          git checkout -B ${{ inputs.ref }} origin/${{ inputs.ref }}
+        else  # checkout the tag/commit
+          echo "Checking out the tag/commit ${{ inputs.ref }}"
+          git checkout ${{ inputs.ref }}
+        fi
+
+        echo "sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
+
+    - name: Check if updated
+      id: post-update
+      shell: bash
+      run: |
+        if [ "${{ steps.initial.outputs.sha }}" != "${{ steps.update.outputs.sha }}" ]; then
+          echo "Repository was updated from ${{ steps.initial.outputs.sha }} to ${{ steps.update.outputs.sha }}"
+          echo "updated=true" >> $GITHUB_OUTPUT
+        else
+          echo "Repository was not updated, stayed at ${{ steps.initial.outputs.sha }}"
+          echo "updated=false" >> $GITHUB_OUTPUT
+        fi

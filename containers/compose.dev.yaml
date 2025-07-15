@@ -1,0 +1,45 @@
+name: Spack Instance
+
+# docker compose ignores 'x-' keys, but they can be used as anchors (&common-args)
+# to reduce duplication in the file
+x-common-args: &common-args
+  OS: rocky
+  SPACK_VERSION: v0.22
+  SPACK_CONFIG_REPO_VERSION: 2025.03.0
+  SOURCE_COMPILERS_SPACK_MANIFEST: upstream/dev/compilers.spack.yaml
+  SOURCE_PACKAGES_SPACK_MANIFEST: upstream/dev/packages.spack.yaml
+
+services:
+  upstream:
+    container_name: Upstream
+    image: ghcr.io/access-nri/build-ci-upstream:rocky
+    tty: true
+    build:
+      context: .
+      target: upstream
+      args:
+        <<: *common-args
+        SPACK_CONFIG_DIR: /opt/spack-config/v0.22/ci-upstream
+    volumes:
+      - dev-upstream:/opt/upstream:rw
+      - dev-buildcache:/opt/runner_set_buildcache:rw
+
+  runner:
+    container_name: Runner
+    image: ghcr.io/access-nri/build-ci-runner:rocky
+    tty: true
+    depends_on:
+    - upstream
+    build:
+      context: .
+      target: runner
+      args:
+        <<: *common-args
+        SPACK_CONFIG_DIR: /opt/spack-config/v0.22/ci-runner
+    volumes:
+      - dev-upstream:/opt/upstream:ro
+      - dev-buildcache:/opt/runner_set_buildcache:rw
+
+volumes:
+  dev-upstream:
+  dev-buildcache:

@@ -12,9 +12,10 @@ ARG OS=rocky
 ################################################################################
 # NOTE: Keep an eye on:
 #       ${SPACK_ROOT}/share/spack/templates/container/rockylinux_8.dockerfile
-FROM rockylinux/rockylinux:8.10 as base-os-rocky
+FROM rockylinux/rockylinux:8.10 AS base-os-rocky
 
 # csh currently required for some build scripts e.g. MOM5
+# yq required for spack manifest modification
 RUN dnf update -y \
  && dnf -y install \
     autoconf \
@@ -50,14 +51,16 @@ RUN dnf update -y \
     python3-setuptools \
     svn \
     unzip \
+    which \
     xz \
     zstd \
  && rm -rf /var/cache/dnf \
- && dnf clean all
-
+ && dnf clean all \
+ && curl -L https://github.com/mikefarah/yq/releases/download/v4.45.1/yq_linux_amd64 -o /usr/bin/yq \
+ && chmod +x /usr/bin/yq
 
 ################################################################################
-FROM opensuse/leap:15.5 as base-os-suse
+FROM opensuse/leap:15.5 AS base-os-suse
 
 # csh currently required for some build scripts e.g. MOM5
 RUN zypper ref \
@@ -98,11 +101,12 @@ RUN zypper ref \
     subversion \
     tcsh \
     vim \
-&&  zypper clean
-
+ &&  zypper clean \
+ && curl -L https://github.com/mikefarah/yq/releases/download/v4.45.1/yq_linux_amd64 -o /usr/bin/yq \
+ && chmod +x /usr/bin/yq
 
 ################################################################################
-FROM base-os-$OS as base-spack
+FROM base-os-$OS AS base-spack
 
 ARG SPACK_GIT_URL=https://github.com/ACCESS-NRI/spack.git
 ARG SPACK_VERSION=v0.22
@@ -111,18 +115,22 @@ ARG SPACK_PACKAGES_REPO_VERSION=main
 ARG SPACK_CONFIG_REPO_VERSION=main
 ARG SPACK_TARGET=x86_64
 ARG SPACK_CONFIG_DIR=/opt/spack-config/${SPACK_VERSION}/ci
-ARG COMPILER_PKG_NAME=intel-oneapi-compilers
-ARG COMPILER_PKG_VERSION=2023.2.4
-ARG COMPILER_NAME=intel
-ARG COMPILER_VERSION=2021.10.0
+ARG SOURCE_COMPILERS_SPACK_MANIFEST=upstream/prod/compilers.spack.yaml
+ARG SOURCE_PACKAGES_SPACK_MANIFEST=upstream/prod/packages.spack.yaml
 
 ENV SPACK_ROOT=/opt/spack
 ENV GNUPGHOME=${SPACK_ROOT}/opt/spack/gpg
 ENV ENV_SPACK_TARGET=${SPACK_TARGET}
-ENV ENV_COMPILER_PKG_NAME=${COMPILER_PKG_NAME}
-ENV ENV_COMPILER_PKG_VERSION=${COMPILER_PKG_VERSION}
-ENV ENV_COMPILER_NAME=${COMPILER_NAME}
-ENV ENV_COMPILER_VERSION=${COMPILER_VERSION}
+ENV ENV_COMPILERS_SPACK_MANIFEST=/opt/compilers.spack.yaml
+ENV ENV_PACKAGES_SPACK_MANIFEST=/opt/packages.spack.yaml
+
+# Export the repo versions for comparison in the runner target
+ENV SPACK_PACKAGES_REPO_VERSION=${SPACK_PACKAGES_REPO_VERSION}
+ENV SPACK_CONFIG_REPO_VERSION=${SPACK_CONFIG_REPO_VERSION}
+ENV SPACK_REPO_VERSION=${SPACK_REPO_VERSION}
+
+# Export the spack config directory for the runner target
+ENV SPACK_CONFIG_DIR=${SPACK_CONFIG_DIR}
 
 # TODO: Ideally we want spack-enable.bash to be the only source of these
 #       definitions. See if spack-enable.bash can be used instead.
@@ -130,11 +138,9 @@ ENV ENV_COMPILER_VERSION=${COMPILER_VERSION}
 ENV SPACK_DISABLE_LOCAL_CONFIG="true"
 ENV SPACK_USER_CACHE_PATH=${SPACK_ROOT}/..
 
-LABEL au.org.access-nri.image.spack-repo-version ${SPACK_REPO_VERSION}
-LABEL au.org.access-nri.image.spack-packages-repo-version ${SPACK_PACKAGES_REPO_VERSION}
-LABEL au.org.access-nri.image.spack-config-repo-version ${SPACK_CONFIG_REPO_VERSION}
-LABEL au.org.access-nri.image.compiler ${COMPILER_NAME}@${COMPILER_VERSION}
-LABEL au.org.access-nri.image.target ${ENV_SPACK_TARGET}
+LABEL au.org.access-nri.image.spack-repo-version=${SPACK_REPO_VERSION}
+LABEL au.org.access-nri.image.spack-packages-repo-version=${SPACK_PACKAGES_REPO_VERSION}
+LABEL au.org.access-nri.image.spack-config-repo-version=${SPACK_CONFIG_REPO_VERSION}
 
 SHELL ["/bin/bash", "-c"]
 
@@ -165,6 +171,9 @@ RUN ln -s ${SPACK_ROOT}/share/spack/docker/entrypoint.bash \
     ln -s ${SPACK_ROOT}/share/spack/docker/entrypoint.bash \
     /usr/local/bin/spack-env
 
+COPY ${SOURCE_COMPILERS_SPACK_MANIFEST} ${ENV_COMPILERS_SPACK_MANIFEST}
+COPY ${SOURCE_PACKAGES_SPACK_MANIFEST} ${ENV_PACKAGES_SPACK_MANIFEST}
+
 # Setup Spack environment for subsequent RUN steps
 SHELL ["docker-shell"]
 
@@ -172,58 +181,51 @@ SHELL ["docker-shell"]
 # Spack is configured to bootstrap its dependencies lazily by default;
 # i.e. the first time they are needed and can’t be found.
 
-# Install compilers
+################################################################################
+# Install compilers and other common packages
+FROM base-spack AS upstream
+
+LABEL org.opencontainers.image.source=https://github.com/ACCESS-NRI/build-ci
+
+# Install compilers and low-level, common packages
 RUN <<EOF
-spack install ${COMPILER_PKG_NAME}@${COMPILER_PKG_VERSION} target=${SPACK_TARGET}
+echo "Installing compilers"
+spack env activate compilers --create --envfile ${ENV_COMPILERS_SPACK_MANIFEST}
+spack spec
+spack install --fail-fast || exit
+spack env deactivate
+yq '.spack.specs[]' "${ENV_COMPILERS_SPACK_MANIFEST}" | while read compiler; do
+  echo "Loading compiler: $compiler"
+  spack load $compiler
+  spack compiler find
+done
+
+echo "Installing common packages"
+spack env activate packages --create --envfile ${ENV_PACKAGES_SPACK_MANIFEST}
+spack install --fail-fast || exit
+spack env deactivate
+
 spack clean --downloads
 EOF
 
-
 ################################################################################
-FROM base-spack as ci
+FROM base-spack AS runner
+
+LABEL org.opencontainers.image.source=https://github.com/ACCESS-NRI/build-ci
+
+# Install tmate on the runner for remote access during workflows via mxschmitt/action-tmate
+RUN <<EOF
+curl -L https://github.com/tmate-io/tmate/releases/download/2.4.0/tmate-2.4.0-static-linux-amd64.tar.xz -o static-tmate.tar.xz
+tar -xvf static-tmate.tar.xz --strip-components=1
+mv tmate /usr/local/bin/tmate
+rm -rf static-tmate.tar.xz
+EOF
 
 # Set up ACCESS Spack buildcache
-RUN pip3 install --no-cache-dir boto3==1.23.10
-RUN spack gpg init
+RUN spack mirror add --autopush --unsigned runner_set_buildcache /opt/runner_set_buildcache
 
-# Add buildcache mirror
-RUN --mount=type=secret,id=S3_ACCESS_KEY_ID \
-    --mount=type=secret,id=S3_ACCESS_KEY_SECRET \
-    spack mirror add \
-    --s3-access-key-id $(cat /run/secrets/S3_ACCESS_KEY_ID) \
-    --s3-access-key-secret $(cat /run/secrets/S3_ACCESS_KEY_SECRET) \
-    s3_buildcache \
-    s3://access-nri-spack-cache
-
-# Import buildcache keys
-RUN --mount=type=secret,id=access-nri.priv \
-    spack gpg trust /run/secrets/access-nri.priv
-RUN --mount=type=secret,id=access-nri.pub \
-    spack gpg trust /run/secrets/access-nri.pub
-
-
-################################################################################
-FROM base-spack as dev
-
-ARG MPI_NAME=openmpi
-ARG MPI_VERSION=4.1.5
-
-RUN <<EOF
-spack load ${COMPILER_PKG_NAME}@${COMPILER_PKG_VERSION} \
- && spack compiler find
-
-spack install \
-    gmake %${COMPILER_NAME}@${COMPILER_VERSION} target=${SPACK_TARGET}
-
-spack install \
-    cmake %${COMPILER_NAME}@${COMPILER_VERSION} target=${SPACK_TARGET}
-
-spack install \
-    ${MPI_NAME}@${MPI_VERSION} %${COMPILER_NAME}@${COMPILER_VERSION} \
-    target=${SPACK_TARGET}
-
-spack clean --downloads
-EOF
+# We copy, but don't source this file here, because it relies on the upstream volume being set up
+COPY spack-config/ci-spack-enable.bash ${SPACK_ROOT}/../spack-config/ci-spack-enable.bash
 
 ENTRYPOINT ["/bin/bash", "/opt/spack/share/spack/docker/entrypoint.bash"]
 CMD ["interactive-shell"]
