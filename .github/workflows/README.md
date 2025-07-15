@@ -29,7 +29,7 @@ This workflow handles building and running short CI tests on a given spack manif
 
 | Name | Type | Description | Required | Default | Example |
 | ---- | ---- | ----------- | -------- | ------- | ------- |
-| `spack-install-command-pat` | `string` (GitHub Personal Access Token) | GitHub PAT to use for the spack install command, for access to potentially private repositories | `false` | N/A | `"github_pat_XXXXX"` |
+| `spack-install-command-pat` | `string` (GitHub Personal Access Token) | GitHub PAT to use for the spack install command, for access to potentially private repositories. Set as a Repo-level secret | `false` | N/A | `"github_pat_XXXXX"` |
 
 ### Outputs
 
@@ -85,18 +85,42 @@ jobs:
   test:
     strategy:
       fail-fast: false
+      # This means that a maximum of 2 jobs will be run at once, which can be useful for
+      # not overloading self-hosted runners quota.
       max-parallel: 2
       matrix:
         # Since it's just a single array of strings, we can do `matrix.manifest`
         manifest:
           - .github/build/one.spack.yaml.j2
           - .github/build/two.spack.yaml.j2
+          - .github/build/three.spack.yaml.j2
     uses: access-nri/build-ci/.github/workflows/ci.yml@v2
     with:
       spack-manifest-path: ${{ matrix.manifest }}
 ```
 
-#### Complex Matrix
+#### Complex Matrix (Each Element With Multiple Attributes)
+
+```yaml
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        # The above is a single array of objects, so we associate one parallel job with one manifest/compiler with no combination taking place (eg, 2 jobs)
+        values:
+          - manifest: .github/build/one.spack.yaml.j2
+            compiler: .github/build/compiler/intel.spack.yaml
+          - manifest: .github/build/two.spack.yaml.j2
+            compiler: .github/build/compiler/gcc.spack.yaml
+    uses: access-nri/build-ci/.github/workflows/ci.yml@v2
+    with:
+      spack-manifest-path: ${{ matrix.values.manifest }}
+      spack-compiler-manifest-path: ${{ matrix.values.compiler }}
+```
+
+#### Complex Matrix (Each Element As A Combination of Attributes)
 
 ```yaml
 jobs:
@@ -105,26 +129,13 @@ jobs:
       fail-fast: false
       max-parallel: 2
       matrix:
-        values:
-          - manifest: .github/build/one.spack.yaml.j2
-            compiler: .github/build/compiler/intel.spack.yaml
-            pat: ${{ secrets.GH_PAT_FOR_MODEL1 }}
-          - manifest: .github/build/two.spack.yaml.j2
-            compiler: .github/build/compiler/gcc.spack.yaml
-            pat: ${{ secrets.GH_PAT_FOR_MODEL2 }}
-        # The above is a single array of objects, so we associate one parallel job with one manifest/compiler/pat with no combination taking place (eg, 2 jobs)
-        # This is instead of multiple arrays of strings, eg.
-        # matrix:
-        #   manifest: [".github/build/one.spack.yaml.j2", ".github/build/two.spack.yaml.j2"]
-        #   compiler: [".github/build/compiler/intel.spack.yaml", ".github/build/compiler/gcc.spack.yaml"]
-        #   pat: ["${{ secrets.GH_PAT_FOR_MODEL1 }}", "${{ secrets.GH_PAT_FOR_MODEL2 }}"]
-        # which would be a combination of all defined manifest/compilers (eg, 8 jobs)
+        # This would be a combination of all defined manifest/compilers (eg, 4 jobs)
+        manifest: [".github/build/one.spack.yaml.j2", ".github/build/two.spack.yaml.j2"]
+        compiler: [".github/build/compiler/intel.spack.yaml", ".github/build/compiler/gcc.spack.yaml"]
     uses: access-nri/build-ci/.github/workflows/ci.yml@v2
     with:
       spack-manifest-path: ${{ matrix.values.manifest }}
       spack-compiler-manifest-path: ${{ matrix.values.compiler }}
-    secrets:
-      spack-install-command-pat: ${{ matrix.values.pat }}
 ```
 
 ### More Information
