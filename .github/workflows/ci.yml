@@ -192,7 +192,9 @@ jobs:
         # Additional data can be provided to fill in the jinja template through the `spack-manifest-data-path` input
         id: jinja-templated
         run: |
-          templated_manifest_path=$(dirname ${{ inputs.spack-manifest-path }})/templated.$(basename ${{ inputs.spack-manifest-path }})
+          templated_manifest_path=$(dirname ${{ inputs.spack-manifest-path }})/templated/$(basename ${{ inputs.spack-manifest-path }} .j2)
+          mkdir -p $(dirname $templated_manifest_path)
+
           jinja \
             --define ref ${{ inputs.ref }} \
             ${{ inputs.spack-manifest-data-path != '' && format('--data {0}', inputs.spack-manifest-data-path) || '' }} \
