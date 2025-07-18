@@ -64,6 +64,8 @@ jobs:
     - uses: actions/checkout@v3
       with:
         repository: access-nri/build-ci
+        # Since this old version of build-ci uses a configuration format that is only on this branch, we need to use `v1` rather than the default branch.
+        ref: v1
 
     - name: Get compilers to test
       id: get-compilers
