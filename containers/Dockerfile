@@ -57,7 +57,11 @@ RUN dnf update -y \
  && rm -rf /var/cache/dnf \
  && dnf clean all \
  && curl -L https://github.com/mikefarah/yq/releases/download/v4.45.1/yq_linux_amd64 -o /usr/bin/yq \
- && chmod +x /usr/bin/yq
+ && chmod +x /usr/bin/yq \
+ && curl -L https://github.com/tmate-io/tmate/releases/download/2.4.0/tmate-2.4.0-static-linux-amd64.tar.xz -o static-tmate.tar.xz \
+ && tar -xvf static-tmate.tar.xz --strip-components=1 \
+ && mv tmate /usr/local/bin/tmate \
+ && rm -rf static-tmate.tar.xz
 
 ################################################################################
 FROM opensuse/leap:15.5 AS base-os-suse
@@ -103,7 +107,11 @@ RUN zypper ref \
     vim \
  &&  zypper clean \
  && curl -L https://github.com/mikefarah/yq/releases/download/v4.45.1/yq_linux_amd64 -o /usr/bin/yq \
- && chmod +x /usr/bin/yq
+ && chmod +x /usr/bin/yq \
+ && curl -L https://github.com/tmate-io/tmate/releases/download/2.4.0/tmate-2.4.0-static-linux-amd64.tar.xz -o static-tmate.tar.xz \
+ && tar -xvf static-tmate.tar.xz --strip-components=1 \
+ && mv tmate /usr/local/bin/tmate \
+ && rm -rf static-tmate.tar.xz
 
 ################################################################################
 FROM base-os-$OS AS base-spack
@@ -214,12 +222,6 @@ FROM base-spack AS runner
 LABEL org.opencontainers.image.source=https://github.com/ACCESS-NRI/build-ci
 
 # Install tmate on the runner for remote access during workflows via mxschmitt/action-tmate
-RUN <<EOF
-curl -L https://github.com/tmate-io/tmate/releases/download/2.4.0/tmate-2.4.0-static-linux-amd64.tar.xz -o static-tmate.tar.xz
-tar -xvf static-tmate.tar.xz --strip-components=1
-mv tmate /usr/local/bin/tmate
-rm -rf static-tmate.tar.xz
-EOF
 
 # Set up ACCESS Spack buildcache
 RUN spack mirror add --autopush --unsigned runner_set_buildcache /opt/runner_set_buildcache
