@@ -1,0 +1,256 @@
+name: CI
+run-name: CI Test ${{ github.repository }} at ${{ github.event.number }} (${{ github.sha }})
+on:
+  workflow_call:
+    inputs:
+      spack-manifest-path:
+        required: true
+        type: string
+        description: |
+          A file path in the caller model component repository that contains the spack manifest template to install.
+          For example: .github/build/manifests/template/access-om2.spack.yaml.j2.
+      spack-manifest-data-path:
+        required: false
+        type: string
+        description: |
+          An optional file path in the caller model component repository that contains data to fill in the spack manifest jinja template.
+          This doesn't include {{ pr }}, which is filled in automatically.
+          For example: .github/build/manifests/data/access-om2.spack.yaml.j2.json.
+      spack-compiler-manifest-path:
+        required: false
+        type: string
+        description: |
+          A file path in the caller model component repository that contains the spack manifest to install local compilers not in the upstream.
+          For example: .github/build/manifests/compilers.spack.yaml.
+      ref:
+        required: false
+        type: string
+        # Since the github.sha for a pull request is the commit SHA of the merge commit (which
+        # doesn't exist in the caller model component repository), we will instead use the PR HEAD SHA.
+        default: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+        description: |
+          The branch, tag, or commit SHA of the caller model component repository.
+          For example: main, 2025.03.0, 7ey2uy2.
+      spack-config-ref:
+        required: false
+        type: string
+        default: main
+        description: |
+          The branch, tag, or commit SHA of the access-nri/spack-config repository to use.
+          For example: main, 2025.03.0, 7ey2uy2.
+      spack-packages-ref:
+        required: false
+        type: string
+        default: main
+        description: |
+          The branch, tag, or commit SHA of the access-nri/spack-packages repository to use.
+          For example: main, 2025.03.0, 7ey2uy2.
+      spack-ref:
+        required: false
+        type: string
+        default: releases/v0.22
+        description: |
+          The branch, tag, or commit SHA of the access-nri/spack repository to use.
+          For example: develop, releases/0.22, 7ey2uy2.
+      pytest-test-markers:
+        required: false
+        type: string
+        description: |
+          A string of pytest markers to use to filter tests in the caller model component repository's .github/build/tests directory.
+          For example: "not slow and not mpi".
+      allow-ssh-into-spack-install:
+        required: false
+        type: boolean
+        default: false
+        description: |
+          Enable the actor of the workflow to SSH into the container where the spack packages have been installed.
+          This is useful for gathering post-install information before the container is destroyed.
+          This will also make the workflow wait until the actor SSHs into the container, or it times out, before continuing.
+    secrets:
+      spack-install-command-pat:
+        required: false
+        description: |
+          An optional GitHub PAT to use for the spack install command, for access to potentially private repositories.
+    outputs:
+      spec-concretization-graph:
+        value: ${{jobs.spack-install-and-test.outputs.spec-concretization-graph }}
+        description: |
+          A visual representation of the dependencies and constraints of the spack manifest file installed.
+      spack-sha:
+        value: ${{ jobs.spack-install-and-test.outputs.spack-sha }}
+        description: |
+          The SHA of the spack repository checked out.
+      spack-config-sha:
+        value: ${{ jobs.spack-install-and-test.outputs.spack-config-sha }}
+        description: |
+          The SHA of the spack-config repository checked out.
+      spack-packages-sha:
+        value: ${{ jobs.spack-install-and-test.outputs.spack-packages-sha }}
+        description: |
+          The SHA of the spack-packages repository checked out.
+      sha:
+        value: ${{ jobs.spack-install-and-test.outputs.sha }}
+        description: |
+          The SHA of the caller model component repository checked out.
+      spack-files-artifact-url:
+        value: ${{ jobs.spack-install-and-test.outputs.spack-files-artifact-url }}
+        description: |
+          The URL of the spack manifest and lock files artifact.
+      # test-artifact-url:
+      #   value: ${{}}
+      #   description: |
+      #     The URL of the pytest result artifact.
+jobs:
+  spack-install-and-test:
+    name: Install and Test
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/access-nri/build-ci-upstream:rocky
+    outputs:
+      spec-concretization-graph: ${{ steps.install.outputs.spec }}
+      spack-sha: ${{ steps.spack-update.outputs.sha }}
+      spack-config-sha: ${{ steps.spack-config-update.outputs.sha }}
+      spack-packages-sha: ${{ steps.spack-packages-update.outputs.sha }}
+      sha: ${{ steps.checkout.outputs.commit }}
+      spack-files-artifact-url: ${{ steps.upload.outputs.artifact-url }}
+      # test-artifact-url: ${{ steps.test.outputs.artifact-url }}
+    steps:
+      - name: Export environment variables into GitHub Actions format
+        # Environment variables inside containers are not accessible in the `env` context,
+        # a context which would be used in future conditional steps.
+        # This step exports important container environment variables as outputs.
+        # And yes, this loop echoes name-of-var=value-of-var!
+        id: env
+        run: |
+          for var in SPACK_ROOT SPACK_CONFIG_DIR SPACK_REPO_VERSION SPACK_CONFIG_REPO_VERSION SPACK_PACKAGES_REPO_VERSION; do
+            echo "$var=${!var}" >> $GITHUB_OUTPUT
+          done
+
+          # The upload step later requires a non-relative path, hence the realpath
+          echo "spack-env-dir=$(realpath $SPACK_ROOT/../environments)" >> $GITHUB_OUTPUT
+
+      - name: Update spack-package version
+        id: spack-packages-update
+        uses: access-nri/build-ci/.github/actions/git-checkout-updated-ref@build-ci-2.0
+        with:
+          repository-path: ${{ steps.env.outputs.SPACK_ROOT }}/../spack-packages
+          ref: ${{ inputs.spack-packages-ref }}
+
+      - name: Update spack-config version
+        id: spack-config-update
+        uses: access-nri/build-ci/.github/actions/git-checkout-updated-ref@build-ci-2.0
+        with:
+          repository-path: ${{ steps.env.outputs.SPACK_ROOT }}/../spack-config
+          ref: ${{ inputs.spack-config-ref }}
+
+      - name: Update spack version
+        id: spack-update
+        uses: access-nri/build-ci/.github/actions/git-checkout-updated-ref@build-ci-2.0
+        with:
+          repository-path: ${{ steps.env.outputs.SPACK_ROOT }}
+          ref: ${{ inputs.spack-ref }}
+
+      - name: Relink spack-config to spack
+        if: steps.spack-config-update.outputs.updated == 'true' || steps.spack-update.outputs.updated == 'true'
+        run: ln --symbolic --relative --verbose --force ${{ steps.env.outputs.SPACK_CONFIG_DIR }}/* ${{ steps.env.outputs.SPACK_ROOT }}/etc/spack/
+
+      - name: Spack - Initial Enable + Compiler Load
+        run: |
+          . ${{ steps.env.outputs.SPACK_ROOT }}/../spack-config/spack-enable.bash
+          spack find
+
+      - name: Manifest - Checkout ${{ github.repository }}
+        id: checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+          submodules: recursive
+
+      - name: Manifest - Install Compilers Locally
+        # Some compilers may not be available upstream, so we install them locally in a separate spack.yaml
+        if: inputs.spack-compiler-manifest-path != ''
+        run: |
+          . ${{ steps.env.outputs.SPACK_ROOT }}/../spack-config/spack-enable.bash
+          spack env activate compilers --create --prompt --envfile ${{ inputs.spack-compiler-manifest-path }}
+          spack --debug install --fail-fast
+          spack env deactivate
+          yq '.spack.specs[]' ${{ inputs.spack-compiler-manifest-path }} | while read compiler; do
+            spack load $compiler
+            spack compiler find
+          done
+          spack compiler list
+
+      - name: Manifest - Install jinja-cli
+        run: python3 -m pip install jinja-cli==1.2.2
+
+      - name: Manifest - Replace jinja template variables
+        # This means that the caller manifest files can remain unchanged, but still vary based on the {{ pr }}
+        # Additional data can be provided to fill in the jinja template through the `spack-manifest-data-path` input
+        id: jinja-templated
+        run: |
+          templated_manifest_path=$(dirname ${{ inputs.spack-manifest-path }})/templated/$(basename ${{ inputs.spack-manifest-path }} .j2)
+          mkdir -p $(dirname $templated_manifest_path)
+
+          jinja \
+            --define ref ${{ inputs.ref }} \
+            ${{ inputs.spack-manifest-data-path != '' && format('--data {0}', inputs.spack-manifest-data-path) || '' }} \
+            ${{ inputs.spack-manifest-path}} \
+            > $templated_manifest_path
+
+          echo "Templated manifest at $templated_manifest_path is:"
+          cat $templated_manifest_path
+
+          echo "spack-manifest-path=$templated_manifest_path" >> $GITHUB_OUTPUT
+
+      - name: Manifest - Install
+        id: install
+        env:
+          # This is needed to ensure that the spack install command can access private repositories - we replace all HTTPS git URLs with the PAT
+          # We set the git config via environment variables, so that the PATs are not persisted in the container
+          GIT_CONFIG_COUNT: 1
+          GIT_CONFIG_KEY_0: url.https://oauth2:${{ secrets.spack-install-command-pat || secrets.GITHUB_TOKEN }}@github.com/.insteadOf
+          GIT_CONFIG_VALUE_0: https://github.com/
+        run: |
+          . ${{ steps.env.outputs.SPACK_ROOT }}/../spack-config/spack-enable.bash
+          spack env create default ${{ steps.jinja-templated.outputs.spack-manifest-path }}
+          spack env activate
+
+          echo "spec<<EOF" >> $GITHUB_OUTPUT
+          echo "$(spack spec)" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+          spack --debug install --fail-fast
+
+      - name: Manifest - Upload
+        id: upload
+        # Upload spack manifest and lock files
+        uses: actions/upload-artifact@v4
+        with:
+          name: spack-files-${{ job.container.id }}
+          path: ${{ steps.env.outputs.spack-env-dir }}/default/spack.*
+          if-no-files-found: error
+
+      - name: Tmate - Create session
+        # Only create the session if the spack installation was attempted, and we want a tmate session
+        if: >-
+          always() &&
+          (steps.install.conclusion == 'failure' || steps.install.conclusion == 'success') &&
+          inputs.allow-ssh-into-spack-install
+        id: tmate
+        uses: mxschmitt/action-tmate@e5c7151931ca95bad1c6f4190c730ecf8c7dde48  # v3.19
+        with:
+          # sudo is not accessible in this container
+          sudo: false
+          # allow future steps to run without awaiting tmate session close
+          detached: true
+          # Only allow actor to access the tmate session
+          limit-access-to-actor: true
+          # Our runner container has tmate pre-installed
+          install-dependencies: false
+
+      # TODO: Add pytest infrastructure
+      # - name: Run pytests
+      #   id: test
+      #   run: |
+      #     python -m pytest -v -m "${{ inputs.pytest-test-markers }}" --junitxml=pytest.xml
+      #     echo "pytest=$(cat pytest.xml)" >> $GITHUB_OUTPUT
