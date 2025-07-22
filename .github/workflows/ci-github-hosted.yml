@@ -1,4 +1,4 @@
-name: CI
+name: CI (GH)
 run-name: CI Test ${{ github.repository }} at ${{ github.event.number }} (${{ github.sha }})
 on:
   workflow_call:
