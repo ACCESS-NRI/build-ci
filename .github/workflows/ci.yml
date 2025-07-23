@@ -14,8 +14,18 @@ on:
         type: string
         description: |
           An optional file path in the caller model component repository that contains data to fill in the spack manifest jinja template.
-          This doesn't include {{ pr }}, which is filled in automatically.
+          This doesn't include {{ ref }}, which is filled in automatically.
           For example: .github/build/manifests/data/access-om2.spack.yaml.j2.json.
+      spack-manifest-data-pairs:
+        required: false
+        type: string
+        description: |
+          An optional, multi-line string of space-separated key-value pairs to fill in inputs.spack-manifest-path.
+          This is useful for filling in template values created dynamically by earlier jobs needed by this workflow.
+          This doesn't include {{ ref }}, which is filled in automatically.
+          For example:
+          package mom5
+          compiler intel
       spack-compiler-manifest-path:
         required: false
         type: string
@@ -30,6 +40,7 @@ on:
         default: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
         description: |
           The branch, tag, or commit SHA of the caller model component repository.
+          This value is filled in to the inputs.spack-manifest-path template as {{ ref }}.
           For example: main, 2025.03.0, 7ey2uy2.
       spack-config-ref:
         required: false
@@ -197,6 +208,7 @@ jobs:
 
           jinja \
             --define ref ${{ inputs.ref }} \
+            $( [ -n "${{ inputs.spack-manifest-data-pairs }}" ] && while read -r d; do echo "--define $d"; done <<< "${{ inputs.spack-manifest-data-pairs }}") \
             ${{ inputs.spack-manifest-data-path != '' && format('--data {0}', inputs.spack-manifest-data-path) || '' }} \
             ${{ inputs.spack-manifest-path}} \
             > $templated_manifest_path
