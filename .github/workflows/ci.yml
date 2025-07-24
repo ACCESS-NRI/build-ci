@@ -314,7 +314,10 @@ jobs:
         if: always()
         # The outputs of the job also contain the inputs to the job, so that they can be used in future jobs.
         run: |
-          jq --null-input '{
+          # We need to serialize the spec concretization graph to a single line, so that it can be used in JSON
+          serialized_spec_concretization_graph=$(sed -z 's/\n/\\n/g' <<< "${{ steps.install.outputs.spec }}")
+
+          jq --null-input --arg spec "$serialized_spec_concretization_graph" '{
             "spack_manifest_path": "${{ inputs.spack-manifest-path }}",
             "spack_manifest_data_path": "${{ inputs.spack-manifest-data-path }}",
             "spack_compiler_manifest_path": "${{ inputs.spack-compiler-manifest-path }}",
@@ -328,7 +331,7 @@ jobs:
 
             "spack_install_result": "${{ steps.install.conclusion }}",
 
-            "spec_concretization_graph": "${{ steps.install.outputs.spec }}",
+            "spec_concretization_graph": "$spec",
             "spack_sha": "${{ steps.spack-update.outputs.sha }}",
             "spack_config_sha": "${{ steps.spack-config-update.outputs.sha }}",
             "spack_packages_sha": "${{ steps.spack-packages-update.outputs.sha }}",
