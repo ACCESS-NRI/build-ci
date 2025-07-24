@@ -306,10 +306,13 @@ jobs:
       - name: Job Outputs - Create
         id: output-create
         # The outputs of the job also contain the inputs to the job, so that they can be used in future jobs.
+        # We need to serialize the spec concretization graph and data pairs to a single line, so that it can be used in JSON.
         run: |
-          # We need to serialize the spec concretization graph to a single line, so that it can be used in JSON
-          serialized_spec_concretization_graph=$(sed -z 's/\n/\\n/g' <<< "${{ steps.install.outputs.spec }}")
-          serialized_spack_manifest_data_pairs=$(sed -z 's/\n/\\n/g' <<< "${{ inputs.spack-manifest-data-pairs }}")
+          echo "${{ steps.install.outputs.spec }}" > ./concretization_graph.txt
+          serialized_spec_concretization_graph=$(sed -z 's/\n/\\n/g' ./concretization_graph.txt)
+
+          echo ${{ inputs.spack-manifest-data-pairs }} > ./spack_manifest_data_pairs.txt
+          serialized_spack_manifest_data_pairs=$(sed -z 's/\n/\\n/g' ./spack_manifest_data_pairs.txt)
 
           jq --null-input \
              --arg spec "$serialized_spec_concretization_graph" \
