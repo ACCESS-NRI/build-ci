@@ -313,10 +313,15 @@ jobs:
         run: |
           # We need to serialize the spec concretization graph to a single line, so that it can be used in JSON
           serialized_spec_concretization_graph=$(sed -z 's/\n/\\n/g' <<< "${{ steps.install.outputs.spec }}")
+          serialized_spack_manifest_data_pairs=$(sed -z 's/\n/\\n/g' <<< "${{ inputs.spack-manifest-data-pairs }}")
 
-          jq --null-input --arg spec "$serialized_spec_concretization_graph" '{
+          jq --null-input \
+             --arg spec "$serialized_spec_concretization_graph" \
+             --arg pairs "$serialized_spack_manifest_data_pairs" \
+          '{
             "spack_manifest_path": "${{ inputs.spack-manifest-path }}",
             "spack_manifest_data_path": "${{ inputs.spack-manifest-data-path }}",
+            "spack_manifest_data_pairs": "$pairs",
             "spack_compiler_manifest_path": "${{ inputs.spack-compiler-manifest-path }}",
             "ref": "${{ inputs.ref }}",
             "spack_config_ref": "${{ inputs.spack-config-ref }}",
