@@ -77,6 +77,14 @@ on:
           Enable the actor of the workflow to SSH into the container where the spack packages have been installed.
           This is useful for gathering post-install information before the container is destroyed.
           This will also make the workflow wait until the actor SSHs into the container, or it times out, before continuing.
+      container-image-version:
+        required: false
+        type: string
+        default: :rocky
+        description: |
+          The version of the container image to use for the runner.
+          Can be either a tag (specified by ':TAG') or a SHA (specified by '@sha256:SHA').
+          For example: ':8.9' or 'rocky@sha256:1234...'.
     secrets:
       spack-install-command-pat:
         required: false
@@ -103,10 +111,27 @@ on:
         value: ${{ jobs.spack-install-and-test.outputs.sha }}
         description: |
           The SHA of the caller model component repository checked out.
+      container-id:
+        value: ${{ jobs.spack-install-and-test.outputs.container-id }}
+        description: |
+          The ID of the container where the spack packages have been installed.
+      ## These outputs contain information on data uploaded as artifacts
+      spack-files-artifact-pattern:
+        value: ${{ jobs.spack-install-and-test.outputs.spack-files-artifact-pattern }}
+        description: |
+          Wildcard pattern to match all spack file artifacts across a matrix job.
       spack-files-artifact-url:
         value: ${{ jobs.spack-install-and-test.outputs.spack-files-artifact-url }}
         description: |
-          The URL of the spack manifest and lock files artifact.
+          The URL of the spack file artifact, which contains the spack files created.
+      job-output-artifact-pattern:
+        value: ${{ jobs.spack-install-and-test.outputs.job-output-artifact-pattern }}
+        description: |
+          Wildcard pattern to match all job output artifacts across a matrix job.
+      job-output-artifact-url:
+        value: ${{ jobs.spack-install-and-test.outputs.job-output-artifact-url }}
+        description: |
+          The URL of the job output artifact, which contains the job outputs in JSON format.
       # test-artifact-url:
       #   value: ${{}}
       #   description: |
@@ -117,7 +142,7 @@ jobs:
     runs-on:
       group: build-ci
     container:
-      image: ghcr.io/access-nri/build-ci-runner:rocky
+      image: ghcr.io/access-nri/build-ci-runner${{ inputs.container-image-version }}
       volumes:
         - /opt/upstream:/opt/upstream:ro
         - /opt/runner_set_buildcache:/opt/runner_set_buildcache:rw
@@ -127,7 +152,11 @@ jobs:
       spack-config-sha: ${{ steps.spack-config-update.outputs.sha }}
       spack-packages-sha: ${{ steps.spack-packages-update.outputs.sha }}
       sha: ${{ steps.checkout.outputs.commit }}
-      spack-files-artifact-url: ${{ steps.upload.outputs.artifact-url }}
+      spack-files-artifact-pattern: ${{ steps.env.outputs.spack-files-artifact-pattern }}
+      spack-files-artifact-url: ${{ steps.manifest-upload.outputs.artifact-url }}
+      job-output-artifact-pattern: ${{ steps.env.outputs.job-output-artifact-pattern }}
+      job-output-artifact-url: ${{ steps.output-upload.outputs.artifact-url }}
+      container-id: ${{ steps.env.outputs.container-id }}
       # test-artifact-url: ${{ steps.test.outputs.artifact-url }}
     steps:
       - name: Export environment variables into GitHub Actions format
@@ -143,6 +172,15 @@ jobs:
 
           # The upload step later requires a non-relative path, hence the realpath
           echo "spack-env-dir=$(realpath $SPACK_ROOT/../environments)" >> $GITHUB_OUTPUT
+
+          # We can only get the job.container.id after the container is started, so we set it as the file name here
+          echo 'job-output-artifact-name=job-output-${{ job.container.id }}' >> $GITHUB_OUTPUT
+          echo 'job-output-artifact-pattern=job-output-*' >> $GITHUB_OUTPUT
+
+          echo 'spack-files-artifact-name=spack-files-${{ job.container.id }}' >> $GITHUB_OUTPUT
+          echo 'spack-files-artifact-pattern=spack-files-*' >> $GITHUB_OUTPUT
+
+          echo 'container-id=${{ job.container.id }}' >> $GITHUB_OUTPUT
 
       - name: Update spack-package version
         id: spack-packages-update
@@ -238,11 +276,11 @@ jobs:
           spack --debug install --fail-fast
 
       - name: Manifest - Upload
-        id: upload
+        id: manifest-upload
         # Upload spack manifest and lock files
         uses: actions/upload-artifact@v4
         with:
-          name: spack-files-${{ job.container.id }}
+          name: ${{ steps.env.outputs.spack-files-artifact-name }}
           path: ${{ steps.env.outputs.spack-env-dir }}/default/spack.*
           if-no-files-found: error
 
@@ -270,3 +308,43 @@ jobs:
       #   run: |
       #     python -m pytest -v -m "${{ inputs.pytest-test-markers }}" --junitxml=pytest.xml
       #     echo "pytest=$(cat pytest.xml)" >> $GITHUB_OUTPUT
+
+      - name: Job Outputs - Create
+        id: output-create
+        if: always()
+        # The outputs of the job also contain the inputs to the job, so that they can be used in future jobs.
+        run: |
+          jq --null-input '{
+            "spack_manifest_path": "${{ inputs.spack-manifest-path }}",
+            "spack_manifest_data_path": "${{ inputs.spack-manifest-data-path }}",
+            "spack_compiler_manifest_path": "${{ inputs.spack-compiler-manifest-path }}",
+            "ref": "${{ inputs.ref }}",
+            "spack_config_ref": "${{ inputs.spack-config-ref }}",
+            "spack_packages_ref": "${{ inputs.spack-packages-ref }}",
+            "spack_ref": "${{ inputs.spack-ref }}",
+            "pytest_test_markers": "${{ inputs.pytest-test-markers }}",
+            "allow_ssh_into_spack_install": "${{ inputs.allow-ssh-into-spack-install }}",
+            "container_image_version": "${{ inputs.container-image-version }}",
+
+            "spack_install_result": "${{ steps.install.conclusion }}",
+
+            "spec_concretization_graph": "${{ steps.install.outputs.spec }}",
+            "spack_sha": "${{ steps.spack-update.outputs.sha }}",
+            "spack_config_sha": "${{ steps.spack-config-update.outputs.sha }}",
+            "spack_packages_sha": "${{ steps.spack-packages-update.outputs.sha }}",
+            "sha": "${{ steps.checkout.outputs.commit }}",
+            "container_id": "${{ steps.env.outputs.container-id }}",
+            "spack_files_artifact_pattern": "${{ steps.env.outputs.spack-files-artifact-pattern }}",
+            "spack_files_artifact_url": "${{ steps.manifest-upload.outputs.artifact-url }}",
+            "job_output_artifact_pattern": "${{ steps.env.outputs.job-output-artifact-pattern }}",
+            "job_output_artifact_url": "${{ steps.env.outputs.job-output-artifact-url }}"
+          }' > ./${{ steps.env.outputs.job-output-artifact-name }}
+
+      - name: Job Outputs - Upload
+        id: output-upload
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.env.outputs.job-output-artifact-name }}
+          path: ./${{ steps.env.outputs.job-output-artifact-name }}
+          if-no-files-found: error
