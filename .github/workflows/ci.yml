@@ -258,6 +258,7 @@ jobs:
 
       - name: Manifest - Install
         id: install
+        continue-on-error: true
         env:
           # This is needed to ensure that the spack install command can access private repositories - we replace all HTTPS git URLs with the PAT
           # We set the git config via environment variables, so that the PATs are not persisted in the container
@@ -285,11 +286,7 @@ jobs:
           if-no-files-found: error
 
       - name: Tmate - Create session
-        # Only create the session if the spack installation was attempted, and we want a tmate session
-        if: >-
-          always() &&
-          (steps.install.conclusion == 'failure' || steps.install.conclusion == 'success') &&
-          inputs.allow-ssh-into-spack-install
+        if: inputs.allow-ssh-into-spack-install
         id: tmate
         uses: mxschmitt/action-tmate@e5c7151931ca95bad1c6f4190c730ecf8c7dde48  # v3.19
         with:
@@ -305,13 +302,13 @@ jobs:
       # TODO: Add pytest infrastructure
       # - name: Run pytests
       #   id: test
+      #   if: steps.install.outcome == 'success'
       #   run: |
       #     python -m pytest -v -m "${{ inputs.pytest-test-markers }}" --junitxml=pytest.xml
       #     echo "pytest=$(cat pytest.xml)" >> $GITHUB_OUTPUT
 
       - name: Job Outputs - Create
         id: output-create
-        if: always()
         # The outputs of the job also contain the inputs to the job, so that they can be used in future jobs.
         run: |
           # We need to serialize the spec concretization graph to a single line, so that it can be used in JSON
@@ -345,7 +342,6 @@ jobs:
 
       - name: Job Outputs - Upload
         id: output-upload
-        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.env.outputs.job-output-artifact-name }}
