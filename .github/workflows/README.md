@@ -212,7 +212,7 @@ spack:
 
 #### Using outputs of a Matrix Job
 
-If you need to aggregate data across multiple instances of a matrix job, you will need to use the `job-output-artifact-pattern` output rather than individual job outputs through `needs`, due to GitHubs instances of jobs overwriting the sole matrix job output. This pattern, when used as an argument to `actions/download-artifact`, will have all the inputs, outputs and conclusion of each instance of the matrix job, in JSON. In a dependent later job, you will need to merge all these artifacts together and parse them. For example:
+If you need to aggregate data across multiple instances of a matrix job, you will need to use the `job-output-artifact-pattern` output rather than individual job outputs through `needs`, due to GitHubs insistence of jobs overwriting the sole matrix job output. This pattern, when used as an argument to `actions/download-artifact`, will have all the inputs, outputs and conclusion of each instance of the matrix job, in JSON. In a dependent later job, you will need to merge all these artifacts together and parse them. For example:
 
 ```yaml
 jobs:
