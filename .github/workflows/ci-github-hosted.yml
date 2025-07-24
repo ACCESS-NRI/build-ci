@@ -320,6 +320,7 @@ jobs:
           '{
             "spack_manifest_path": "${{ inputs.spack-manifest-path }}",
             "spack_manifest_data_path": "${{ inputs.spack-manifest-data-path }}",
+            "spack_manifest_data_pairs": $pairs,
             "spack_compiler_manifest_path": "${{ inputs.spack-compiler-manifest-path }}",
             "ref": "${{ inputs.ref }}",
             "spack_config_ref": "${{ inputs.spack-config-ref }}",
@@ -331,7 +332,7 @@ jobs:
 
             "spack_install_result": "${{ steps.install.conclusion }}",
 
-            "spec_concretization_graph": "$spec",
+            "spec_concretization_graph": $spec,
             "spack_sha": "${{ steps.spack-update.outputs.sha }}",
             "spack_config_sha": "${{ steps.spack-config-update.outputs.sha }}",
             "spack_packages_sha": "${{ steps.spack-packages-update.outputs.sha }}",
@@ -339,8 +340,7 @@ jobs:
             "container_id": "${{ steps.env.outputs.container-id }}",
             "spack_files_artifact_pattern": "${{ steps.env.outputs.spack-files-artifact-pattern }}",
             "spack_files_artifact_url": "${{ steps.manifest-upload.outputs.artifact-url }}",
-            "job_output_artifact_pattern": "${{ steps.env.outputs.job-output-artifact-pattern }}",
-            "job_output_artifact_url": "${{ steps.env.outputs.job-output-artifact-url }}"
+            "job_output_artifact_pattern": "${{ steps.env.outputs.job-output-artifact-pattern }}"
           }' > ./${{ steps.env.outputs.job-output-artifact-name }}
 
       - name: Job Outputs - Upload
