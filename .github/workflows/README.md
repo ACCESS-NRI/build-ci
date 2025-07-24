@@ -18,6 +18,7 @@ This workflow handles building and running short CI tests on a given spack manif
 | `spack-config-ref` | `string` (Git ref) | The branch, tag, or commit SHA of the access-nri/spack-config repository to use | `false` | `"main"` | `"02125b01eb7c778c8d0ae0a02a260de474782e81"`, `"main"`, `"2025.01.000"` |
 | `spack-packages-ref` | `string` (Git ref) | The branch, tag, or commit SHA of the access-nri/spack-packages repository to use | `false` | `"main"` | `"02125b01eb7c778c8d0ae0a02a260de474782e81"`, `"main"`, `"2025.01.000"` |
 | `allow-ssh-into-spack-install` | `boolean` | Enable the actor of the workflow to SSH into the container where the spack packages have been installed. This is useful for gathering post-install information before the container is destroyed. This will also make the workflow wait until the actor SSHs into the container, or it times out, before continuing | `false` | `false` | `true`, `false` |
+| `container-image-version` | `string` (Docker version ref) | The version of the container image to use for the runner. Can be either a `:TAG` or a `@sha256:SHA`. | `false` | `":rocky"` | `':8.9'` (tag), `'@sha256:1234...'` (SHA) |
 
 #### Future Inputs
 
@@ -41,7 +42,11 @@ This workflow handles building and running short CI tests on a given spack manif
 | `spack-config-sha` | `string` (Git commit SHA) | The SHA of the `ACCESS-NRI/spack-config` repository checked out | `"02125b01eb7c778c8d0ae0a02a260de474782e81"` |
 | `spack-packages-sha` | `string` (Git commit SHA) | The SHA of the `ACCESS-NRI/spack-packages` repository checked out | `"02125b01eb7c778c8d0ae0a02a260de474782e81"` |
 | `sha` | `string` (Git commit SHA) | The SHA of the caller model component repository checked out | `"02125b01eb7c778c8d0ae0a02a260de474782e81"` |
+| `container-id` | `string` | The ID of the container where the spack packages have been installed | `"ohfn2ofy2h2uyfg2uyg3uyg3uh"` |
+| `spack-files-artifact-pattern` | `string` (glob) | Wildcard pattern to match all spack file artifacts across a matrix job | `'spack-files-*'` |
 | `spack-files-artifact-url` | `string` (URL) | The URL of the spack manifest and lock files artifact | `"https://github.com/ACCESS-NRI/MOM5/actions/runs/15890554355/artifacts/3406449135"` |
+| `job-output-artifact-pattern` | `string` (glob) | Wildcard pattern to match all job output artifacts across a matrix job | `'job-output-*'` |
+| `job-output-artifact-url` | `string` (URL) | The URL of the job output artifact, which contains the job outputs in JSON format | `"https://github.com/ACCESS-NRI/MOM5/actions/runs/15890554355/artifacts/3406449136"` |
 
 #### Future Outputs
 
@@ -203,4 +208,41 @@ spack:
   view: false
   concretizer:
     unify: false
+```
+
+#### Using outputs of a Matrix Job
+
+If you need to aggregate data across multiple instances of a matrix job, you will need to use the `job-output-artifact-pattern` output rather than individual job outputs through `needs`, due to GitHubs instances of jobs overwriting the sole matrix job output. This pattern, when used as an argument to `actions/download-artifact`, will have all the inputs, outputs and conclusion of each instance of the matrix job, in JSON. In a dependent later job, you will need to merge all these artifacts together and parse them. For example:
+
+```yaml
+jobs:
+  ci:
+    strategy:
+      fail-fast: false
+      matrix:
+        file:
+        - .github/build-ci/manifests/some.spack.yaml.j2
+        - .github/build-ci/manifests/another.spack.yaml.j2
+    uses: access-nri/build-ci/.github/workflows/ci.yaml@v2
+    with:
+      spack-manifest-path: ${{ matrix.file }}
+
+  post-ci-rollup:
+    needs:
+    - ci
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/download-artifact@v4
+      with:
+        pattern: ${{ needs.ci.outputs.job-output-artifact-pattern }}
+        merge-multiple: true
+        path: ./outputs
+
+    - name: Output all concretization graphs within this job
+      run: |
+        cd ./outputs
+        for f in *; do
+          echo "For job with container id: $(jq '.container_id' $f)"
+          jq '.spec_concretization_graph' $f
+        done
 ```
