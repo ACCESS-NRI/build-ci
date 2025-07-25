@@ -12,7 +12,7 @@ spack:
     # Compilers to install the packages
     - compilers:
       - intel@2021.10.0
-      - oneapi@2025.0.4
+      - oneapi@2025.2.0
 
     # Targets for the packages
     - targets:
@@ -25,7 +25,7 @@ spack:
     - [$targets]
   # Further specs can be installed in the usual way below, eg:
   # - gmake%intel@2021.10.0 target=x86_64
-  - python@3.11.7 %gcc@8.5.0 target=x86_64
+  - python@3.11.7 %gcc@13.2.0 target=x86_64
   view: false  # No view required as these upstream packages are not loaded by users
   concretizer:
     unify: false  # No need to unify because there are combinations of the same package
