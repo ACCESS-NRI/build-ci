@@ -4,8 +4,9 @@ spack:
   # We can't install compilers in a matrix, because we attempt to load each of the compilers in the speclist
   # when running containers/spack-config/ci-spack-enable.bash
   specs:
+  - gcc@13.2.0 target=x86_64
   - intel-oneapi-compilers@2023.2.4 target=x86_64
-  - intel-oneapi-compilers@2025.0.4 target=x86_64
+  - intel-oneapi-compilers@2025.2.0 target=x86_64
   view: false
   concretizer:
     unify: false
