@@ -1,0 +1,14 @@
+name: Build
+on:
+  pull_request:
+jobs:
+  ci:
+    name: CI
+    uses: access-nri/build-ci/.github/workflows/ci.yml@v2
+    with:
+      spack-manifest-path: .github/build-ci/manifests/spack.yaml.j2
+      spack-data-path: .github/build-ci/data/standard.json
+      allow-ssh-into-spack-install: false  # If true, PR author must ssh into instance to complete job
+      # spack-packages-ref: main
+      # spack-config-ref: main
+      # spack-ref: releases/v0.22
