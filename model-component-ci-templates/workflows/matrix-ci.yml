@@ -15,7 +15,7 @@ jobs:
         # Find all relevant files under .github/build-ci/manifests
         # then output them as a JSON array (minus the last comma)
         run: |
-          files =$(find .github/build-ci/manifests/ -iname '*.j2' -printf '%p,')
+          files =$(find .github/build-ci/manifests/ -iname '*.j2' -printf '"%p",')
           echo "matrix=[${files%,}]" >> $GITHUB_OUTPUT
 
   ci:
