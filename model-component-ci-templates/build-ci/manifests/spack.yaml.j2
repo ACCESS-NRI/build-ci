@@ -1,10 +1,11 @@
+# package, compiler and target are defined in .github/build-ci/data/standard.json
 spack:
   specs:
   - '{{ package }}@git.{{ ref }}'
   packages:
     all:
       require:
-      - '%{{ compiler }} target=x86_64'
+      - '%{{ compiler }} target={{ target }}'
   concretizer:
     unify: false
   view: false
