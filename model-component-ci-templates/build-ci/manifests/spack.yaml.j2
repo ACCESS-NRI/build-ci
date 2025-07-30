@@ -1,6 +1,10 @@
 spack:
   specs:
-  - '{{ package }}@git.{{ ref }} {{ compiler }}'
+  - '{{ package }}@git.{{ ref }}'
+  packages:
+    all:
+      require:
+      - '%{{ compiler }} target=x86_64'
   concretizer:
     unify: false
   view: false
