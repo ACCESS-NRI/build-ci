@@ -9,6 +9,7 @@ jobs:
       spack-manifest-path: .github/build-ci/manifests/spack.yaml.j2
       spack-data-path: .github/build-ci/data/standard.json
       allow-ssh-into-spack-install: false  # If true, PR author must ssh into instance to complete job
+      # Below are the the effective defaults for some of the important inputs
       # spack-packages-ref: main
       # spack-config-ref: main
       # spack-ref: releases/v0.22
