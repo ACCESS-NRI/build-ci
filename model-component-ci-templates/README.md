@@ -1,8 +1,8 @@
-# Example Templates for Model Component Repository Build CI
+# Example Templates for Repository Build CI
 
 ## Overview
 
-For simple model component repository (MCR) build CI, it can often be enough to just run the defaults for the reusable workflow.
+For simple repository build CI, including Model Component Repositories (MCRs) and any other repositories that are referenced in spack packages, it can often be enough to just run the defaults for the reusable workflow.
 
 More complex CI is definitely possible, and the basic examples here shouldn't limit more complex use cases - this is just for quick additions to MCRs.
 

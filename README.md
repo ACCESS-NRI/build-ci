@@ -4,7 +4,7 @@ A central repository for reusable CI compilation testing workflows and container
 
 ## Repositories Serviced By `build-ci`
 
-These are repositories that use the `component` tag, which can be given by either this [search url](https://github.com/search?q=org%3AACCESS-NRI%20topic%3Acomponent&type=repositories) or through `gh` with `gh search repos --owner access-nri --include-forks -- topic:component`.
+These are repositories that use the `component` tag, which can be given by either this [search url](https://github.com/search?q=org%3AACCESS-NRI%20topic%3Abuild-ci-enabled&type=repositories) or through `gh` with `gh search repos --owner access-nri --include-forks -- topic:build-ci-enabled`.
 
 ## Overview
 
