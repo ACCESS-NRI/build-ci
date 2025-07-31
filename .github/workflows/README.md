@@ -1,6 +1,6 @@
 # Entrypoint Workflows
 
-## `ci.yml` - Build and Test Workflow Entrypoint
+## `ci.yml`, `ci-github-hosted.yml` - Build and Test Workflow Entrypoint
 
 ### Overview
 
