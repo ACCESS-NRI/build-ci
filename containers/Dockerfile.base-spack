@@ -50,6 +50,7 @@ RUN dnf update -y \
     python3-setuptools \
     svn \
     unzip \
+    vim \
     which \
     xz \
     zstd \
