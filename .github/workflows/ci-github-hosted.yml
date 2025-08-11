@@ -132,6 +132,14 @@ on:
         value: ${{ jobs.spack-install-and-test.outputs.job-output-artifact-url }}
         description: |
           The URL of the job output artifact, which contains the job outputs in JSON format.
+      spack-logs-artifact-pattern:
+        value: ${{ jobs.spack-install-and-test.outputs.spack-logs-artifact-pattern }}
+        description: |
+          Wildcard pattern to match all spack log artifacts across a matrix job.
+      spack-logs-artifact-url:
+        value: ${{ jobs.spack-install-and-test.outputs.spack-logs-artifact-url }}
+        description: |
+          The URL of the spack log artifact, which contains the spack logs created.
       # test-artifact-url:
       #   value: ${{}}
       #   description: |
@@ -152,6 +160,8 @@ jobs:
       spack-files-artifact-url: ${{ steps.manifest-upload.outputs.artifact-url }}
       job-output-artifact-pattern: ${{ steps.env.outputs.job-output-artifact-pattern }}
       job-output-artifact-url: ${{ steps.output-upload.outputs.artifact-url }}
+      spack-logs-artifact-pattern: ${{ steps.env.outputs.spack-logs-artifact-pattern }}
+      spack-logs-artifact-url: ${{ steps.logs-upload.outputs.artifact-url }}
       container-id: ${{ steps.env.outputs.container-id }}
       # test-artifact-url: ${{ steps.test.outputs.artifact-url }}
     steps:
@@ -175,6 +185,9 @@ jobs:
 
           echo 'spack-files-artifact-name=spack-files-${{ job.container.id }}' >> $GITHUB_OUTPUT
           echo 'spack-files-artifact-pattern=spack-files-*' >> $GITHUB_OUTPUT
+
+          echo 'spack-logs-artifact-name=spack-logs-${{ job.container.id }}' >> $GITHUB_OUTPUT
+          echo 'spack-logs-artifact-pattern=spack-logs-*' >> $GITHUB_OUTPUT
 
           echo 'container-id=${{ job.container.id }}' >> $GITHUB_OUTPUT
 
@@ -281,6 +294,32 @@ jobs:
           path: ${{ steps.env.outputs.spack-env-dir }}/default/spack.*
           if-no-files-found: error
 
+      - name: Manifest - Logs Create
+        if: always() && (steps.install.conclusion == 'failure' || steps.install.conclusion == 'success')
+        id: logs-create
+        run: |
+          . ${{ steps.env.outputs.SPACK_ROOT }}/../spack-config/ci-spack-enable.bash
+
+          mkdir logs
+
+          # Get all the top-level specs from the manifest
+          specs="$(yq '.spack.specs[] | match("[^%+~@ ]+").string' ${{ steps.env.outputs.spack-env-dir }}/default/spack.yaml)"
+          echo "Found top-level specs: $specs"
+
+          for spec in $specs; do
+            spec_no_space=$(tr ' ' '_' <<< "$spec")
+            spack -e default logs $spec > "logs/$spec_no_space.log"
+          done
+
+      - name: Manifest - Logs Upload
+        if: always() && (steps.install.conclusion == 'failure' || steps.install.conclusion == 'success')
+        id: logs-upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.env.outputs.spack-logs-artifact-name }}
+          path: logs/*.log
+          if-no-files-found: warning
+
       - name: Tmate - Create session
         # Only create the session if the spack installation was attempted, and we want a tmate session
         if: >-
@@ -341,7 +380,9 @@ jobs:
             "container_id": "${{ steps.env.outputs.container-id }}",
             "spack_files_artifact_pattern": "${{ steps.env.outputs.spack-files-artifact-pattern }}",
             "spack_files_artifact_url": "${{ steps.manifest-upload.outputs.artifact-url }}",
-            "job_output_artifact_pattern": "${{ steps.env.outputs.job-output-artifact-pattern }}"
+            "job_output_artifact_pattern": "${{ steps.env.outputs.job-output-artifact-pattern }}",
+            "spack_logs_artifact_url": "${{ steps.logs-upload.outputs.artifact-url }}",
+            "spack_logs_artifact_pattern": "${{ steps.env.outputs.artifact-pattern }}"
           }' > ./${{ steps.env.outputs.job-output-artifact-name }}
 
       - name: Job Outputs - Upload
