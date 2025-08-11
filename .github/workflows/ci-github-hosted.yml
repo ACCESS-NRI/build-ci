@@ -303,13 +303,15 @@ jobs:
           mkdir logs
 
           # Get all the top-level specs from the manifest
-          specs="$(yq '.spack.specs[] | match("[^%+~@ ]+").string' ${{ steps.env.outputs.spack-env-dir }}/default/spack.yaml)"
-          echo "Found top-level specs: $specs"
+          specs="$(yq '.spack.specs[]' ${{ steps.env.outputs.spack-env-dir }}/default/spack.yaml)"
+          echo "Found top-level specs:"
+          echo "$specs"
 
-          for spec in $specs; do
-            spec_no_space=$(tr ' ' '_' <<< "$spec")
+          while read -r spec; do
+            # We don't like spaces or unnecessary slashes in paths
+            spec_no_space=$(tr ' /' '__' <<< "$spec")
             spack -e default logs $spec > "logs/$spec_no_space.log"
-          done
+          done <<< "$specs"
 
       - name: Manifest - Logs Upload
         if: always() && (steps.install.conclusion == 'failure' || steps.install.conclusion == 'success')
