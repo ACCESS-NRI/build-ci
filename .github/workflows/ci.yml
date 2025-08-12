@@ -115,6 +115,10 @@ on:
         value: ${{ jobs.spack-install-and-test.outputs.container-id }}
         description: |
           The ID of the container where the spack packages have been installed.
+      short-container-id:
+        value: ${{ jobs.spack-install-and-test.outputs.short-container-id }}
+        description: |
+          The short ID of the container where the spack packages have been installed - used for artifact disambiguation.
       ## These outputs contain information on data uploaded as artifacts
       spack-files-artifact-pattern:
         value: ${{ jobs.spack-install-and-test.outputs.spack-files-artifact-pattern }}
@@ -167,6 +171,7 @@ jobs:
       spack-logs-artifact-pattern: ${{ steps.env.outputs.spack-logs-artifact-pattern }}
       spack-logs-artifact-url: ${{ steps.logs-upload.outputs.artifact-url }}
       container-id: ${{ steps.env.outputs.container-id }}
+      short-container-id: ${{ steps.env.outputs.short-container-id }}
       # test-artifact-url: ${{ steps.test.outputs.artifact-url }}
     steps:
       - name: Export environment variables into GitHub Actions format
@@ -183,17 +188,21 @@ jobs:
           # The upload step later requires a non-relative path, hence the realpath
           echo "spack-env-dir=$(realpath $SPACK_ROOT/../environments)" >> $GITHUB_OUTPUT
 
+          container_id=${{ job.container.id }}
+          short_container_id=$(echo ${{ job.container.id }} | cut -c1-8)
+
           # We can only get the job.container.id after the container is started, so we set it as the file name here
-          echo 'job-output-artifact-name=job-output-${{ job.container.id }}' >> $GITHUB_OUTPUT
-          echo 'job-output-artifact-pattern=job-output-*' >> $GITHUB_OUTPUT
+          echo "job-output-artifact-name=job-output-$short_container_id" >> $GITHUB_OUTPUT
+          echo "job-output-artifact-pattern=job-output-*" >> $GITHUB_OUTPUT
 
-          echo 'spack-files-artifact-name=spack-files-${{ job.container.id }}' >> $GITHUB_OUTPUT
-          echo 'spack-files-artifact-pattern=spack-files-*' >> $GITHUB_OUTPUT
+          echo "spack-files-artifact-name=spack-files-$short_container_id" >> $GITHUB_OUTPUT
+          echo "spack-files-artifact-pattern=spack-files-*" >> $GITHUB_OUTPUT
 
-          echo 'spack-logs-artifact-name=spack-logs-${{ job.container.id }}' >> $GITHUB_OUTPUT
-          echo 'spack-logs-artifact-pattern=spack-logs-*' >> $GITHUB_OUTPUT
+          echo "spack-logs-artifact-name=spack-logs-$short_container_id" >> $GITHUB_OUTPUT
+          echo "spack-logs-artifact-pattern=spack-logs-*" >> $GITHUB_OUTPUT
 
-          echo 'container-id=${{ job.container.id }}' >> $GITHUB_OUTPUT
+          echo "container-id=$container_id" >> $GITHUB_OUTPUT
+          echo "short-container-id=$short_container_id" >> $GITHUB_OUTPUT
 
       - name: Update spack-package version
         id: spack-packages-update
@@ -384,6 +393,7 @@ jobs:
             "spack_packages_sha": "${{ steps.spack-packages-update.outputs.sha }}",
             "sha": "${{ steps.checkout.outputs.commit }}",
             "container_id": "${{ steps.env.outputs.container-id }}",
+            "short_container_id": "${{ steps.env.outputs.short-container-id }}",
             "spack_files_artifact_pattern": "${{ steps.env.outputs.spack-files-artifact-pattern }}",
             "spack_files_artifact_url": "${{ steps.manifest-upload.outputs.artifact-url }}",
             "job_output_artifact_pattern": "${{ steps.env.outputs.job-output-artifact-pattern }}",
