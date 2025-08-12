@@ -209,7 +209,7 @@ jobs:
         # Furthermore, if spack has been updated, we need to make sure we link to the correct vX config directory in spack-config.
         # We find what branch the spack SHA is part of, and attempt to link to that directory.
         run: |
-          spack_branch=$(git -C ${{ steps.env.outputs.SPACK_ROOT }}/../spack for-each-ref --format='%(refname:short)' refs/remotes --contains ${{ steps.spack-update.outputs.sha }} \
+          spack_branch=$(git -C ${{ steps.env.outputs.SPACK_ROOT }} for-each-ref --format='%(refname:short)' refs/remotes --contains ${{ steps.spack-update.outputs.sha }} \
             | grep origin/releases/ \
             | sed -E 's|^origin/releases/(.+)|\1|' \
           )
@@ -217,7 +217,7 @@ jobs:
           if [[ $(echo "$spack_branch" | wc -l) -gt 1 ]]; then
             echo "::error::${{ steps.spack-update.outputs.sha }} is part of multiple spack release branches, and we can't determine which to link spack-config to"
             exit 2
-          elif [[ -n "$spack_branch" ]]; then
+          elif [[ -z "$spack_branch" ]]; then
             echo "::error::${{ steps.spack-update.outputs.sha }} is not part of any spack release branch, so we can't link spack-config to anything"
             exit 2
           else
