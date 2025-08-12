@@ -209,9 +209,9 @@ jobs:
         # Furthermore, if spack has been updated, we need to make sure we link to the correct vX config directory in spack-config.
         # We find what branch the spack SHA is part of, and attempt to link to that directory.
         run: |
-          spack_branch=$(git for-each-ref --format='%(refname:short)' refs/remotes --contains ${{ steps.spack-update.outputs.sha }}
-            | grep origin/releases/
-            | sed -E 's|^origin/releases/(.+)|\1|'
+          spack_branch=$(git for-each-ref --format='%(refname:short)' refs/remotes --contains ${{ steps.spack-update.outputs.sha }} \
+            | grep origin/releases/ \
+            | sed -E 's|^origin/releases/(.+)|\1|' \
           )
 
           if [[ $(echo "$spack_branch" | wc -l) -gt 1 ]]; then
