@@ -180,21 +180,21 @@ jobs:
 
       - name: Update spack-package version
         id: spack-packages-update
-        uses: access-nri/build-ci/.github/actions/git-checkout-updated-ref@build-ci-2.0
+        uses: access-nri/build-ci/.github/actions/git-checkout-updated-ref@v2
         with:
           repository-path: ${{ steps.env.outputs.SPACK_ROOT }}/../spack-packages
           ref: ${{ inputs.spack-packages-ref }}
 
       - name: Update spack-config version
         id: spack-config-update
-        uses: access-nri/build-ci/.github/actions/git-checkout-updated-ref@build-ci-2.0
+        uses: access-nri/build-ci/.github/actions/git-checkout-updated-ref@v2
         with:
           repository-path: ${{ steps.env.outputs.SPACK_ROOT }}/../spack-config
           ref: ${{ inputs.spack-config-ref }}
 
       - name: Update spack version
         id: spack-update
-        uses: access-nri/build-ci/.github/actions/git-checkout-updated-ref@build-ci-2.0
+        uses: access-nri/build-ci/.github/actions/git-checkout-updated-ref@v2
         with:
           repository-path: ${{ steps.env.outputs.SPACK_ROOT }}
           ref: ${{ inputs.spack-ref }}
