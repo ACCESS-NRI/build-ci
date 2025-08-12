@@ -333,7 +333,7 @@ jobs:
         with:
           name: ${{ steps.env.outputs.spack-logs-artifact-name }}
           path: logs/*.log
-          if-no-files-found: warning
+          if-no-files-found: warn
 
       - name: Tmate - Create session
         # Only create the session if the spack installation was attempted, and we want a tmate session
