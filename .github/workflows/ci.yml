@@ -320,10 +320,10 @@ jobs:
           echo "Found top-level specs:"
           echo "$specs"
 
+          i=0
           while read -r spec; do
-            # We don't like spaces or unnecessary slashes in paths
-            spec_no_special_chars=$(tr ' /' '__' <<< "$spec")
-            spack -e default logs $spec > "logs/$spec_no_special_chars.log"
+            spack -e default logs $spec > "logs/spec_${i}.log"
+            i=$((i + 1))
           done <<< "$specs"
 
       - name: Manifest - Logs Upload
