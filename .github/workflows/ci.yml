@@ -184,28 +184,47 @@ jobs:
 
       - name: Update spack-package version
         id: spack-packages-update
-        uses: access-nri/build-ci/.github/actions/git-checkout-updated-ref@build-ci-2.0
+        uses: access-nri/build-ci/.github/actions/git-checkout-updated-ref@v2
         with:
           repository-path: ${{ steps.env.outputs.SPACK_ROOT }}/../spack-packages
           ref: ${{ inputs.spack-packages-ref }}
 
       - name: Update spack-config version
         id: spack-config-update
-        uses: access-nri/build-ci/.github/actions/git-checkout-updated-ref@build-ci-2.0
+        uses: access-nri/build-ci/.github/actions/git-checkout-updated-ref@v2
         with:
           repository-path: ${{ steps.env.outputs.SPACK_ROOT }}/../spack-config
           ref: ${{ inputs.spack-config-ref }}
 
       - name: Update spack version
         id: spack-update
-        uses: access-nri/build-ci/.github/actions/git-checkout-updated-ref@build-ci-2.0
+        uses: access-nri/build-ci/.github/actions/git-checkout-updated-ref@v2
         with:
           repository-path: ${{ steps.env.outputs.SPACK_ROOT }}
           ref: ${{ inputs.spack-ref }}
 
       - name: Relink spack-config to spack
         if: steps.spack-config-update.outputs.updated == 'true' || steps.spack-update.outputs.updated == 'true'
-        run: ln --symbolic --relative --verbose --force ${{ steps.env.outputs.SPACK_CONFIG_DIR }}/* ${{ steps.env.outputs.SPACK_ROOT }}/etc/spack/
+        # If there was a change in spack or spack-config, we should relink the config to spack.
+        # Furthermore, if spack has been updated, we need to make sure we link to the correct vX config directory in spack-config.
+        # We find what branch the spack SHA is part of, and attempt to link to that directory.
+        run: |
+          spack_branch=$(git for-each-ref --format='%(refname:short)' refs/remotes --contains ${{ steps.spack-update.outputs.sha }}
+            | grep origin/releases/
+            | sed -E 's|^origin/releases/(.+)|\1|'
+          )
+
+          if [[ $(echo "$spack_branch" | wc -l) -gt 1 ]]; then
+            echo "::error::${{ steps.spack-update.outputs.sha }} is part of multiple spack release branches, and we can't determine which to link spack-config to"
+            exit 2
+          elif [[ -n "$spack_branch" ]]; then
+            echo "::error::${{ steps.spack-update.outputs.sha }} is not part of any spack release branch, so we can't link spack-config to anything"
+            exit 2
+          else
+            echo "Linking spack with SHA ${{ steps.spack-update.outputs.sha }} to spack-config directory $spack_branch"
+          fi
+
+          ln --symbolic --relative --verbose --force ${{ steps.env.outputs.SPACK_ROOT }}/${spack_branch}/* ${{ steps.env.outputs.SPACK_ROOT }}/etc/spack/
 
       - name: Spack - Initial Enable + Compiler Load
         run: |
