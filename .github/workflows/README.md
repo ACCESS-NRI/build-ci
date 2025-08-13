@@ -47,6 +47,8 @@ This workflow handles building and running short CI tests on a given spack manif
 | `spack-files-artifact-url` | `string` (URL) | The URL of the spack manifest and lock files artifact | `"https://github.com/ACCESS-NRI/MOM5/actions/runs/15890554355/artifacts/3406449135"` |
 | `job-output-artifact-pattern` | `string` (glob) | Wildcard pattern to match all job output artifacts across a matrix job | `'job-output-*'` |
 | `job-output-artifact-url` | `string` (URL) | The URL of the job output artifact, which contains the job outputs in JSON format | `"https://github.com/ACCESS-NRI/MOM5/actions/runs/15890554355/artifacts/3406449136"` |
+| `spack-logs-artifact-pattern` | `string` (glob) | Wildcard pattern to match all spack log artifacts across a matrix job | `'spack-logs-*'` |
+| `spack-logs-artifact-url` | `string` (URL) | The URL of the spack logs artifact, which contains the spack logs for each input spec | `"https://github.com/ACCESS-NRI/MOM5/actions/runs/15890554355/artifacts/3406449137"` |
 
 #### Future Outputs
 
