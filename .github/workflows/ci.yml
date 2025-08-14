@@ -330,7 +330,7 @@ jobs:
         if: always() && (steps.install.conclusion == 'failure' || steps.install.conclusion == 'success')
         id: logs-create
         run: |
-          . ${{ steps.env.outputs.SPACK_ROOT }}/../spack-config/ci-spack-enable.bash
+          . ${{ steps.env.outputs.SPACK_ROOT }}/../spack-config/spack-enable.bash
 
           mkdir logs
 
