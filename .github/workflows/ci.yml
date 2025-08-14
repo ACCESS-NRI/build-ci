@@ -189,7 +189,7 @@ jobs:
           echo "spack-env-dir=$(realpath $SPACK_ROOT/../environments)" >> $GITHUB_OUTPUT
 
           container_id=${{ job.container.id }}
-          short_container_id=$(echo ${{ job.container.id }} | cut -c1-8)
+          short_container_id=${container_id:0:8}
 
           # We can only get the job.container.id after the container is started, so we set it as the file name here
           echo "job-output-artifact-name=job-output-$short_container_id" >> $GITHUB_OUTPUT
