@@ -13,6 +13,7 @@ spack:
     - compilers:
       - intel@2021.10.0
       - oneapi@2025.2.0
+      - gcc@13.2.0
 
     # Targets for the packages
     - targets:
