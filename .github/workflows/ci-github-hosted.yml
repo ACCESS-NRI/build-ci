@@ -336,7 +336,7 @@ jobs:
           fi
 
           # Get all the top-level specs from the manifest
-          specs="$(yq '.roots[].spec' ${{ steps.env.outputs.spack-env-dir }}/default/spack.lock)"
+          specs="$(jq --raw-output '.roots[].spec' ${{ steps.env.outputs.spack-env-dir }}/default/spack.lock)"
           echo "Found top-level specs:"
           echo "$specs"
 
