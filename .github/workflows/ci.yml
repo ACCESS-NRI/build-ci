@@ -334,8 +334,13 @@ jobs:
 
           mkdir logs
 
+          if [ ! -f ${{ steps.env.outputs.spack-env-dir }}/default/spack.lock ]; then
+            echo "Spack lock file not found, skipping log creation."
+            exit 0
+          fi
+
           # Get all the top-level specs from the manifest
-          specs="$(yq '.spack.specs[]' ${{ steps.env.outputs.spack-env-dir }}/default/spack.yaml)"
+          specs="$(jq --raw-output '.roots[].spec' ${{ steps.env.outputs.spack-env-dir }}/default/spack.lock)"
           echo "Found top-level specs:"
           echo "$specs"
 
