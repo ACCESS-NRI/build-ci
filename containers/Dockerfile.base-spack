@@ -215,14 +215,14 @@ spack load ${COMPILER_PKG_NAME}@${COMPILER_PKG_VERSION} \
  && spack compiler find
 
 spack install \
-    gmake %${COMPILER_NAME}@${COMPILER_VERSION} target=${SPACK_TARGET}
+    gmake target=${SPACK_TARGET} %${COMPILER_NAME}@${COMPILER_VERSION}
 
 spack install \
-    cmake %${COMPILER_NAME}@${COMPILER_VERSION} target=${SPACK_TARGET}
+    cmake target=${SPACK_TARGET} %${COMPILER_NAME}@${COMPILER_VERSION}
 
 spack install \
-    ${MPI_NAME}@${MPI_VERSION} %${COMPILER_NAME}@${COMPILER_VERSION} \
-    target=${SPACK_TARGET}
+    ${MPI_NAME}@${MPI_VERSION} target=${SPACK_TARGET} \
+    %${COMPILER_NAME}@${COMPILER_VERSION}
 
 spack clean --downloads
 EOF
