@@ -4,27 +4,29 @@ name: Spack Instance
 # to reduce duplication in the file
 x-common-args: &common-args
   OS: rocky
-  SPACK_VERSION: v0.22
+  SPACK_VERSION: v1.0
+  SPACK_PACKAGES_REPO_VERSION: api-v2
+  SPACK_CONFIG_REPO_VERSION: main
   SOURCE_COMPILERS_SPACK_MANIFEST: upstream/prod/compilers.spack.yaml
   SOURCE_PACKAGES_SPACK_MANIFEST: upstream/prod/packages.spack.yaml
 services:
   upstream:
     container_name: Upstream
-    image: ghcr.io/access-nri/build-ci-upstream:rocky
+    image: ghcr.io/access-nri/build-ci-upstream:rocky-v1.0
     tty: true
     build:
       context: .
       target: upstream
       args:
         <<: *common-args
-        SPACK_CONFIG_DIR: /opt/spack-config/v0.22/ci-upstream
+        SPACK_CONFIG_DIR: /opt/spack-config/v1.0/ci-upstream
     volumes:
       - upstream:/opt/upstream:rw
       - buildcache:/opt/runner_set_buildcache:rw
 
   runner:
     container_name: Runner
-    image: ghcr.io/access-nri/build-ci-runner:rocky
+    image: ghcr.io/access-nri/build-ci-runner:rocky-v1.0
     tty: true
     depends_on:
     - upstream
@@ -33,7 +35,7 @@ services:
       target: runner
       args:
         <<: *common-args
-        SPACK_CONFIG_DIR: /opt/spack-config/v0.22/ci-runner
+        SPACK_CONFIG_DIR: /opt/spack-config/v1.0/ci-runner
     volumes:
       - upstream:/opt/upstream:ro
       - buildcache:/opt/runner_set_buildcache:rw
