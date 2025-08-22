@@ -54,15 +54,20 @@ RUN dnf update -y \
     which \
     xz \
     zstd \
- && rm -rf /var/cache/dnf \
- && dnf clean all \
+ # Install yq
  && curl -L https://github.com/mikefarah/yq/releases/download/v4.45.1/yq_linux_amd64 -o /usr/bin/yq \
  && chmod +x /usr/bin/yq \
 # Install tmate in the image for remote access during workflows via mxschmitt/action-tmate
  && curl -L https://github.com/tmate-io/tmate/releases/download/2.4.0/tmate-2.4.0-static-linux-amd64.tar.xz -o static-tmate.tar.xz \
  && tar -xvf static-tmate.tar.xz --strip-components=1 \
  && mv tmate /usr/local/bin/tmate \
- && rm -rf static-tmate.tar.xz
+ && rm -rf static-tmate.tar.xz \
+ # Install gh
+ && curl -fsSL https://cli.github.com/packages/rpm/gh-cli.repo | tee /etc/yum.repos.d/github-cli.repo \
+ && dnf -y install gh \
+ # dnf cleanup
+ && rm -rf /var/cache/dnf \
+ && dnf clean all
 
 ################################################################################
 FROM opensuse/leap:15.5 AS base-os-suse
@@ -106,14 +111,21 @@ RUN zypper ref \
     subversion \
     tcsh \
     vim \
- &&  zypper clean \
+ # Install yq
  && curl -L https://github.com/mikefarah/yq/releases/download/v4.45.1/yq_linux_amd64 -o /usr/bin/yq \
  && chmod +x /usr/bin/yq \
  # Install tmate in the image for remote access during workflows via mxschmitt/action-tmate
  && curl -L https://github.com/tmate-io/tmate/releases/download/2.4.0/tmate-2.4.0-static-linux-amd64.tar.xz -o static-tmate.tar.xz \
  && tar -xvf static-tmate.tar.xz --strip-components=1 \
  && mv tmate /usr/local/bin/tmate \
- && rm -rf static-tmate.tar.xz
+ && rm -rf static-tmate.tar.xz \
+ # Install gh
+ && zypper addrepo https://cli.github.com/packages/rpm/gh-cli.repo \
+ && zypper ref \
+ && zypper install gh \
+ # zypper cleanup
+ &&  zypper clean 
+
 
 ################################################################################
 FROM base-os-$OS AS base-spack
@@ -202,7 +214,7 @@ RUN <<EOF
 echo "Installing compilers"
 spack env activate compilers --create --envfile ${ENV_COMPILERS_SPACK_MANIFEST}
 spack spec
-spack install --fail-fast || exit
+spack install --deprecated --fail-fast || exit
 spack env deactivate
 yq '.spack.specs[]' "${ENV_COMPILERS_SPACK_MANIFEST}" | while read compiler; do
   echo "Loading compiler: $compiler"
@@ -212,10 +224,10 @@ done
 
 echo "Installing common packages"
 spack env activate packages --create --envfile ${ENV_PACKAGES_SPACK_MANIFEST}
-spack install --fail-fast || exit
+spack install --deprecated --fail-fast || exit
 spack env deactivate
 
-spack clean --downloads
+spack clean --downloads --stage
 EOF
 
 ################################################################################
