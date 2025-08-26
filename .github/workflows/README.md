@@ -19,6 +19,7 @@ This workflow handles building and running short CI tests on a given spack manif
 | `spack-packages-ref` | `string` (Git ref) | The branch, tag, or commit SHA of the access-nri/spack-packages repository to use | `false` | `"main"` | `"02125b01eb7c778c8d0ae0a02a260de474782e81"`, `"main"`, `"2025.01.000"` |
 | `allow-ssh-into-spack-install` | `boolean` | Enable the actor of the workflow to SSH into the container where the spack packages have been installed. This is useful for gathering post-install information before the container is destroyed. This will also make the workflow wait until the actor SSHs into the container, or it times out, before continuing | `false` | `false` | `true`, `false` |
 | `container-image-version` | `string` (Docker version ref) | The version of the container image to use for the runner. Can be either a `:TAG` or a `@sha256:SHA`. | `false` | `":rocky"` | `':8.9'` (tag), `'@sha256:1234...'` (SHA) |
+| `spack-oci-buildcache-url` | `string` (OCI URL) | The URL to an oci-backed buildcache, available in spack >= v1.0. OCI-backed buildcaches are the only option for GitHub-hosted CI, and can be used as a backup for self-hosted CI's runner buildcache | `false` | N/A | `"oci://ghcr.io/ACCESS-NRI/build-ci-buildcache"`, `"oci://ghcr.io/ORG/IMAGE"` |
 
 #### Future Inputs
 
@@ -32,6 +33,9 @@ This workflow handles building and running short CI tests on a given spack manif
 | Name | Type | Description | Required | Default | Example |
 | ---- | ---- | ----------- | -------- | ------- | ------- |
 | `spack-install-command-pat` | `string` (GitHub Personal Access Token) | GitHub PAT to use for the spack install command, for access to potentially private repositories. Set as a Repo-level secret | `false` | N/A | `"github_pat_XXXXX"` |
+| `spack-oci-buildcache-username` | `string` (GitHub Login if `oci://ghcr.io`) | A username (or GitHub username for `oci://ghcr.io` buildcaches) to use for reading and writing to the spack OCI buildcache, if `inputs.spack-oci-buildcache-url` is defined | `false` (attempts with `github.actor`) | N/A | `"CodeGat"` |
+
+| `spack-oci-buildcache-password` | `string` (GitHub Personal Access Token if `oci://ghcr.io`) | A password (or GitHub PAT for `oci://ghcr.io` buildcaches) to use for reading and writing to the spack OCI buildcache, if `inputs.spack-oci-buildcache-url` is defined | `false` (attempts with `secrets.GITHUB_TOKEN`) | N/A | `"github_pat_XXXXX"` |
 
 ### Outputs
 
