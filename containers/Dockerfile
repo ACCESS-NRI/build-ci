@@ -124,7 +124,7 @@ RUN zypper ref \
  && zypper ref \
  && zypper install gh \
  # zypper cleanup
- &&  zypper clean 
+ &&  zypper clean
 
 
 ################################################################################
@@ -193,9 +193,6 @@ RUN ln -s ${SPACK_ROOT}/share/spack/docker/entrypoint.bash \
     ln -s ${SPACK_ROOT}/share/spack/docker/entrypoint.bash \
     /usr/local/bin/spack-env
 
-COPY ${SOURCE_COMPILERS_SPACK_MANIFEST} ${ENV_COMPILERS_SPACK_MANIFEST}
-COPY ${SOURCE_PACKAGES_SPACK_MANIFEST} ${ENV_PACKAGES_SPACK_MANIFEST}
-
 # Setup Spack environment for subsequent RUN steps
 SHELL ["docker-shell"]
 
@@ -210,6 +207,7 @@ FROM base-spack AS upstream
 LABEL org.opencontainers.image.source=https://github.com/ACCESS-NRI/build-ci
 
 # Install compilers and low-level, common packages
+COPY ${SOURCE_COMPILERS_SPACK_MANIFEST} ${ENV_COMPILERS_SPACK_MANIFEST}
 RUN <<EOF
 echo "Installing compilers"
 spack env activate compilers --create --envfile ${ENV_COMPILERS_SPACK_MANIFEST}
@@ -222,6 +220,11 @@ yq '.spack.specs[]' "${ENV_COMPILERS_SPACK_MANIFEST}" | while read compiler; do
   spack compiler find
 done
 
+spack clean --downloads --stage
+EOF
+
+COPY ${SOURCE_PACKAGES_SPACK_MANIFEST} ${ENV_PACKAGES_SPACK_MANIFEST}
+RUN <<EOF
 echo "Installing common packages"
 spack env activate packages --create --envfile ${ENV_PACKAGES_SPACK_MANIFEST}
 spack install --deprecated --fail-fast || exit
