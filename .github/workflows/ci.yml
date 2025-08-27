@@ -271,7 +271,7 @@ jobs:
       - name: Spack - OCI Buildcache Init
         if: inputs.spack-oci-buildcache-url != ''
         run: |
-          . ${{ steps.env.outputs.SPACK_ROOT }}/../spack-config/spack-enable.bash
+          . ${{ steps.env.outputs.SPACK_ROOT }}/../spack-config/ci-spack-enable.bash
           spack mirror add --unsigned \
             --oci-username-variable OCI_USERNAME \
             --oci-password-variable OCI_PASSWORD \

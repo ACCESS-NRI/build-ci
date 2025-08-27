@@ -261,13 +261,13 @@ jobs:
 
       - name: Spack - Initial Enable + Compiler Load
         run: |
-          . ${{ steps.env.outputs.SPACK_ROOT }}/../spack-config/spack-enable.bash
+          . ${{ steps.env.outputs.SPACK_ROOT }}/../spack-config/ci-spack-enable.bash
           spack find
 
       - name: Spack - OCI Buildcache Init
         if: inputs.spack-oci-buildcache-url != ''
         run: |
-          . ${{ steps.env.outputs.SPACK_ROOT }}/../spack-config/spack-enable.bash
+          . ${{ steps.env.outputs.SPACK_ROOT }}/../spack-config/ci-spack-enable.bash
           spack mirror add --unsigned \
             --oci-username-variable OCI_USERNAME \
             --oci-password-variable OCI_PASSWORD \
@@ -288,7 +288,7 @@ jobs:
           OCI_USERNAME: ${{ secrets.spack-oci-buildcache-username || github.actor }}
           OCI_PASSWORD: ${{ secrets.spack-oci-buildcache-password || secrets.GITHUB_TOKEN }}
         run: |
-          . ${{ steps.env.outputs.SPACK_ROOT }}/../spack-config/spack-enable.bash
+          . ${{ steps.env.outputs.SPACK_ROOT }}/../spack-config/ci-spack-enable.bash
           spack env activate compilers --create --prompt --envfile ${{ inputs.spack-compiler-manifest-path }}
           spack --debug install --fail-fast --deprecated
           spack env deactivate
@@ -333,7 +333,7 @@ jobs:
           GIT_CONFIG_KEY_0: url.https://oauth2:${{ secrets.spack-install-command-pat || secrets.GITHUB_TOKEN }}@github.com/.insteadOf
           GIT_CONFIG_VALUE_0: https://github.com/
         run: |
-          . ${{ steps.env.outputs.SPACK_ROOT }}/../spack-config/spack-enable.bash
+          . ${{ steps.env.outputs.SPACK_ROOT }}/../spack-config/ci-spack-enable.bash
           spack env create default ${{ steps.jinja-templated.outputs.spack-manifest-path }}
           spack env activate
 
@@ -350,7 +350,7 @@ jobs:
           OCI_PASSWORD: ${{ secrets.spack-oci-buildcache-password || secrets.GITHUB_TOKEN }}
         if: inputs.spack-oci-buildcache-url != ''
         run: |
-          . ${{ steps.env.outputs.SPACK_ROOT }}/../spack-config/spack-enable.bash
+          . ${{ steps.env.outputs.SPACK_ROOT }}/../spack-config/ci-spack-enable.bash
           spack -e default buildcache push --unsigned oci_buildcache
 
       - name: Manifest - Upload
@@ -367,7 +367,7 @@ jobs:
         if: always() && (steps.install.conclusion == 'failure' || steps.install.conclusion == 'success')
         id: logs-create
         run: |
-          . ${{ steps.env.outputs.SPACK_ROOT }}/../spack-config/spack-enable.bash
+          . ${{ steps.env.outputs.SPACK_ROOT }}/../spack-config/ci-spack-enable.bash
 
           mkdir logs
 

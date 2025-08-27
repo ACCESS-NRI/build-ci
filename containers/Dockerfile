@@ -233,6 +233,8 @@ spack env deactivate
 spack clean --downloads --stage
 EOF
 
+COPY spack-config/ci-spack-enable.bash ${SPACK_ROOT}/../spack-config/ci-spack-enable.bash
+
 ################################################################################
 FROM base-spack AS runner
 
