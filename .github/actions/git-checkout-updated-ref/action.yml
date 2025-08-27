@@ -28,7 +28,7 @@ runs:
       id: update
       working-directory: ${{ inputs.repository-path }}
       run: |
-        git fetch --all --tags
+        git fetch --all --tags --force
 
         if git ls-remote --exit-code --heads origin ${{ inputs.ref }}; then  # If the ref is a branch
           echo "Checking out the branch ${{ inputs.ref }} at the latest commit"
