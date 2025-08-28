@@ -27,6 +27,8 @@ runs:
     - shell: bash
       id: update
       working-directory: ${{ inputs.repository-path }}
+      # We  --force checkout/fetch to ensure we overwrite tags that have been moved,
+      # and reset spack-config to the ref irrespective of local config changes.
       run: |
         git fetch --all --tags --force
 
