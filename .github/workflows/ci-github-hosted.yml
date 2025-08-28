@@ -346,7 +346,8 @@ jobs:
 
       - name: Manifest - Push to Buildcache
         env:
-          # For pulling OCI buildcache
+          # For pulling and pushing OCI buildcache
+          # If secrets.GITHUB_TOKEN has permissions.packages:write, one would not have to specify secrets.spack-oci-buildcache-password
           OCI_USERNAME: ${{ secrets.spack-oci-buildcache-username || github.actor }}
           OCI_PASSWORD: ${{ secrets.spack-oci-buildcache-password || secrets.GITHUB_TOKEN }}
         if: inputs.spack-oci-buildcache-url != ''
