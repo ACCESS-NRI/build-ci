@@ -276,6 +276,7 @@ jobs:
             --oci-username-variable OCI_USERNAME \
             --oci-password-variable OCI_PASSWORD \
             oci_buildcache ${{ inputs.spack-oci-buildcache-url }}
+          spack mirror list
 
       - name: Manifest - Checkout ${{ github.repository }}
         id: checkout
