@@ -217,7 +217,7 @@ spack env deactivate
 yq '.spack.specs[]' "${ENV_COMPILERS_SPACK_MANIFEST}" | while read compiler; do
   echo "Loading compiler: $compiler"
   spack load $compiler
-  spack compiler find
+  spack compiler find --scope=user
 done
 
 spack clean --downloads --stage
@@ -233,8 +233,6 @@ spack env deactivate
 spack clean --downloads --stage
 EOF
 
-COPY spack-config/ci-spack-enable.bash ${SPACK_ROOT}/../spack-config/ci-spack-enable.bash
-
 ################################################################################
 FROM base-spack AS runner
 
@@ -242,9 +240,6 @@ LABEL org.opencontainers.image.source=https://github.com/ACCESS-NRI/build-ci
 
 # Set up ACCESS Spack buildcache
 RUN spack mirror add --autopush --unsigned runner_set_buildcache /opt/runner_set_buildcache
-
-# We copy, but don't source this file here, because it relies on the upstream volume being set up
-COPY spack-config/ci-spack-enable.bash ${SPACK_ROOT}/../spack-config/ci-spack-enable.bash
 
 ENTRYPOINT ["/bin/bash", "/opt/spack/share/spack/docker/entrypoint.bash"]
 CMD ["interactive-shell"]
