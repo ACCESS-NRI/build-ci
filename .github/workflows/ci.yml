@@ -357,7 +357,7 @@ jobs:
         if: inputs.spack-oci-buildcache-url != ''
         run: |
           . ${{ steps.env.outputs.SPACK_ROOT }}/../spack-config/spack-enable.bash ci
-          spack -e default buildcache push --unsigned oci_buildcache
+          spack -e default buildcache push --unsigned --only=dependencies oci_buildcache
 
       - name: Manifest - Upload
         if: always() && (steps.install.conclusion == 'failure' || steps.install.conclusion == 'success')
