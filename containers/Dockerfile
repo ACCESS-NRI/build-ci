@@ -157,7 +157,6 @@ ENV SPACK_CONFIG_DIR=${SPACK_CONFIG_DIR}
 # TODO: Ideally we want spack-enable.bash to be the only source of these
 #       definitions. See if spack-enable.bash can be used instead.
 # NOTE: In the meantime, keep in-sync with spack-config/spack-enable.bash
-ENV SPACK_DISABLE_LOCAL_CONFIG="true"
 ENV SPACK_USER_CACHE_PATH=${SPACK_ROOT}/..
 
 LABEL au.org.access-nri.image.spack-repo-version=${SPACK_REPO_VERSION}
