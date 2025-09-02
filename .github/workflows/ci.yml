@@ -85,11 +85,26 @@ on:
           The version of the container image to use for the runner.
           Can be either a tag (specified by ':TAG') or a SHA (specified by '@sha256:SHA').
           For example: ':8.9' or 'rocky@sha256:1234...'.
+      spack-oci-buildcache-url:
+        required: false
+        type: string
+        description: |
+          The URL to an oci-backed buildcache, available in spack >= v1.0.
+          OCI-backed buildcaches are the only option for GitHub-hosted CI, and can be used as a backup for self-hosted CI's runner buildcache.
+          For example: 'oci://ghcr.io/ACCESS-NRI/build-ci-buildcache'.
     secrets:
       spack-install-command-pat:
         required: false
         description: |
           An optional GitHub PAT to use for the spack install command, for access to potentially private repositories.
+      spack-oci-buildcache-username:
+        required: false
+        description: |
+          A username (or GitHub username for oci://ghcr.io buildcaches) to use for reading and writing to the spack OCI buildcache, if inputs.spack-oci-buildcache-url is defined.
+      spack-oci-buildcache-password:
+        required: false
+        description: |
+          A password (or GitHub PAT for oci://ghcr.io buildcaches) to use for reading and writing to the spack OCI buildcache, if inputs.spack-oci-buildcache-url is defined.
     outputs:
       spec-concretization-graph:
         value: ${{jobs.spack-install-and-test.outputs.spec-concretization-graph }}
@@ -250,8 +265,23 @@ jobs:
 
       - name: Spack - Initial Enable + Compiler Load
         run: |
-          . ${{ steps.env.outputs.SPACK_ROOT }}/../spack-config/ci-spack-enable.bash
+          . ${{ steps.env.outputs.SPACK_ROOT }}/share/spack/setup-env.sh
+          yq '.spack.specs[]' "${ENV_COMPILERS_SPACK_MANIFEST}" | while read compiler; do
+            echo "Loading compiler: $compiler"
+            spack load $compiler
+            spack compiler find --scope=user
+          done
           spack find
+
+      - name: Spack - OCI Buildcache Init
+        if: inputs.spack-oci-buildcache-url != ''
+        run: |
+          . ${{ steps.env.outputs.SPACK_ROOT }}/share/spack/setup-env.sh
+          spack mirror add --unsigned \
+            --oci-username-variable OCI_USERNAME \
+            --oci-password-variable OCI_PASSWORD \
+            oci_buildcache ${{ inputs.spack-oci-buildcache-url }}
+          spack mirror list
 
       - name: Manifest - Checkout ${{ github.repository }}
         id: checkout
@@ -263,14 +293,18 @@ jobs:
       - name: Manifest - Install Compilers Locally
         # Some compilers may not be available upstream, so we install them locally in a separate spack.yaml
         if: inputs.spack-compiler-manifest-path != ''
+        env:
+          # For pulling OCI buildcache
+          OCI_USERNAME: ${{ secrets.spack-oci-buildcache-username || github.actor }}
+          OCI_PASSWORD: ${{ secrets.spack-oci-buildcache-password || secrets.GITHUB_TOKEN }}
         run: |
-          . ${{ steps.env.outputs.SPACK_ROOT }}/../spack-config/ci-spack-enable.bash
+          . ${{ steps.env.outputs.SPACK_ROOT }}/share/spack/setup-env.sh
           spack env activate compilers --create --prompt --envfile ${{ inputs.spack-compiler-manifest-path }}
-          spack --debug install --fail-fast
+          spack --debug install --fail-fast --deprecated
           spack env deactivate
           yq '.spack.specs[]' ${{ inputs.spack-compiler-manifest-path }} | while read compiler; do
             spack load $compiler
-            spack compiler find
+            spack compiler find --scope=user
           done
           spack compiler list
 
@@ -300,13 +334,17 @@ jobs:
       - name: Manifest - Install
         id: install
         env:
+          # For pulling and pushing OCI buildcache
+          # If secrets.GITHUB_TOKEN has permissions.packages:write, one would not have to specify secrets.spack-oci-buildcache-password
+          OCI_USERNAME: ${{ secrets.spack-oci-buildcache-username || github.actor }}
+          OCI_PASSWORD: ${{ secrets.spack-oci-buildcache-password || secrets.GITHUB_TOKEN }}
           # This is needed to ensure that the spack install command can access private repositories - we replace all HTTPS git URLs with the PAT
           # We set the git config via environment variables, so that the PATs are not persisted in the container
           GIT_CONFIG_COUNT: 1
           GIT_CONFIG_KEY_0: url.https://oauth2:${{ secrets.spack-install-command-pat || secrets.GITHUB_TOKEN }}@github.com/.insteadOf
           GIT_CONFIG_VALUE_0: https://github.com/
         run: |
-          . ${{ steps.env.outputs.SPACK_ROOT }}/../spack-config/ci-spack-enable.bash
+          . ${{ steps.env.outputs.SPACK_ROOT }}/share/spack/setup-env.sh
           spack env create default ${{ steps.jinja-templated.outputs.spack-manifest-path }}
           spack env activate
 
@@ -314,7 +352,17 @@ jobs:
           echo "$(spack spec)" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
-          spack --debug install --fail-fast
+          spack --debug install --fail-fast --deprecated
+
+      - name: Manifest - Push to Buildcache
+        env:
+          # For pulling OCI buildcache
+          OCI_USERNAME: ${{ secrets.spack-oci-buildcache-username || github.actor }}
+          OCI_PASSWORD: ${{ secrets.spack-oci-buildcache-password || secrets.GITHUB_TOKEN }}
+        if: inputs.spack-oci-buildcache-url != ''
+        run: |
+          . ${{ steps.env.outputs.SPACK_ROOT }}/share/spack/setup-env.sh
+          spack -e default buildcache push --unsigned --only=dependencies oci_buildcache
 
       - name: Manifest - Upload
         if: always() && (steps.install.conclusion == 'failure' || steps.install.conclusion == 'success')
@@ -330,7 +378,7 @@ jobs:
         if: always() && (steps.install.conclusion == 'failure' || steps.install.conclusion == 'success')
         id: logs-create
         run: |
-          . ${{ steps.env.outputs.SPACK_ROOT }}/../spack-config/spack-enable.bash
+          . ${{ steps.env.outputs.SPACK_ROOT }}/share/spack/setup-env.sh
 
           mkdir logs
 

@@ -27,15 +27,17 @@ runs:
     - shell: bash
       id: update
       working-directory: ${{ inputs.repository-path }}
+      # We  --force checkout/fetch to ensure we overwrite tags that have been moved,
+      # and reset spack-config to the ref irrespective of local config changes.
       run: |
-        git fetch --all --tags
+        git fetch --all --tags --force
 
         if git ls-remote --exit-code --heads origin ${{ inputs.ref }}; then  # If the ref is a branch
           echo "Checking out the branch ${{ inputs.ref }} at the latest commit"
-          git checkout -B ${{ inputs.ref }} origin/${{ inputs.ref }}
+          git checkout --force -B ${{ inputs.ref }} origin/${{ inputs.ref }}
         else  # checkout the tag/commit
           echo "Checking out the tag/commit ${{ inputs.ref }}"
-          git checkout ${{ inputs.ref }}
+          git checkout --force ${{ inputs.ref }}
         fi
 
         echo "sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
