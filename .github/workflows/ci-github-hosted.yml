@@ -273,7 +273,8 @@ jobs:
         if: inputs.spack-oci-buildcache-url != ''
         run: |
           . ${{ steps.env.outputs.SPACK_ROOT }}/share/spack/setup-env.sh
-          spack mirror add --unsigned \
+          spack mirror add --scope=system \
+            --unsigned \
             --oci-username-variable OCI_USERNAME \
             --oci-password-variable OCI_PASSWORD \
             oci_buildcache ${{ inputs.spack-oci-buildcache-url }}
