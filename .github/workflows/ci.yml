@@ -388,16 +388,16 @@ jobs:
             exit 0
           fi
 
-          # Get all the top-level specs from the manifest
-          specs="$(jq --raw-output '.roots[].spec' ${{ steps.env.outputs.spack-env-dir }}/default/spack.lock)"
-          echo "Found top-level specs:"
-          echo "$specs"
+          # Get all the top-level hashes from the manifest
+          hashes="$(jq --raw-output '.roots[].hash' ${{ steps.env.outputs.spack-env-dir }}/default/spack.lock)"
+          echo "Found top-level hashes:"
+          echo "$hashes"
 
           i=0
-          while read -r spec; do
-            spack -e default logs $spec > "logs/spec_${i}.log"
+          while read -r hash; do
+            spack -e default logs /$hash > "logs/spec_${i}.log"
             i=$((i + 1))
-          done <<< "$specs"
+          done <<< "$hashes"
 
       - name: Manifest - Logs Upload
         if: always() && (steps.install.conclusion == 'failure' || steps.install.conclusion == 'success')
