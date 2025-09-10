@@ -262,11 +262,19 @@ jobs:
       - name: Spack - Initial Enable + Compiler Load
         run: |
           . ${{ steps.env.outputs.SPACK_ROOT }}/share/spack/setup-env.sh
-          yq '.spack.specs[]' "${ENV_COMPILERS_SPACK_MANIFEST}" | while read compiler; do
-            echo "Loading compiler: $compiler"
-            spack load $compiler
-            spack compiler find --scope=user
-          done
+
+          # Attempt a load of compilers via upstream compilers lockfile (if it exists)
+          if [ -f /opt/upstream/compilers.spack.lock ]; then
+            echo "Found /opt/upstream/compilers.spack.lock, attempting to load compilers from upstream"
+            yq '.roots[].hash' /opt/upstream/compilers.spack.lock | while read hash; do
+              echo "Loading compiler with hash: $hash"
+              spack load /$hash
+              spack compiler find --scope=user
+            done
+          else
+            echo "No /opt/upstream/compilers.spack.lock found, skipping compiler load from upstream"
+          fi
+
           spack find
 
       - name: Spack - OCI Buildcache Init
