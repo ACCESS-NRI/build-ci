@@ -240,8 +240,8 @@ LABEL org.opencontainers.image.source=https://github.com/ACCESS-NRI/build-ci
 # Set up ACCESS Spack buildcache
 RUN spack mirror add --scope=system --autopush --unsigned runner_set_buildcache /opt/runner_set_buildcache
 
-COPY ${SOURCE_COMPILERS_SPACK_MANIFEST} ${ENV_COMPILERS_SPACK_MANIFEST}
-COPY ${SOURCE_PACKAGES_SPACK_MANIFEST} ${ENV_PACKAGES_SPACK_MANIFEST}
+# Bootstrap Spack now to avoid doing it on first runner use, every time
+RUN spack bootstrap now
 
 ENTRYPOINT ["/bin/bash", "/opt/spack/share/spack/docker/entrypoint.bash"]
 CMD ["interactive-shell"]
