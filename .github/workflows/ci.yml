@@ -271,16 +271,21 @@ jobs:
         run: |
           . ${{ steps.env.outputs.SPACK_ROOT }}/share/spack/setup-env.sh
 
+          # Get currently enabled upstream
+          upstream_path=$(spack config get upstreams | yq '.upstreams.upstream.install_tree')
+
           # Attempt a load of compilers via upstream compilers lockfile (if it exists)
-          if [ -f /opt/upstream/compilers.spack.lock ]; then
-            echo "Found /opt/upstream/compilers.spack.lock, attempting to load compilers from upstream"
-            yq '.roots[].hash' /opt/upstream/compilers.spack.lock | while read hash; do
+          if [ "$upstream_path" == "null" ]; then
+            echo "::notice::No upstream volume configured, skipping compiler load from upstream"
+          elif [ ! -f "$upstream_path/compilers.spack.lock" ]; then
+            echo "::warning::No $upstream_path/compilers.spack.lock found, skipping compiler load from upstream"
+          else
+            echo "Found $upstream_path/compilers.spack.lock, attempting to load compilers from upstream"
+            yq '.roots[].hash' "$upstream_path/compilers.spack.lock" | while read hash; do
               echo "Loading compiler with hash: $hash"
               spack load /$hash
               spack compiler find --scope=user
             done
-          else
-            echo "No /opt/upstream/compilers.spack.lock found, skipping compiler load from upstream"
           fi
 
           spack find
