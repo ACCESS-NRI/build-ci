@@ -173,9 +173,8 @@ jobs:
       image: ghcr.io/access-nri/build-ci-runner${{ inputs.container-image-version }}
       volumes:
         # FIXME: To be able to support both v0.22 and v1.0 upstreams at the same time
-        # We would enable each upstream in the spack-config, depending on the spack version
+        # We need to pick the correct upstream volume based on the runner image spack version
         # This may not be required in the future if we only support v1.0+
-        # TODO: Update image tags to include vX spack versionL eg. :rocky-v0.22-2025.09.003
         - /opt/upstream${{ contains('v1.0', inputs.container-image-version) && '-v1.0' || '' }}:/opt/upstream${{ contains('v1.0', inputs.container-image-version) && '-v1.0' || '' }}:ro
         - /opt/runner_set_buildcache:/opt/runner_set_buildcache:rw
     outputs:
