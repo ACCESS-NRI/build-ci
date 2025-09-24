@@ -175,7 +175,7 @@ jobs:
         # FIXME: To be able to support both v0.22 and v1.0 upstreams at the same time
         # We need to pick the correct upstream volume based on the runner image spack version
         # This may not be required in the future if we only support v1.0+
-        - /opt/upstream${{ contains('v1.0', inputs.container-image-version) && '-v1.0' || '' }}:/opt/upstream${{ contains('v1.0', inputs.container-image-version) && '-v1.0' || '' }}:ro
+        - /opt/upstream${{ contains(inputs.container-image-version, 'v1.0') && '-v1.0' || '' }}:/opt/upstream${{ contains(inputs.container-image-version, 'v1.0') && '-v1.0' || '' }}:ro
         - /opt/runner_set_buildcache:/opt/runner_set_buildcache:rw
     outputs:
       spec-concretization-graph: ${{ steps.install.outputs.spec }}
