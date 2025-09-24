@@ -169,7 +169,6 @@ jobs:
     runs-on:
       group: build-ci
     container:
-      # image: ghcr.io/access-nri/build-ci-runner:${{ inputs.container-image-distro }}-${{ inputs.spack-version }}-${{ container-image-version }}
       image: ghcr.io/access-nri/build-ci-runner${{ inputs.container-image-version }}
       volumes:
         # FIXME: To be able to support both v0.22 and v1.0 upstreams at the same time
