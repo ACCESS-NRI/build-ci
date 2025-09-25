@@ -113,8 +113,10 @@ ARG SPACK_PACKAGES_REPO_VERSION=main
 ARG SPACK_CONFIG_REPO_VERSION=main
 ARG SPACK_TARGET=x86_64
 ARG SPACK_CONFIG_DIR=/opt/spack-config/${SPACK_VERSION}/ci
-ARG COMPILER_PKG_NAME=intel-oneapi-compilers
-ARG COMPILER_PKG_VERSION=2023.2.4
+# Choose intel-oneapi-compilers-classic for ifort
+# Choose intel-oneapi-compilers for ifx
+ARG COMPILER_PKG_NAME=intel-oneapi-compilers-classic
+ARG COMPILER_PKG_VERSION=2021.10.0
 ARG COMPILER_NAME=intel
 ARG COMPILER_VERSION=2021.10.0
 
