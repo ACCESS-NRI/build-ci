@@ -317,7 +317,7 @@ jobs:
           OCI_PASSWORD: ${{ secrets.spack-oci-buildcache-password || secrets.GITHUB_TOKEN }}
         run: |
           . ${{ steps.env.outputs.SPACK_ROOT }}/share/spack/setup-env.sh
-          spack env activate compilers --create --prompt --envfile ${{ inputs.spack-compiler-manifest-path }}
+          spack env activate local_compilers --create --prompt --envfile ${{ inputs.spack-compiler-manifest-path }}
           spack --debug install --fail-fast --deprecated
           spack env deactivate
           yq '.spack.specs[]' ${{ inputs.spack-compiler-manifest-path }} | while read compiler; do
