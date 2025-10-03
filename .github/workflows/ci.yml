@@ -270,21 +270,23 @@ jobs:
         run: |
           . ${{ steps.env.outputs.SPACK_ROOT }}/share/spack/setup-env.sh
 
-          upstream_path="/opt/upstream"
-
-          # Attempt a load of compilers via upstream compilers lockfile (if it exists)
-          if [ "$upstream_path" == "null" ]; then
-            echo "::notice::No upstream volume configured, skipping compiler load from upstream"
-          elif [ ! -f "$upstream_path/compilers.spack.lock" ]; then
-            echo "::warning::No $upstream_path/compilers.spack.lock found, skipping compiler load from upstream"
+          # Find potential upstream compiler lockfile path
+          if [ -f "/opt/upstream/compilers.spack.lock" ]; then
+            compiler_lockfile_path="/opt/upstream/compilers.spack.lock"
+          elif [ -f "/opt/environments/compilers/spack.lock" ]; then
+            compiler_lockfile_path="/opt/environments/compilers/spack.lock"
           else
-            echo "Found $upstream_path/compilers.spack.lock, attempting to load compilers from upstream"
-            yq '.roots[].hash' "$upstream_path/compilers.spack.lock" | while read hash; do
-              echo "Loading compiler with hash: $hash"
-              spack load /$hash
-              spack compiler find --scope=user
-            done
+            echo "::warning::No upstream compilers.spack.lock or environments/compilers/spack.lock found, skipping compiler load from upstream"
+            exit 0
           fi
+
+          # Attempt a load of compilers via upstream compilers lockfile
+          echo "Found $compiler_lockfile_path, attempting to load compilers from upstream"
+          yq '.roots[].hash' "$compiler_lockfile_path" | while read hash; do
+            echo "Loading compiler with hash: $hash"
+            spack load /$hash
+            spack compiler find --scope=user
+          done
 
           spack find
 
