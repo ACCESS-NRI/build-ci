@@ -263,17 +263,23 @@ jobs:
         run: |
           . ${{ steps.env.outputs.SPACK_ROOT }}/share/spack/setup-env.sh
 
-          # Attempt a load of compilers via upstream compilers lockfile (if it exists)
-          if [ -f /opt/upstream/compilers.spack.lock ]; then
-            echo "Found /opt/upstream/compilers.spack.lock, attempting to load compilers from upstream"
-            yq '.roots[].hash' /opt/upstream/compilers.spack.lock | while read hash; do
-              echo "Loading compiler with hash: $hash"
-              spack load /$hash
-              spack compiler find --scope=user
-            done
+          # Find potential upstream compiler lockfile path
+          if [ -f "/opt/upstream/compilers.spack.lock" ]; then
+            compiler_lockfile_path="/opt/upstream/compilers.spack.lock"
+          elif [ -f "/opt/environments/compilers/spack.lock" ]; then
+            compiler_lockfile_path="/opt/environments/compilers/spack.lock"
           else
-            echo "No /opt/upstream/compilers.spack.lock found, skipping compiler load from upstream"
+            echo "::warning::No upstream compilers.spack.lock or environments/compilers/spack.lock found, skipping compiler load from upstream"
+            exit 0
           fi
+
+          # Attempt a load of compilers via upstream compilers lockfile
+          echo "Found $compiler_lockfile_path, attempting to load compilers from upstream"
+          yq '.roots[].hash' "$compiler_lockfile_path" | while read hash; do
+            echo "Loading compiler with hash: $hash"
+            spack load /$hash
+            spack compiler find --scope=user
+          done
 
           spack find
 
@@ -304,7 +310,7 @@ jobs:
           OCI_PASSWORD: ${{ secrets.spack-oci-buildcache-password || secrets.GITHUB_TOKEN }}
         run: |
           . ${{ steps.env.outputs.SPACK_ROOT }}/share/spack/setup-env.sh
-          spack env activate compilers --create --prompt --envfile ${{ inputs.spack-compiler-manifest-path }}
+          spack env activate local_compilers --create --prompt --envfile ${{ inputs.spack-compiler-manifest-path }}
           spack --debug install --fail-fast --deprecated
           spack env deactivate
           yq '.spack.specs[]' ${{ inputs.spack-compiler-manifest-path }} | while read compiler; do
