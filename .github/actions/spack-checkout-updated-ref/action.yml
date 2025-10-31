@@ -1,0 +1,58 @@
+name: Checkout Ref Via Spack
+description: Updates and checks out a given ref for an existing spack-packages repository via spack
+inputs:
+  spack-packages-repository-name:
+    description: The name of the repository to update and check out the ref
+    required: true
+  spack-packages-repository-path:
+    description: The path to the repository to update and check out the ref
+    required: true
+  ref:
+    description: The git ref to check out
+    required: true
+  spack-instance-root-path:
+    description: The path to the spack instance root, used to setup the spack environment
+    required: true
+outputs:
+  sha:
+    description: 'The SHA of the checked out ref'
+    value: ${{ steps.ref-sha.outputs.sha }}
+  updated:
+    description: 'Whether the repository was updated'
+    value: ${{ steps.post-update.outputs.updated }}
+runs:
+  using: composite
+  steps:
+    - name: Get initial SHA
+      id: initial
+      shell: bash
+      run: |
+        sha=$(git -C ${{ inputs.spack-packages-repository-path }} rev-parse HEAD^{})
+        echo "${{ inputs.spack-packages-repository-name }} Initial SHA: $sha"
+
+        echo "sha=$sha" >> $GITHUB_OUTPUT
+
+    - name: Get SHA for ref
+      id: ref-sha
+      uses: access-nri/actions/.github/actions/get-git-ref-info@main
+      with:
+        repository-name: ${{ inputs.spack-packages-repository-name }}
+        ref: ${{ inputs.ref }}
+
+    - shell: bash
+      id: update
+      run: |
+        . ${{ inputs.spack-instance-root-path }}/share/spack/setup-env.sh
+        spack repo update ${{ inputs.spack-packages-repository-name }} --commit ${{ steps.ref-sha.outputs.sha }}
+
+    - name: Check if updated
+      id: post-update
+      shell: bash
+      run: |
+        if [ "${{ steps.initial.outputs.sha }}" != "${{ steps.ref-sha.outputs.sha }}" ]; then
+          echo "Repository was updated from ${{ steps.initial.outputs.sha }} to ${{ inputs.ref }} (${{ steps.ref-sha.outputs.sha }})"
+          echo "updated=true" >> $GITHUB_OUTPUT
+        else
+          echo "Repository was not updated, stayed at ${{ inputs.ref }} (${{ steps.initial.outputs.sha }})"
+          echo "updated=false" >> $GITHUB_OUTPUT
+        fi
