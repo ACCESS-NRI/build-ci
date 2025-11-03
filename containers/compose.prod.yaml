@@ -4,7 +4,7 @@ name: Spack Instance
 # to reduce duplication in the file
 x-common-args: &common-args
   OS: rocky
-  SPACK_VERSION: v0.22
+  SPACK_VERSION: v1.0
   SOURCE_COMPILERS_SPACK_MANIFEST: upstream/prod/compilers.spack.yaml
   SOURCE_PACKAGES_SPACK_MANIFEST: upstream/prod/packages.spack.yaml
 services:
@@ -17,7 +17,11 @@ services:
       target: upstream
       args:
         <<: *common-args
-        SPACK_CONFIG_DIR: /opt/spack-config/v0.22/ci-upstream
+        SPACK_CONFIG_DIR: /opt/spack-config/v1.0/ci-upstream
+      secrets:
+        - oci-username
+        - oci-password
+        - oci-url
     volumes:
       - upstream:/opt/upstream:rw
       - buildcache:/opt/runner_set_buildcache:rw
@@ -33,7 +37,7 @@ services:
       target: runner
       args:
         <<: *common-args
-        SPACK_CONFIG_DIR: /opt/spack-config/v0.22/ci-runner
+        SPACK_CONFIG_DIR: /opt/spack-config/v1.0/ci-runner
     volumes:
       - upstream:/opt/upstream:ro
       - buildcache:/opt/runner_set_buildcache:rw
@@ -41,3 +45,11 @@ services:
 volumes:
   upstream:
   buildcache:
+
+secrets:
+  oci-username:
+    file: ./upstream/secrets/oci-username.txt
+  oci-password:
+    file: ./upstream/secrets/oci-password.txt
+  oci-url:
+    file: ./upstream/secrets/oci-url.txt
