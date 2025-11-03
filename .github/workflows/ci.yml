@@ -59,14 +59,14 @@ on:
       access-spack-packages-ref:
         required: false
         type: string
-        default: main
+        default: api-v2
         description: |
           The branch, tag, or commit SHA of the access-nri/spack-packages repository to use.
           For example: main, 2025.03.0, 7ey2uy2.
       spack-ref:
         required: false
         type: string
-        default: releases/v0.22
+        default: releases/v1.0
         description: |
           The branch, tag, or commit SHA of the access-nri/spack repository to use.
           For example: develop, releases/0.22, 7ey2uy2.
