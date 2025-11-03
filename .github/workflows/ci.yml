@@ -49,7 +49,14 @@ on:
         description: |
           The branch, tag, or commit SHA of the access-nri/spack-config repository to use.
           For example: main, 2025.03.0, 7ey2uy2.
-      spack-packages-ref:
+      builtin-spack-packages-ref:
+        required: false
+        type: string
+        default: main
+        description: |
+          The branch, tag, or commit SHA of the spack/spack-packages repository to use.
+          For example: main, 2025.03.0, 7ey2uy2.
+      access-spack-packages-ref:
         required: false
         type: string
         default: main
@@ -118,10 +125,14 @@ on:
         value: ${{ jobs.spack-install-and-test.outputs.spack-config-sha }}
         description: |
           The SHA of the spack-config repository checked out.
-      spack-packages-sha:
-        value: ${{ jobs.spack-install-and-test.outputs.spack-packages-sha }}
+      builtin-spack-packages-sha:
+        value: ${{ jobs.spack-install-and-test.outputs.builtin-spack-packages-sha }}
         description: |
-          The SHA of the spack-packages repository checked out.
+          The SHA of the builtin spack-packages repository checked out.
+      access-spack-packages-sha:
+        value: ${{ jobs.spack-install-and-test.outputs.access-spack-packages-sha }}
+        description: |
+          The SHA of the access-spack-packages repository checked out.
       sha:
         value: ${{ jobs.spack-install-and-test.outputs.sha }}
         description: |
@@ -180,7 +191,8 @@ jobs:
       spec-concretization-graph: ${{ steps.install.outputs.spec }}
       spack-sha: ${{ steps.spack-update.outputs.sha }}
       spack-config-sha: ${{ steps.spack-config-update.outputs.sha }}
-      spack-packages-sha: ${{ steps.spack-packages-update.outputs.sha }}
+      builtin-spack-packages-sha: ${{ steps.builtin-spack-packages-update.outputs.sha }}
+      access-spack-packages-sha: ${{ steps.access-spack-packages-update.outputs.sha }}
       sha: ${{ steps.checkout.outputs.commit }}
       spack-files-artifact-pattern: ${{ steps.env.outputs.spack-files-artifact-pattern }}
       spack-files-artifact-url: ${{ steps.manifest-upload.outputs.artifact-url }}
@@ -192,7 +204,7 @@ jobs:
       short-container-id: ${{ steps.env.outputs.short-container-id }}
       # test-artifact-url: ${{ steps.test.outputs.artifact-url }}
     steps:
-      - name: Export environment variables into GitHub Actions format
+      - name: Init - Export environment variables into GitHub Actions format
         # Environment variables inside containers are not accessible in the `env` context,
         # a context which would be used in future conditional steps.
         # This step exports important container environment variables as outputs.
@@ -222,28 +234,21 @@ jobs:
           echo "container-id=$container_id" >> $GITHUB_OUTPUT
           echo "short-container-id=$short_container_id" >> $GITHUB_OUTPUT
 
-      - name: Update spack-package version
-        id: spack-packages-update
-        uses: access-nri/build-ci/.github/actions/git-checkout-updated-ref@v2
-        with:
-          repository-path: ${{ steps.env.outputs.SPACK_ROOT }}/../spack-packages
-          ref: ${{ inputs.spack-packages-ref }}
-
-      - name: Update spack-config version
+      - name: Update - spack-config version
         id: spack-config-update
         uses: access-nri/build-ci/.github/actions/git-checkout-updated-ref@v2
         with:
           repository-path: ${{ steps.env.outputs.SPACK_ROOT }}/../spack-config
           ref: ${{ inputs.spack-config-ref }}
 
-      - name: Update spack version
+      - name: Update - spack version
         id: spack-update
         uses: access-nri/build-ci/.github/actions/git-checkout-updated-ref@v2
         with:
           repository-path: ${{ steps.env.outputs.SPACK_ROOT }}
           ref: ${{ inputs.spack-ref }}
 
-      - name: Relink spack-config to spack
+      - name: Update - Relink spack-config to spack
         if: steps.spack-config-update.outputs.updated == 'true' || steps.spack-update.outputs.updated == 'true'
         # If there was a change in spack or spack-config, we should relink the config to spack.
         # Furthermore, if spack has been updated, we need to make sure we link to the correct vX config directory in spack-config.
@@ -266,7 +271,36 @@ jobs:
 
           ln --symbolic --relative --verbose --force ${{ steps.env.outputs.SPACK_ROOT }}/../spack-config/${spack_branch}/ci-runner/* ${{ steps.env.outputs.SPACK_ROOT }}/etc/spack/
 
-      - name: Spack - Initial Enable + Compiler Load
+      - name: Spack - Initial Enable
+        run: . ${{ steps.env.outputs.SPACK_ROOT }}/share/spack/setup-env.sh
+
+      - name: Spack - Get spack-packages repo locations
+        id: spack-packages-locations
+        run: |
+          . ${{ steps.env.outputs.SPACK_ROOT }}/share/spack/setup-env.sh
+
+          echo "builtin=$(spack location --repo builtin)" >> $GITHUB_OUTPUT
+          echo "access-spack-packages=$(spack location --repo access.nri)" >> $GITHUB_OUTPUT
+
+      - name: Update - builtin spack-package version
+        id: builtin-spack-packages-update
+        uses: access-nri/build-ci/.github/actions/spack-checkout-updated-ref@v2
+        with:
+          spack-packages-repository-name: builtin
+          spack-packages-repository-path: ${{ steps.spack-packages-locations.outputs.builtin }}
+          ref: ${{ inputs.builtin-spack-packages-ref }}
+          spack-instance-root-path: ${{ steps.env.outputs.SPACK_ROOT }}
+
+      - name: Update - access-spack-package version
+        id: access-spack-packages-update
+        uses: access-nri/build-ci/.github/actions/spack-checkout-updated-ref@v2
+        with:
+          spack-packages-repository-name: access_spack_packages
+          spack-packages-repository-path: ${{ steps.spack-packages-locations.outputs.access-spack-packages }}
+          ref: ${{ inputs.access-spack-packages-ref }}
+          spack-instance-root-path: ${{ steps.env.outputs.SPACK_ROOT }}
+
+      - name: Spack - Compiler Load
         run: |
           . ${{ steps.env.outputs.SPACK_ROOT }}/share/spack/setup-env.sh
 
@@ -469,7 +503,8 @@ jobs:
             "spack_compiler_manifest_path": "${{ inputs.spack-compiler-manifest-path }}",
             "ref": "${{ inputs.ref }}",
             "spack_config_ref": "${{ inputs.spack-config-ref }}",
-            "spack_packages_ref": "${{ inputs.spack-packages-ref }}",
+            "builtin_spack_packages_ref": "${{ inputs.builtin-spack-packages-ref }}",
+            "access_spack_packages_ref": "${{ inputs.access-spack-packages-ref }}",
             "spack_ref": "${{ inputs.spack-ref }}",
             "pytest_test_markers": "${{ inputs.pytest-test-markers }}",
             "allow_ssh_into_spack_install": "${{ inputs.allow-ssh-into-spack-install }}",
@@ -480,7 +515,8 @@ jobs:
             "spec_concretization_graph": $spec,
             "spack_sha": "${{ steps.spack-update.outputs.sha }}",
             "spack_config_sha": "${{ steps.spack-config-update.outputs.sha }}",
-            "spack_packages_sha": "${{ steps.spack-packages-update.outputs.sha }}",
+            "builtin_spack_packages_sha": "${{ steps.builtin-spack-packages-update.outputs.sha }}",
+            "access_spack_packages_sha": "${{ steps.access-spack-packages-update.outputs.sha }}",
             "sha": "${{ steps.checkout.outputs.commit }}",
             "container_id": "${{ steps.env.outputs.container-id }}",
             "short_container_id": "${{ steps.env.outputs.short-container-id }}",
