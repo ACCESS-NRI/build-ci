@@ -131,9 +131,8 @@ RUN zypper ref \
 FROM base-os-$OS AS base-spack
 
 ARG SPACK_GIT_URL=https://github.com/ACCESS-NRI/spack.git
-ARG SPACK_VERSION=v0.22
+ARG SPACK_VERSION=v1.0
 ARG SPACK_REPO_VERSION=releases/${SPACK_VERSION}
-ARG SPACK_PACKAGES_REPO_VERSION=main
 ARG SPACK_CONFIG_REPO_VERSION=main
 ARG SPACK_TARGET=x86_64
 ARG SPACK_CONFIG_DIR=/opt/spack-config/${SPACK_VERSION}/ci
@@ -147,9 +146,8 @@ ENV ENV_COMPILERS_SPACK_MANIFEST=/opt/compilers.spack.yaml
 ENV ENV_PACKAGES_SPACK_MANIFEST=/opt/packages.spack.yaml
 
 # Export the repo versions for comparison in the runner target
-ENV SPACK_PACKAGES_REPO_VERSION=${SPACK_PACKAGES_REPO_VERSION}
-ENV SPACK_CONFIG_REPO_VERSION=${SPACK_CONFIG_REPO_VERSION}
-ENV SPACK_REPO_VERSION=${SPACK_REPO_VERSION}
+ENV INITIAL_SPACK_CONFIG_REPO_VERSION=${SPACK_CONFIG_REPO_VERSION}
+ENV INITIAL_SPACK_REPO_VERSION=${SPACK_REPO_VERSION}
 
 # Export the spack config directory for the runner target
 ENV SPACK_CONFIG_DIR=${SPACK_CONFIG_DIR}
@@ -160,7 +158,6 @@ ENV SPACK_CONFIG_DIR=${SPACK_CONFIG_DIR}
 ENV SPACK_USER_CACHE_PATH=${SPACK_ROOT}/..
 
 LABEL au.org.access-nri.image.spack-repo-version=${SPACK_REPO_VERSION}
-LABEL au.org.access-nri.image.spack-packages-repo-version=${SPACK_PACKAGES_REPO_VERSION}
 LABEL au.org.access-nri.image.spack-config-repo-version=${SPACK_CONFIG_REPO_VERSION}
 
 SHELL ["/bin/bash", "-c"]
@@ -169,14 +166,10 @@ SHELL ["/bin/bash", "-c"]
 RUN <<EOF
 git clone -c feature.manyFiles=true ${SPACK_GIT_URL} ${SPACK_ROOT} --branch ${SPACK_REPO_VERSION}
 
-# Install ACCESS-NRI's spack-packages repo
-git clone  https://github.com/ACCESS-NRI/spack-packages.git /opt/spack-packages --branch ${SPACK_PACKAGES_REPO_VERSION}
-
-# Install ACCESS-NRI's spack-config repo
+# Install ACCESS-NRIs spack-config repo
 git clone  https://github.com/ACCESS-NRI/spack-config.git /opt/spack-config --branch ${SPACK_CONFIG_REPO_VERSION}
 
-# Exit with ENOENT 2 "No such file or directory", if the directory does not
-# exist
+# Exit with ENOENT 2 "No such file or directory", if the directory does not exist
 if [ -d "${SPACK_CONFIG_DIR}" ]; then ln -s -r -v ${SPACK_CONFIG_DIR}/* ${SPACK_ROOT}/etc/spack/; else echo "${SPACK_CONFIG_DIR} does not exist!"; exit 2; fi
 EOF
 
@@ -196,8 +189,18 @@ RUN ln -s ${SPACK_ROOT}/share/spack/docker/entrypoint.bash \
 SHELL ["docker-shell"]
 
 # https://spack.readthedocs.io/en/latest/bootstrapping.html
-# Spack is configured to bootstrap its dependencies lazily by default;
+# Spack is configured to bootstrap its dependencies and repositories lazily by default;
 # i.e. the first time they are needed and can’t be found.
+
+# Bootstrap spack and clone relevant spack-packages repos
+
+# Currently, the version of spack-config informs the initial versions of the spack-packages repos to use.
+# If we wanted to do it manually, add this post-bootstrap
+#   builtin_spack_packages_sha=$(git -C $(spack location --repo builtin) rev-parse "${BUILTIN_SPACK_PACKAGES_REPO_VERSION}}^{}")
+#   access_spack_packages_sha=$(git -C $(spack location --repo access.nri) rev-parse "${ACCESS_SPACK_PACKAGES_REPO_VERSION}}^{}")
+#   spack repo update builtin --commit $builtin_spack_packages_sha
+#   spack repo update access.nri --commit $access_spack_packages_sha
+RUN spack bootstrap now
 
 ################################################################################
 # Install compilers and other common packages
@@ -207,7 +210,18 @@ LABEL org.opencontainers.image.source=https://github.com/ACCESS-NRI/build-ci
 
 # Install compilers and low-level, common packages
 COPY ${SOURCE_COMPILERS_SPACK_MANIFEST} ${ENV_COMPILERS_SPACK_MANIFEST}
-RUN <<EOF
+RUN --mount=type=secret,id=oci-username,env=OCI_USERNAME \
+    --mount=type=secret,id=oci-password,env=OCI_PASSWORD \
+    --mount=type=secret,id=oci-url,env=OCI_URL \
+    <<EOF
+spack mirror add \
+  --scope=system \
+  --autopush \
+  --unsigned \
+  --oci-username-variable OCI_USERNAME \
+  --oci-password-variable OCI_PASSWORD \
+  docker_build_buildcache $OCI_URL
+
 echo "Installing compilers"
 spack env activate compilers --create --envfile ${ENV_COMPILERS_SPACK_MANIFEST}
 spack spec
@@ -220,16 +234,32 @@ yq '.spack.specs[]' "${ENV_COMPILERS_SPACK_MANIFEST}" | while read compiler; do
 done
 
 spack clean --downloads --stage
+
+spack mirror remove --scope=system docker_build_buildcache
 EOF
 
 COPY ${SOURCE_PACKAGES_SPACK_MANIFEST} ${ENV_PACKAGES_SPACK_MANIFEST}
-RUN <<EOF
+RUN --mount=type=secret,id=oci-username,env=OCI_USERNAME \
+    --mount=type=secret,id=oci-password,env=OCI_PASSWORD \
+    --mount=type=secret,id=oci-url,env=OCI_URL \
+    <<EOF
+
+spack mirror add \
+  --scope=system \
+  --autopush \
+  --unsigned \
+  --oci-username-variable OCI_USERNAME \
+  --oci-password-variable OCI_PASSWORD \
+  docker_build_buildcache $OCI_URL
+
 echo "Installing common packages"
 spack env activate packages --create --envfile ${ENV_PACKAGES_SPACK_MANIFEST}
 spack install --deprecated --fail-fast || exit
 spack env deactivate
 
 spack clean --downloads --stage
+
+spack mirror remove --scope=system docker_build_buildcache
 EOF
 
 ################################################################################
@@ -239,9 +269,6 @@ LABEL org.opencontainers.image.source=https://github.com/ACCESS-NRI/build-ci
 
 # Set up ACCESS Spack buildcache
 RUN spack mirror add --scope=system --autopush --unsigned runner_set_buildcache /opt/runner_set_buildcache
-
-# Bootstrap Spack now to avoid doing it on first runner use, every time
-RUN spack bootstrap now
 
 ENTRYPOINT ["/bin/bash", "/opt/spack/share/spack/docker/entrypoint.bash"]
 CMD ["interactive-shell"]
