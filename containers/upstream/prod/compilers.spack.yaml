@@ -5,7 +5,7 @@ spack:
   # when running spack-enable.bash
   specs:
   - gcc@13.2.0 %gcc@8.5.0 target=x86_64
-  - intel-oneapi-compilers@2023.2.4 target=x86_64
+  - intel-oneapi-compilers-classic@2021.10.0 target=x86_64
   - intel-oneapi-compilers@2025.2.0 target=x86_64
   view: false
   concretizer:
