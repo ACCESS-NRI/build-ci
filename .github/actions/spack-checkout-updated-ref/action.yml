@@ -2,7 +2,9 @@ name: Checkout Ref Via Spack
 description: Updates and checks out a given ref for an existing spack-packages repository via spack
 inputs:
   spack-packages-repository-name:
-    description: The name of the repository to update and check out the ref
+    description: |
+      The spack name of the repository to update and check out the ref.
+      This is the repos.NAME key in spacks repos.yaml config file - eg. builtin
     required: true
   spack-packages-repository-path:
     description: The path to the repository to update and check out the ref
@@ -36,7 +38,7 @@ runs:
       id: ref-sha
       uses: access-nri/actions/.github/actions/get-git-ref-info@main
       with:
-        repository-name: ${{ inputs.spack-packages-repository-name }}
+        repository-path: ${{ inputs.spack-packages-repository-path }}
         ref: ${{ inputs.ref }}
 
     - shell: bash
