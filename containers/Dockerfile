@@ -207,7 +207,18 @@ LABEL org.opencontainers.image.source=https://github.com/ACCESS-NRI/build-ci
 
 # Install compilers and low-level, common packages
 COPY ${SOURCE_COMPILERS_SPACK_MANIFEST} ${ENV_COMPILERS_SPACK_MANIFEST}
-RUN <<EOF
+RUN --mount=type=secret,id=oci-username,env=OCI_USERNAME \
+    --mount=type=secret,id=oci-password,env=OCI_PASSWORD \
+    --mount=type=secret,id=oci-url,env=OCI_URL \
+    <<EOF
+spack mirror add \
+  --scope=system \
+  --autopush \
+  --unsigned \
+  --oci-username-variable OCI_USERNAME \
+  --oci-password-variable OCI_PASSWORD \
+  docker_build_buildcache $OCI_URL
+
 echo "Installing compilers"
 spack env activate compilers --create --envfile ${ENV_COMPILERS_SPACK_MANIFEST}
 spack spec
@@ -220,16 +231,32 @@ yq '.spack.specs[]' "${ENV_COMPILERS_SPACK_MANIFEST}" | while read compiler; do
 done
 
 spack clean --downloads --stage
+
+spack mirror remove --scope=system docker_build_buildcache
 EOF
 
 COPY ${SOURCE_PACKAGES_SPACK_MANIFEST} ${ENV_PACKAGES_SPACK_MANIFEST}
-RUN <<EOF
+RUN --mount=type=secret,id=oci-username,env=OCI_USERNAME \
+    --mount=type=secret,id=oci-password,env=OCI_PASSWORD \
+    --mount=type=secret,id=oci-url,env=OCI_URL \
+    <<EOF
+
+spack mirror add \
+  --scope=system \
+  --autopush \
+  --unsigned \
+  --oci-username-variable OCI_USERNAME \
+  --oci-password-variable OCI_PASSWORD \
+  docker_build_buildcache $OCI_URL
+
 echo "Installing common packages"
 spack env activate packages --create --envfile ${ENV_PACKAGES_SPACK_MANIFEST}
 spack install --deprecated --fail-fast || exit
 spack env deactivate
 
 spack clean --downloads --stage
+
+spack mirror remove --scope=system docker_build_buildcache
 EOF
 
 ################################################################################
