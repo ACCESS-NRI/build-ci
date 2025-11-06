@@ -371,7 +371,9 @@ jobs:
           echo "EOF" >> $GITHUB_OUTPUT
 
           # Output config before install for debugging
+          echo "::group::Spack Config Blame Output"
           spack config blame
+          echo "::endgroup::"
 
           spack --debug install --fail-fast --deprecated
 
