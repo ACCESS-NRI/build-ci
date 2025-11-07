@@ -1,10 +1,10 @@
 # Entrypoint Workflows
 
-## `ci.yml`, `ci-github-hosted.yml` - Build and Test Workflow Entrypoint
+## `ci.yml` - Build and Test Workflow Entrypoint
 
 ### Overview
 
-This workflow handles building and running short CI tests on a given spack manifest. It offers customisation of `spack`, `spack-config` and `spack-packages`, and allows SSH access to the installation to the author of the PR.
+This workflow handles building and running short CI tests on a given spack manifest. It offers customisation of `spack`, `spack-config`, and spack packages repos, and allows SSH access to the installation to the author of the PR.
 
 ### Inputs
 
@@ -21,6 +21,7 @@ This workflow handles building and running short CI tests on a given spack manif
 | `allow-ssh-into-spack-install` | `boolean` | Enable the actor of the workflow to SSH into the container where the spack packages have been installed. This is useful for gathering post-install information before the container is destroyed. This will also make the workflow wait until the actor SSHs into the container, or it times out, before continuing | `false` | `false` | `true`, `false` |
 | `container-image-version` | `string` (Docker version ref) | The version of the container image to use for the runner. Can be either a `:TAG` or a `@sha256:SHA`. | `false` | `":rocky"` | `':8.9'` (tag), `'@sha256:1234...'` (SHA) |
 | `spack-oci-buildcache-url` | `string` (OCI URL) | The URL to an oci-backed buildcache, available in spack >= v1.0. OCI-backed buildcaches are the only option for GitHub-hosted CI, and can be used as a backup for self-hosted CI's runner buildcache | `false` | N/A | `"oci://ghcr.io/ACCESS-NRI/build-ci-buildcache"`, `"oci://ghcr.io/ORG/IMAGE"` |
+| `run-self-hosted` | `boolean` | Whether to run the job on a self-hosted runner. For security, workflow runs will hang if this is `true` but it is not using a valid `v*` branch or tag for the workflow ref | `false` | `true` | `true`, `false` |
 
 #### Future Inputs
 
@@ -89,6 +90,7 @@ jobs:
       access-spack-packages-ref: 2025.05.000
       spack-config-ref: 2025.10.001
       allow-ssh-into-spack-install: true
+      run-self-hosted: false
     secrets:
       spack-install-command-pat: ${{ secrets.GH_PAT }}
 ```
