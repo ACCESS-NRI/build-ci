@@ -362,6 +362,11 @@ jobs:
           echo "$(spack spec)" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
+          # Output config before install for debugging
+          echo "::group::Spack Config Blame Output"
+          spack config blame
+          echo "::endgroup::"
+
           spack --debug install --fail-fast --deprecated
 
       - name: Manifest - Push to Buildcache
@@ -388,6 +393,9 @@ jobs:
       - name: Manifest - Logs Create
         if: always() && (steps.install.conclusion == 'failure' || steps.install.conclusion == 'success')
         id: logs-create
+        # Logs may not be available if the spack install failed before concretization, so we'd rather direct users to the
+        # above install failure than have this step fail.
+        continue-on-error: true
         run: |
           . ${{ steps.env.outputs.SPACK_ROOT }}/share/spack/setup-env.sh
 
