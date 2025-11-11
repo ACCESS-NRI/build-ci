@@ -34,6 +34,10 @@ runs:
 
         echo "sha=$sha" >> $GITHUB_OUTPUT
 
+    - name: Fetch latest for repo
+      shell: bash
+      run: git -C ${{ inputs.spack-packages-repository-path }} fetch --force --tags
+
     - name: Get SHA for ref
       id: ref-sha
       uses: access-nri/actions/.github/actions/get-git-ref-info@main
@@ -41,11 +45,19 @@ runs:
         repository-path: ${{ inputs.spack-packages-repository-path }}
         ref: ${{ inputs.ref }}
 
-    - shell: bash
+    - name: Update ref via Spack
+      shell: bash
       id: update
+      continue-on-error: true
       run: |
         . ${{ inputs.spack-instance-root-path }}/share/spack/setup-env.sh
         spack repo update ${{ inputs.spack-packages-repository-name }} --commit ${{ steps.ref-sha.outputs.sha }}
+
+    - name: Force Update ref via Git if Failure
+      if: steps.update.outcome == 'failure'
+      shell: bash
+      # FIXME: If there is ever a spack repo update --force option, use that for the above command and delete this step
+      run: git -C ${{ inputs.spack-packages-repository-path }} checkout --force ${{ steps.ref-sha.outputs.sha }}
 
     - name: Check if updated
       id: post-update
