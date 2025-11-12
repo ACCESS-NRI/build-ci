@@ -69,7 +69,7 @@ This workflow handles building and running short CI tests on a given spack manif
 ```yaml
 jobs:
   test:
-    uses: access-nri/build-ci/.github/workflows/ci.yml@v3
+    uses: access-nri/build-ci/.github/workflows/ci.yml@spack-config-81-git-based-spack-packages-repo_TEST
     with:
       spack-manifest-path: .github/build/spack.yaml.j2
 ```
@@ -79,7 +79,7 @@ jobs:
 ```yaml
 jobs:
   test:
-    uses: access-nri/build-ci/.github/workflows/ci.yml@v3
+    uses: access-nri/build-ci/.github/workflows/ci.yml@spack-config-81-git-based-spack-packages-repo_TEST
     with:
       spack-manifest-path: .github/build/spack.yaml.j2
       spack-manifest-data-path: .github/build/data/data.json
@@ -109,7 +109,7 @@ jobs:
           - .github/build/one.spack.yaml.j2
           - .github/build/two.spack.yaml.j2
           - .github/build/three.spack.yaml.j2
-    uses: access-nri/build-ci/.github/workflows/ci.yml@v3
+    uses: access-nri/build-ci/.github/workflows/ci.yml@spack-config-81-git-based-spack-packages-repo_TEST
     with:
       spack-manifest-path: ${{ matrix.manifest }}
 ```
@@ -129,7 +129,7 @@ jobs:
             compiler: .github/build/compiler/intel.spack.yaml
           - manifest: .github/build/two.spack.yaml.j2
             compiler: .github/build/compiler/gcc.spack.yaml
-    uses: access-nri/build-ci/.github/workflows/ci.yml@v3
+    uses: access-nri/build-ci/.github/workflows/ci.yml@spack-config-81-git-based-spack-packages-repo_TEST
     with:
       spack-manifest-path: ${{ matrix.values.manifest }}
       spack-compiler-manifest-path: ${{ matrix.values.compiler }}
@@ -147,7 +147,7 @@ jobs:
         # This would be a combination of all defined manifest/compilers (eg, 4 jobs)
         manifest: [".github/build/one.spack.yaml.j2", ".github/build/two.spack.yaml.j2"]
         compiler: [".github/build/compiler/intel.spack.yaml", ".github/build/compiler/gcc.spack.yaml"]
-    uses: access-nri/build-ci/.github/workflows/ci.yml@v3
+    uses: access-nri/build-ci/.github/workflows/ci.yml@spack-config-81-git-based-spack-packages-repo_TEST
     with:
       spack-manifest-path: ${{ matrix.values.manifest }}
       spack-compiler-manifest-path: ${{ matrix.values.compiler }}
@@ -177,7 +177,7 @@ The jinja data file (and the jinja-templatable spack manifest) can be much more 
 Alternatively, you can supply a newline-separated list of space-separated template-value pairs through `inputs.spack-manifest-data-pairs`, which are more useful if you are supplying data to this workflow through `need`ed job outputs. For example:
 
 ```yaml
-    uses: access-nri/build-ci/.github/workflows/ci.yml@v3
+    uses: access-nri/build-ci/.github/workflows/ci.yml@spack-config-81-git-based-spack-packages-repo_TEST
     with:
       spack-manifest-path: .github/build-ci/manifests/spack.yaml.j2
       spack-manifest-data-pairs: |-
@@ -232,7 +232,7 @@ jobs:
         file:
         - .github/build-ci/manifests/some.spack.yaml.j2
         - .github/build-ci/manifests/another.spack.yaml.j2
-    uses: access-nri/build-ci/.github/workflows/ci.yaml@v3
+    uses: access-nri/build-ci/.github/workflows/ci.yaml@spack-config-81-git-based-spack-packages-repo_TEST
     with:
       spack-manifest-path: ${{ matrix.file }}
 
