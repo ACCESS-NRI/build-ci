@@ -52,7 +52,7 @@ on:
       builtin-spack-packages-ref:
         required: false
         type: string
-        default: main
+        default: develop
         description: |
           The branch, tag, or commit SHA of the spack/spack-packages repository to use.
           For example: main, 2025.03.0, 7ey2uy2.
