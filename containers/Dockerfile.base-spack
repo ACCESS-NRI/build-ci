@@ -145,8 +145,15 @@ SHELL ["/bin/bash", "-c"]
 RUN <<EOF
 git clone -c feature.manyFiles=true ${SPACK_GIT_URL} ${SPACK_ROOT} --branch ${SPACK_REPO_VERSION}
 
-# Install ACCESS-NRI's spack-packages repo
-git clone  https://github.com/ACCESS-NRI/spack-packages.git /opt/spack-packages --branch ${SPACK_PACKAGES_REPO_VERSION}
+# Install ACCESS-NRI's access-spack-packages repo for versions older than v1.0
+case "$SPACK_VERSION" in
+	v0*) git clone https://github.com/ACCESS-NRI/access-spack-packages.git /opt/spack-packages --branch ${SPACK_PACKAGES_REPO_VERSION}
+             ;;
+        v1*) echo "Spack v1.x manages access-spack-packages directly"
+             ;;
+        *) echo "Unknown Spack version"
+           ;;
+esac
 
 # Install ACCESS-NRI's spack-config repo
 git clone  https://github.com/ACCESS-NRI/spack-config.git /opt/spack-config --branch ${SPACK_CONFIG_REPO_VERSION}
@@ -212,8 +219,15 @@ ARG MPI_NAME=openmpi
 ARG MPI_VERSION=4.1.5
 
 RUN <<EOF
-spack load ${COMPILER_PKG_NAME}@${COMPILER_PKG_VERSION} \
- && spack compiler find
+case "$SPACK_VERSION" in
+	v0*) spack load ${COMPILER_PKG_NAME}@${COMPILER_PKG_VERSION}
+             spack compiler find
+             ;;
+        v1*) echo "Spack v1.x detects compilers directly"
+             ;;
+        *) echo "Unknown Spack version"
+           ;;
+esac
 
 spack install \
     gmake target=${SPACK_TARGET} %${COMPILER_NAME}@${COMPILER_VERSION}
