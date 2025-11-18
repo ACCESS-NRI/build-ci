@@ -12,7 +12,7 @@ ARG OS=rocky
 ################################################################################
 # NOTE: Keep an eye on:
 #       ${SPACK_ROOT}/share/spack/templates/container/rockylinux_8.dockerfile
-FROM rockylinux/rockylinux:8.10 as base-os-rocky
+FROM rockylinux/rockylinux:8.10 AS base-os-rocky
 
 # csh currently required for some build scripts e.g. MOM5
 RUN dnf update -y \
@@ -59,7 +59,7 @@ RUN dnf update -y \
 
 
 ################################################################################
-FROM opensuse/leap:15.5 as base-os-suse
+FROM opensuse/leap:15.5 AS base-os-suse
 
 # csh currently required for some build scripts e.g. MOM5
 RUN zypper ref \
@@ -104,7 +104,7 @@ RUN zypper ref \
 
 
 ################################################################################
-FROM base-os-$OS as base-spack
+FROM base-os-$OS AS base-spack
 
 ARG SPACK_GIT_URL=https://github.com/ACCESS-NRI/spack.git
 ARG SPACK_VERSION=v0.22
@@ -183,7 +183,7 @@ EOF
 
 
 ################################################################################
-FROM base-spack as ci
+FROM base-spack AS ci
 
 # Set up ACCESS Spack buildcache
 RUN pip3 install --no-cache-dir boto3==1.23.10
@@ -206,7 +206,7 @@ RUN --mount=type=secret,id=access-nri.pub \
 
 
 ################################################################################
-FROM base-spack as dev
+FROM base-spack AS dev
 
 ARG MPI_NAME=openmpi
 ARG MPI_VERSION=4.1.5
