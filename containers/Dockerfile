@@ -51,6 +51,7 @@ RUN dnf update -y \
     python3-setuptools \
     svn \
     unzip \
+    vim \
     which \
     xz \
     zstd \
@@ -114,11 +115,6 @@ RUN zypper ref \
  # Install yq
  && curl -L https://github.com/mikefarah/yq/releases/download/v4.45.1/yq_linux_amd64 -o /usr/bin/yq \
  && chmod +x /usr/bin/yq \
- # Install tmate in the image for remote access during workflows via mxschmitt/action-tmate
- && curl -L https://github.com/tmate-io/tmate/releases/download/2.4.0/tmate-2.4.0-static-linux-amd64.tar.xz -o static-tmate.tar.xz \
- && tar -xvf static-tmate.tar.xz --strip-components=1 \
- && mv tmate /usr/local/bin/tmate \
- && rm -rf static-tmate.tar.xz \
  # Install gh
  && zypper addrepo https://cli.github.com/packages/rpm/gh-cli.repo \
  && zypper ref \
@@ -204,7 +200,7 @@ RUN spack bootstrap now
 
 ################################################################################
 # Install compilers and other common packages
-FROM base-spack AS upstream
+FROM base-spack AS base-upstream
 
 LABEL org.opencontainers.image.source=https://github.com/ACCESS-NRI/build-ci
 
@@ -214,43 +210,54 @@ RUN --mount=type=secret,id=oci-username,env=OCI_USERNAME \
     --mount=type=secret,id=oci-password,env=OCI_PASSWORD \
     --mount=type=secret,id=oci-url,env=OCI_URL \
     <<EOF
-spack mirror add \
-  --scope=system \
-  --autopush \
-  --unsigned \
-  --oci-username-variable OCI_USERNAME \
-  --oci-password-variable OCI_PASSWORD \
-  docker_build_buildcache $OCI_URL
+if [ -n "$OCI_USERNAME" ] || [ -n "$OCI_PASSWORD" ] || [ -n "$OCI_URL" ]; then
+  REQUESTS_OCI_MIRROR=1
+fi
+
+if [ -n "$REQUESTS_OCI_MIRROR" ]; then
+  spack mirror add \
+    --scope=site \
+    --autopush \
+    --unsigned \
+    --oci-username-variable OCI_USERNAME \
+    --oci-password-variable OCI_PASSWORD \
+    docker_build_buildcache $OCI_URL
+fi
+spack mirror list
 
 echo "Installing compilers"
 spack env activate compilers --create --envfile ${ENV_COMPILERS_SPACK_MANIFEST}
-spack spec
 spack install --deprecated --fail-fast || exit
 spack env deactivate
-yq '.spack.specs[]' "${ENV_COMPILERS_SPACK_MANIFEST}" | while read compiler; do
-  echo "Loading compiler: $compiler"
-  spack load $compiler
-  spack compiler find --scope=user
-done
 
 spack clean --downloads --stage
 
-spack mirror remove --scope=system docker_build_buildcache
+if [ -n "$REQUESTS_OCI_MIRROR" ]; then
+  spack mirror remove --scope=site docker_build_buildcache
+fi
 EOF
 
+# Conditionally add mirrors based on whether secrets exist
 COPY ${SOURCE_PACKAGES_SPACK_MANIFEST} ${ENV_PACKAGES_SPACK_MANIFEST}
 RUN --mount=type=secret,id=oci-username,env=OCI_USERNAME \
     --mount=type=secret,id=oci-password,env=OCI_PASSWORD \
     --mount=type=secret,id=oci-url,env=OCI_URL \
     <<EOF
 
-spack mirror add \
-  --scope=system \
-  --autopush \
-  --unsigned \
-  --oci-username-variable OCI_USERNAME \
-  --oci-password-variable OCI_PASSWORD \
-  docker_build_buildcache $OCI_URL
+if [ -n "$OCI_USERNAME" ] || [ -n "$OCI_PASSWORD" ] || [ -n "$OCI_URL" ]; then
+  REQUESTS_OCI_MIRROR=1
+fi
+
+if [ -n "$REQUESTS_OCI_MIRROR" ]; then
+  spack mirror add \
+    --scope=site \
+    --autopush \
+    --unsigned \
+    --oci-username-variable OCI_USERNAME \
+    --oci-password-variable OCI_PASSWORD \
+    docker_build_buildcache $OCI_URL
+fi
+spack mirror list
 
 echo "Installing common packages"
 spack env activate packages --create --envfile ${ENV_PACKAGES_SPACK_MANIFEST}
@@ -259,16 +266,36 @@ spack env deactivate
 
 spack clean --downloads --stage
 
-spack mirror remove --scope=system docker_build_buildcache
+if [ -n "$REQUESTS_OCI_MIRROR" ]; then
+  spack mirror remove --scope=site docker_build_buildcache
+fi
 EOF
+
+FROM base-upstream AS upstream
+# Install tmate in the image for remote access during workflows via mxschmitt/action-tmate
+RUN <<EOF
+curl -L https://github.com/tmate-io/tmate/releases/download/2.4.0/tmate-2.4.0-static-linux-amd64.tar.xz -o static-tmate.tar.xz
+tar -xvf static-tmate.tar.xz --strip-components=1
+mv tmate /usr/local/bin/tmate
+rm -rf static-tmate.tar.xz
+EOF
+
 
 ################################################################################
 FROM base-spack AS runner
 
 LABEL org.opencontainers.image.source=https://github.com/ACCESS-NRI/build-ci
 
+RUN <<EOF
+curl -L https://github.com/tmate-io/tmate/releases/download/2.4.0/tmate-2.4.0-static-linux-amd64.tar.xz -o static-tmate.tar.xz
+tar -xvf static-tmate.tar.xz --strip-components=1
+mv tmate /usr/local/bin/tmate
+rm -rf static-tmate.tar.xz
+EOF
+
 # Set up ACCESS Spack buildcache
-RUN spack mirror add --scope=system --autopush --unsigned runner_set_buildcache /opt/runner_set_buildcache
+RUN spack mirror add --scope=site --autopush --unsigned runner_set_buildcache /opt/runner_set_buildcache
+
 
 ENTRYPOINT ["/bin/bash", "/opt/spack/share/spack/docker/entrypoint.bash"]
 CMD ["interactive-shell"]

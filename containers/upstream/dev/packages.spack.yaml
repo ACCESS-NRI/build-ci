@@ -16,17 +16,17 @@ spack:
       - gcc@13.2.0
 
     # Targets for the packages
-    - targets:
-      - target=x86_64
+    # - targets:
+    #   - target=x86_64
   specs:
   # Combination of packages, compilers and targets for the final list of specs
   - matrix:
     - [$packages]
     - [$%compilers]
-    - [$targets]
+    # - [$targets]
   # Further specs can be installed in the usual way below, eg:
   # - gmake%intel@2021.10.0 target=x86_64
-  - python@3.11.7 %gcc target=x86_64
+  - python@3.11.7 %gcc
   view: false  # No view required as these upstream packages are not loaded by users
   concretizer:
     unify: false  # No need to unify because there are combinations of the same package
