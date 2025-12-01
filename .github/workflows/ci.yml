@@ -334,7 +334,7 @@ jobs:
           yq '.roots[].hash' "$compiler_lockfile_path" | while read hash; do
             echo "Loading compiler with hash: $hash"
             spack load /$hash
-            spack compiler find --scope=user
+            spack compiler find --scope=site
           done
 
           spack find
@@ -371,7 +371,7 @@ jobs:
           spack env deactivate
           yq '.spack.specs[]' ${{ inputs.spack-compiler-manifest-path }} | while read compiler; do
             spack load $compiler
-            spack compiler find --scope=user
+            spack compiler find --scope=site
           done
           spack compiler list
 

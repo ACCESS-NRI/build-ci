@@ -66,7 +66,7 @@ on:
       spack-ref:
         required: false
         type: string
-        default: releases/v1.0
+        default: releases/v1.1
         description: |
           The branch, tag, or commit SHA of the access-nri/spack repository to use.
           For example: develop, releases/0.22, 7ey2uy2.
@@ -327,7 +327,7 @@ jobs:
           yq '.roots[].hash' "$compiler_lockfile_path" | while read hash; do
             echo "Loading compiler with hash: $hash"
             spack load /$hash
-            spack compiler find --scope=user
+            spack compiler find --scope=site
           done
 
           spack find
@@ -364,7 +364,7 @@ jobs:
           spack env deactivate
           yq '.spack.specs[]' ${{ inputs.spack-compiler-manifest-path }} | while read compiler; do
             spack load $compiler
-            spack compiler find --scope=user
+            spack compiler find --scope=site
           done
           spack compiler list
 
