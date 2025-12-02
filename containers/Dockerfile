@@ -107,8 +107,8 @@ RUN zypper ref \
     vim \
  # Install gh
  && zypper addrepo https://cli.github.com/packages/rpm/gh-cli.repo \
- && zypper ref \
- && zypper install gh \
+ && zypper --gpg-auto-import-keys refresh \
+ && zypper -n install gh \
  # zypper cleanup
  &&  zypper clean
 
@@ -125,6 +125,7 @@ ARG SPACK_CONFIG_DIR=/opt/spack-config/${SPACK_VERSION}/ci
 ARG SOURCE_COMPILERS_SPACK_MANIFEST=upstream/prod/compilers.spack.yaml
 ARG SOURCE_PACKAGES_SPACK_MANIFEST=upstream/prod/packages.spack.yaml
 
+ENV SPACK_VERSION=${SPACK_VERSION}
 ENV SPACK_ROOT=/opt/spack
 ENV GNUPGHOME=${SPACK_ROOT}/opt/spack/gpg
 ENV ENV_SPACK_TARGET=${SPACK_TARGET}
@@ -150,7 +151,7 @@ SHELL ["/bin/bash", "-c"]
 
 # Install spack
 RUN <<EOF
-git clone -c feature.manyFiles=true ${SPACK_GIT_URL} ${SPACK_ROOT} --branch ${SPACK_REPO_VERSION}
+git clone ${SPACK_GIT_URL} ${SPACK_ROOT} --branch ${SPACK_REPO_VERSION}
 
 # Install ACCESS-NRIs spack-config repo
 git clone  https://github.com/ACCESS-NRI/spack-config.git /opt/spack-config --branch ${SPACK_CONFIG_REPO_VERSION}
@@ -176,7 +177,7 @@ SHELL ["docker-shell"]
 
 # https://spack.readthedocs.io/en/latest/bootstrapping.html
 # Spack is configured to bootstrap its dependencies and repositories lazily by default;
-# i.e. the first time they are needed and can’t be found.
+# i.e. the first time they are needed and can't be found.
 
 # Bootstrap spack and clone relevant spack-packages repos
 
@@ -187,6 +188,41 @@ SHELL ["docker-shell"]
 #   spack repo update builtin --commit $builtin_spack_packages_sha
 #   spack repo update access.nri --commit $access_spack_packages_sha
 RUN spack bootstrap now
+
+################################################################################
+FROM base-spack AS dev
+
+RUN <<EOF
+spack install gcc@13.2.0 ~binutils target=x86_64
+spack install intel-oneapi-compilers-classic@2021.10.0 target=x86_64
+spack install intel-oneapi-compilers@2025.2.0 target=x86_64
+
+case "$SPACK_VERSION" in
+  v0*) spack load $(spack find --no-groups gcc intel-oneapi-compilers intel-oneapi-compilers-classic)
+       spack compiler find
+       git clone https://github.com/ACCESS-NRI/access-spack-packages.git /opt/spack-packages --branch api-v1
+       git clone https://github.com/ACCESS-NRI/ACCESS-OM2 /opt/ACCESS-OM2 --branch api-v1
+       ;;
+
+  v1*) echo "Spack v1.x detects compilers directly"
+       echo "spack-config v1.x manages access-spack-packages directly"
+       git clone https://github.com/ACCESS-NRI/ACCESS-OM2 /opt/ACCESS-OM2
+       ;;
+
+  *) echo "Unknown Spack version"
+     ;;
+esac
+
+spack env activate -p /opt/ACCESS-OM2
+spack concretize -f
+spack install
+spack env deactivate
+
+spack clean --downloads --stage
+EOF
+
+ENTRYPOINT ["/bin/bash", "/opt/spack/share/spack/docker/entrypoint.bash"]
+CMD ["interactive-shell"]
 
 ################################################################################
 FROM base-spack AS base-ci
