@@ -444,6 +444,7 @@ jobs:
       - name: Manifest - Logs Create
         if: always() && (steps.install.conclusion == 'failure' || steps.install.conclusion == 'success')
         id: logs-create
+        continue-on-error: true
         run: |
           . ${{ steps.env.outputs.SPACK_ROOT }}/share/spack/setup-env.sh
 
@@ -461,7 +462,7 @@ jobs:
 
           i=0
           while read -r hash; do
-            spack -e default logs /$hash > "logs/spec_${i}.log"
+            spack -e default logs /$hash > "logs/spec_${i}.log" || true
             i=$((i + 1))
           done <<< "$hashes"
 

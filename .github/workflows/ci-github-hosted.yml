@@ -454,7 +454,7 @@ jobs:
 
           i=0
           while read -r hash; do
-            spack -e default logs /$hash > "logs/spec_${i}.log"
+            spack -e default logs /$hash > "logs/spec_${i}.log" || true
             i=$((i + 1))
           done <<< "$hashes"
 
