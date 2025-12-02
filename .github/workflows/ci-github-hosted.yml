@@ -407,6 +407,8 @@ jobs:
           spack env create default ${{ steps.jinja-templated.outputs.spack-manifest-path }}
           spack env activate
 
+          spack concretize --fresh --force
+
           echo "spec<<EOF" >> $GITHUB_OUTPUT
           echo "$(spack spec)" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
