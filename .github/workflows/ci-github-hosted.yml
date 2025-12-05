@@ -80,7 +80,7 @@ on:
       container-image-version:
         required: false
         type: string
-        default: :rocky
+        default: :rocky-v0.22
         description: |
           The version of the container image to use for the runner.
           Can be either a tag (specified by ':TAG') or a SHA (specified by '@sha256:SHA').
