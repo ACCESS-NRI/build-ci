@@ -10,7 +10,7 @@ Action that updates an existing repository, and checks out the updated ref.
 | `spack-packages-repository-path` | `string` (path) | The path to the repository to update and check out the ref | `true` | N/A | `"/root/.spack/package_repos/fncqgg4/repos/spack_repo/builtin"` |
 | `ref` | `string` (git branch, tag or sha) | The git ref to check out | `true` | N/A | `"main"` or `"v1"` or `"f8r73g3"` |
 | `spack-instance-root-path` | `string` (path) | The path to the spack instance root, used to setup the spack environment | `true` | N/A | `"/opt/spack"` |
-
+An example [`repos.yaml` file](https://github.com/ACCESS-NRI/spack-config/blob/main/common-api-v2/repos.yaml) as referenced above.
 ## Outputs
 
 | Name | Type | Description | Example |
