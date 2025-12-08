@@ -213,9 +213,6 @@ RUN --mount=type=secret,id=oci-username,env=OCI_USERNAME \
     <<EOF
 if [ -n "$OCI_USERNAME" ] || [ -n "$OCI_PASSWORD" ] || [ -n "$OCI_URL" ]; then
   REQUESTS_OCI_MIRROR=1
-fi
-
-if [ -n "$REQUESTS_OCI_MIRROR" ]; then
   spack mirror add \
     --scope=site \
     --autopush \
@@ -247,9 +244,6 @@ RUN --mount=type=secret,id=oci-username,env=OCI_USERNAME \
 
 if [ -n "$OCI_USERNAME" ] || [ -n "$OCI_PASSWORD" ] || [ -n "$OCI_URL" ]; then
   REQUESTS_OCI_MIRROR=1
-fi
-
-if [ -n "$REQUESTS_OCI_MIRROR" ]; then
   spack mirror add \
     --scope=site \
     --autopush \
