@@ -288,7 +288,12 @@ jobs:
           ln --symbolic --relative --verbose --force ${{ steps.env.outputs.SPACK_ROOT }}/../spack-config/${spack_branch}/ci-runner/* ${{ steps.env.outputs.SPACK_ROOT }}/etc/spack/
 
       - name: Spack - Initial Enable
-        run: . ${{ steps.env.outputs.SPACK_ROOT }}/share/spack/setup-env.sh
+        run: |
+          . ${{ steps.env.outputs.SPACK_ROOT }}/share/spack/setup-env.sh
+          echo "----- Compilers -----"
+          spack compiler list
+          echo "----- Packages -----"
+          spack find
 
       - name: Spack - Get spack-packages repo locations
         id: spack-packages-locations
@@ -315,30 +320,6 @@ jobs:
           spack-packages-repository-path: ${{ steps.spack-packages-locations.outputs.access-spack-packages }}
           ref: ${{ inputs.access-spack-packages-ref }}
           spack-instance-root-path: ${{ steps.env.outputs.SPACK_ROOT }}
-
-      - name: Spack - Compiler Load
-        run: |
-          . ${{ steps.env.outputs.SPACK_ROOT }}/share/spack/setup-env.sh
-
-          # Find potential upstream compiler lockfile path
-          if [ -f "/opt/upstream/compilers.spack.lock" ]; then
-            compiler_lockfile_path="/opt/upstream/compilers.spack.lock"
-          elif [ -f "/opt/environments/compilers/spack.lock" ]; then
-            compiler_lockfile_path="/opt/environments/compilers/spack.lock"
-          else
-            echo "::warning::No upstream compilers.spack.lock or environments/compilers/spack.lock found, skipping compiler load from upstream"
-            exit 0
-          fi
-
-          # Attempt a load of compilers via upstream compilers lockfile
-          echo "Found $compiler_lockfile_path, attempting to load compilers from upstream"
-          yq '.roots[].hash' "$compiler_lockfile_path" | while read hash; do
-            echo "Loading compiler with hash: $hash"
-            spack load /$hash
-            spack compiler find --scope=site
-          done
-
-          spack find
 
       - name: Spack - OCI Buildcache Init
         if: inputs.spack-oci-buildcache-url != ''
