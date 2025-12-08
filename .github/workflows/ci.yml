@@ -49,17 +49,25 @@ on:
         description: |
           The branch, tag, or commit SHA of the access-nri/spack-config repository to use.
           For example: main, 2025.03.0, 7ey2uy2.
-      spack-packages-ref:
+      builtin-spack-packages-ref:
         required: false
         type: string
-        default: main
+        default: develop
+        description: |
+          The branch, tag, or commit SHA of the spack/spack-packages repository to use.
+          For example: main, 2025.03.0, 7ey2uy2.
+      access-spack-packages-ref:
+        required: false
+        type: string
+        default: api-v2
         description: |
           The branch, tag, or commit SHA of the access-nri/spack-packages repository to use.
           For example: main, 2025.03.0, 7ey2uy2.
       spack-ref:
         required: false
         type: string
-        default: releases/v0.22
+        # Default spack version - must be changed across the Dockerfile as well
+        default: releases/v1.1
         description: |
           The branch, tag, or commit SHA of the access-nri/spack repository to use.
           For example: develop, releases/0.22, 7ey2uy2.
@@ -118,10 +126,14 @@ on:
         value: ${{ jobs.spack-install-and-test.outputs.spack-config-sha }}
         description: |
           The SHA of the spack-config repository checked out.
-      spack-packages-sha:
-        value: ${{ jobs.spack-install-and-test.outputs.spack-packages-sha }}
+      builtin-spack-packages-sha:
+        value: ${{ jobs.spack-install-and-test.outputs.builtin-spack-packages-sha }}
         description: |
-          The SHA of the spack-packages repository checked out.
+          The SHA of the builtin spack-packages repository checked out.
+      access-spack-packages-sha:
+        value: ${{ jobs.spack-install-and-test.outputs.access-spack-packages-sha }}
+        description: |
+          The SHA of the access-spack-packages repository checked out.
       sha:
         value: ${{ jobs.spack-install-and-test.outputs.sha }}
         description: |
@@ -174,13 +186,14 @@ jobs:
         # FIXME: To be able to support both v0.22 and v1.0 upstreams at the same time
         # We need to pick the correct upstream volume based on the runner image spack version
         # This may not be required in the future if we only support v1.0+
-        - /opt/upstream${{ contains(inputs.container-image-version, 'v1.0') && '-v1.0' || '' }}:/opt/upstream:ro
+        - /opt/upstream${{ contains(inputs.container-image-version, 'v1') && '-v1' || '' }}:/opt/upstream:ro
         - /opt/runner_set_buildcache:/opt/runner_set_buildcache:rw
     outputs:
       spec-concretization-graph: ${{ steps.install.outputs.spec }}
       spack-sha: ${{ steps.spack-update.outputs.sha }}
       spack-config-sha: ${{ steps.spack-config-update.outputs.sha }}
-      spack-packages-sha: ${{ steps.spack-packages-update.outputs.sha }}
+      builtin-spack-packages-sha: ${{ steps.builtin-spack-packages-update.outputs.sha }}
+      access-spack-packages-sha: ${{ steps.access-spack-packages-update.outputs.sha }}
       sha: ${{ steps.checkout.outputs.commit }}
       spack-files-artifact-pattern: ${{ steps.env.outputs.spack-files-artifact-pattern }}
       spack-files-artifact-url: ${{ steps.manifest-upload.outputs.artifact-url }}
@@ -192,14 +205,14 @@ jobs:
       short-container-id: ${{ steps.env.outputs.short-container-id }}
       # test-artifact-url: ${{ steps.test.outputs.artifact-url }}
     steps:
-      - name: Export environment variables into GitHub Actions format
+      - name: Init - Export environment variables into GitHub Actions format
         # Environment variables inside containers are not accessible in the `env` context,
         # a context which would be used in future conditional steps.
         # This step exports important container environment variables as outputs.
         # And yes, this loop echoes name-of-var=value-of-var!
         id: env
         run: |
-          for var in SPACK_ROOT SPACK_CONFIG_DIR SPACK_REPO_VERSION SPACK_CONFIG_REPO_VERSION SPACK_PACKAGES_REPO_VERSION; do
+          for var in SPACK_ROOT INITIAL_SPACK_REPO_VERSION; do
             echo "$var=${!var}" >> $GITHUB_OUTPUT
           done
 
@@ -222,28 +235,30 @@ jobs:
           echo "container-id=$container_id" >> $GITHUB_OUTPUT
           echo "short-container-id=$short_container_id" >> $GITHUB_OUTPUT
 
-      - name: Update spack-package version
-        id: spack-packages-update
-        uses: access-nri/build-ci/.github/actions/git-checkout-updated-ref@v2
-        with:
-          repository-path: ${{ steps.env.outputs.SPACK_ROOT }}/../spack-packages
-          ref: ${{ inputs.spack-packages-ref }}
-
-      - name: Update spack-config version
+      - name: Update - spack-config version
         id: spack-config-update
-        uses: access-nri/build-ci/.github/actions/git-checkout-updated-ref@v2
+        uses: access-nri/build-ci/.github/actions/git-checkout-updated-ref@v3
         with:
           repository-path: ${{ steps.env.outputs.SPACK_ROOT }}/../spack-config
           ref: ${{ inputs.spack-config-ref }}
 
-      - name: Update spack version
+      - name: Update - spack version
         id: spack-update
-        uses: access-nri/build-ci/.github/actions/git-checkout-updated-ref@v2
+        uses: access-nri/build-ci/.github/actions/git-checkout-updated-ref@v3
         with:
           repository-path: ${{ steps.env.outputs.SPACK_ROOT }}
           ref: ${{ inputs.spack-ref }}
 
-      - name: Relink spack-config to spack
+      - name: Update - Validate non-updated spack
+        if: steps.spack-update.outputs.updated == 'false' && steps.spack-config-update.outputs.updated == 'false'
+        # We don't support spack < v1.0 in build-ci@v3, so we error out if the spack version is not updated and the version in the image is < v1.0
+        run: |
+          if [[ "${{ steps.env.outputs.INITIAL_SPACK_REPO_VERSION }}" == "releases/v0"* ]]; then
+            echo "::error::spack branch ${{ steps.env.outputs.INITIAL_SPACK_REPO_VERSION }} is not a v1.x branch, and build-ci@v3 only supports spack >= v1.0. Use build-ci@v2 for spack < v1.0"
+            exit 2
+          fi
+
+      - name: Update - Validate and relink spack-config to spack
         if: steps.spack-config-update.outputs.updated == 'true' || steps.spack-update.outputs.updated == 'true'
         # If there was a change in spack or spack-config, we should relink the config to spack.
         # Furthermore, if spack has been updated, we need to make sure we link to the correct vX config directory in spack-config.
@@ -264,31 +279,47 @@ jobs:
             echo "Linking spack with SHA ${{ steps.spack-update.outputs.sha }} to spack-config directory $spack_branch"
           fi
 
+          # Check if the determined spack_branch starts with v0, which is unsupported in build-ci@v3
+          if [[ "$spack_branch" == "v0"* ]]; then
+            echo "::error::spack branch $spack_branch is not a v1.x branch, and build-ci@v3 only supports spack >= v1.0. Use build-ci@v2 for spack < v1.0"
+            exit 2
+          fi
+
           ln --symbolic --relative --verbose --force ${{ steps.env.outputs.SPACK_ROOT }}/../spack-config/${spack_branch}/ci-runner/* ${{ steps.env.outputs.SPACK_ROOT }}/etc/spack/
 
-      - name: Spack - Initial Enable + Compiler Load
+      - name: Spack - Initial Enable
+        run: |
+          . ${{ steps.env.outputs.SPACK_ROOT }}/share/spack/setup-env.sh
+          echo "----- Compilers -----"
+          spack compiler list
+          echo "----- Packages -----"
+          spack find
+
+      - name: Spack - Get spack-packages repo locations
+        id: spack-packages-locations
         run: |
           . ${{ steps.env.outputs.SPACK_ROOT }}/share/spack/setup-env.sh
 
-          # Find potential upstream compiler lockfile path
-          if [ -f "/opt/upstream/compilers.spack.lock" ]; then
-            compiler_lockfile_path="/opt/upstream/compilers.spack.lock"
-          elif [ -f "/opt/environments/compilers/spack.lock" ]; then
-            compiler_lockfile_path="/opt/environments/compilers/spack.lock"
-          else
-            echo "::warning::No upstream compilers.spack.lock or environments/compilers/spack.lock found, skipping compiler load from upstream"
-            exit 0
-          fi
+          echo "builtin=$(spack location --repo builtin)" >> $GITHUB_OUTPUT
+          echo "access-spack-packages=$(spack location --repo access.nri)" >> $GITHUB_OUTPUT
 
-          # Attempt a load of compilers via upstream compilers lockfile
-          echo "Found $compiler_lockfile_path, attempting to load compilers from upstream"
-          yq '.roots[].hash' "$compiler_lockfile_path" | while read hash; do
-            echo "Loading compiler with hash: $hash"
-            spack load /$hash
-            spack compiler find --scope=user
-          done
+      - name: Update - builtin spack-package version
+        id: builtin-spack-packages-update
+        uses: access-nri/build-ci/.github/actions/spack-checkout-updated-ref@v3
+        with:
+          spack-packages-repository-name: builtin
+          spack-packages-repository-path: ${{ steps.spack-packages-locations.outputs.builtin }}
+          ref: ${{ inputs.builtin-spack-packages-ref }}
+          spack-instance-root-path: ${{ steps.env.outputs.SPACK_ROOT }}
 
-          spack find
+      - name: Update - access-spack-package version
+        id: access-spack-packages-update
+        uses: access-nri/build-ci/.github/actions/spack-checkout-updated-ref@v3
+        with:
+          spack-packages-repository-name: access_spack_packages
+          spack-packages-repository-path: ${{ steps.spack-packages-locations.outputs.access-spack-packages }}
+          ref: ${{ inputs.access-spack-packages-ref }}
+          spack-instance-root-path: ${{ steps.env.outputs.SPACK_ROOT }}
 
       - name: Spack - OCI Buildcache Init
         if: inputs.spack-oci-buildcache-url != ''
@@ -322,7 +353,7 @@ jobs:
           spack env deactivate
           yq '.spack.specs[]' ${{ inputs.spack-compiler-manifest-path }} | while read compiler; do
             spack load $compiler
-            spack compiler find --scope=user
+            spack compiler find --scope=site
           done
           spack compiler list
 
@@ -352,8 +383,7 @@ jobs:
       - name: Manifest - Install
         id: install
         env:
-          # For pulling and pushing OCI buildcache
-          # If secrets.GITHUB_TOKEN has permissions.packages:write, one would not have to specify secrets.spack-oci-buildcache-password
+          # For pulling OCI buildcache
           OCI_USERNAME: ${{ secrets.spack-oci-buildcache-username || github.actor }}
           OCI_PASSWORD: ${{ secrets.spack-oci-buildcache-password || secrets.GITHUB_TOKEN }}
           # This is needed to ensure that the spack install command can access private repositories - we replace all HTTPS git URLs with the PAT
@@ -365,6 +395,8 @@ jobs:
           . ${{ steps.env.outputs.SPACK_ROOT }}/share/spack/setup-env.sh
           spack env create default ${{ steps.jinja-templated.outputs.spack-manifest-path }}
           spack env activate
+
+          spack concretize --force
 
           echo "spec<<EOF" >> $GITHUB_OUTPUT
           echo "$(spack spec)" >> $GITHUB_OUTPUT
@@ -379,7 +411,8 @@ jobs:
 
       - name: Manifest - Push to Buildcache
         env:
-          # For pulling OCI buildcache
+          # For pulling and pushing OCI buildcache
+          # If secrets.GITHUB_TOKEN has permissions.packages:write, one would not have to specify secrets.spack-oci-buildcache-password
           OCI_USERNAME: ${{ secrets.spack-oci-buildcache-username || github.actor }}
           OCI_PASSWORD: ${{ secrets.spack-oci-buildcache-password || secrets.GITHUB_TOKEN }}
         if: inputs.spack-oci-buildcache-url != ''
@@ -420,7 +453,7 @@ jobs:
 
           i=0
           while read -r hash; do
-            spack -e default logs /$hash > "logs/spec_${i}.log"
+            spack -e default logs /$hash > "logs/spec_${i}.log" || true
             i=$((i + 1))
           done <<< "$hashes"
 
@@ -477,7 +510,8 @@ jobs:
             "spack_compiler_manifest_path": "${{ inputs.spack-compiler-manifest-path }}",
             "ref": "${{ inputs.ref }}",
             "spack_config_ref": "${{ inputs.spack-config-ref }}",
-            "spack_packages_ref": "${{ inputs.spack-packages-ref }}",
+            "builtin_spack_packages_ref": "${{ inputs.builtin-spack-packages-ref }}",
+            "access_spack_packages_ref": "${{ inputs.access-spack-packages-ref }}",
             "spack_ref": "${{ inputs.spack-ref }}",
             "pytest_test_markers": "${{ inputs.pytest-test-markers }}",
             "allow_ssh_into_spack_install": "${{ inputs.allow-ssh-into-spack-install }}",
@@ -488,7 +522,8 @@ jobs:
             "spec_concretization_graph": $spec,
             "spack_sha": "${{ steps.spack-update.outputs.sha }}",
             "spack_config_sha": "${{ steps.spack-config-update.outputs.sha }}",
-            "spack_packages_sha": "${{ steps.spack-packages-update.outputs.sha }}",
+            "builtin_spack_packages_sha": "${{ steps.builtin-spack-packages-update.outputs.sha }}",
+            "access_spack_packages_sha": "${{ steps.access-spack-packages-update.outputs.sha }}",
             "sha": "${{ steps.checkout.outputs.commit }}",
             "container_id": "${{ steps.env.outputs.container-id }}",
             "short_container_id": "${{ steps.env.outputs.short-container-id }}",

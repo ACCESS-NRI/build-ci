@@ -8,8 +8,6 @@ This folder contains the `Dockerfile` and `compose.*.yaml` files needed to build
 
 Furthermore, those images download upstream compilers and common packages informed by the `upstream/[dev|prod]/[packages|compilers].spack.yaml` spack manifests.
 
-Finally, there is a `spack-config` folder that contains a customised [spack-enable.bash](https://github.com/ACCESS-NRI/spack-config/blob/main/spack-enable.bash) used to load `spack`, as well as upstream compilers.
-
 ## How to build `spack` for testing
 
 You can use spack in a similar way to `build-ci`, with it's own upstream `spack` used for compilers and common packages. This is also suitable for developers to test. Run the following Docker Compose commands:
@@ -26,4 +24,4 @@ When finished, you can run the following to shut down the services:
 docker compose -f containers/compose.dev.yaml down --volumes
 ```
 
-Users can modify `SPACK_PACKAGES_REPO_VERSION`/`SPACK_CONFIG_REPO_VERSION`, among other things, from within the docker compose file before running `docker compose build`.
+Users can modify the `SPACK_CONFIG_REPO_VERSION`, among other things, from within the docker compose file before running `docker compose build`.

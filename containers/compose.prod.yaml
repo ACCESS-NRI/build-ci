@@ -4,27 +4,30 @@ name: Spack Instance
 # to reduce duplication in the file
 x-common-args: &common-args
   OS: rocky
-  SPACK_VERSION: v0.22
   SOURCE_COMPILERS_SPACK_MANIFEST: upstream/prod/compilers.spack.yaml
   SOURCE_PACKAGES_SPACK_MANIFEST: upstream/prod/packages.spack.yaml
 services:
   upstream:
     container_name: Upstream
-    image: ghcr.io/access-nri/build-ci-upstream:rocky
+    image: ghcr.io/access-nri/build-ci-upstream:rocky-v1.1-2025.12.000
     tty: true
     build:
       context: .
       target: upstream
       args:
         <<: *common-args
-        SPACK_CONFIG_DIR: /opt/spack-config/v0.22/ci-upstream
+        SPACK_CONFIG_DIR: /opt/spack-config/v1.1/ci-upstream
+      secrets:
+        - oci-username
+        - oci-password
+        - oci-url
     volumes:
       - upstream:/opt/upstream:rw
       - buildcache:/opt/runner_set_buildcache:rw
 
   runner:
     container_name: Runner
-    image: ghcr.io/access-nri/build-ci-runner:rocky
+    image: ghcr.io/access-nri/build-ci-runner:rocky-v1.1-2025.12.000
     tty: true
     depends_on:
     - upstream
@@ -33,7 +36,7 @@ services:
       target: runner
       args:
         <<: *common-args
-        SPACK_CONFIG_DIR: /opt/spack-config/v0.22/ci-runner
+        SPACK_CONFIG_DIR: /opt/spack-config/v1.1/ci-runner
     volumes:
       - upstream:/opt/upstream:ro
       - buildcache:/opt/runner_set_buildcache:rw
@@ -41,3 +44,11 @@ services:
 volumes:
   upstream:
   buildcache:
+
+secrets:
+  oci-username:
+    file: ./upstream/secrets/oci-username.txt
+  oci-password:
+    file: ./upstream/secrets/oci-password.txt
+  oci-url:
+    file: ./upstream/secrets/oci-url.txt
