@@ -35,8 +35,6 @@ jobs:
         . ${{ env.SPACK_ROOT }}/share/spack/setup-env.sh
         echo "path=$(spack location --repo builtin)" >> $GITHUB_OUTPUT
 
-    - run: sleep 10000  # Maybe some updates will happen to the remote by the end of this...
-
     - id: update
       uses: ./.github/actions/spack-checkout-updated-ref
       with:
