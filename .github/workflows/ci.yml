@@ -329,14 +329,9 @@ jobs:
             exit 0
           fi
 
-          # Attempt a load of compilers via upstream compilers lockfile
-          echo "Found $compiler_lockfile_path, attempting to load compilers from upstream"
-          yq '.roots[].hash' "$compiler_lockfile_path" | while read hash; do
-            echo "Loading compiler with hash: $hash"
-            spack load /$hash
-            spack compiler find --scope=site
-          done
-
+          spack compiler list
+          spack compiler find --scope=site
+          spack compiler list
           spack find
 
       - name: Spack - OCI Buildcache Init
