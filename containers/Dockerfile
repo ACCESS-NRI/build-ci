@@ -127,6 +127,7 @@ RUN zypper ref \
 FROM base-os-$OS AS base-spack
 
 ARG SPACK_GIT_URL=https://github.com/ACCESS-NRI/spack.git
+# Default spack version - must be changed across ci*.yml as well
 ARG SPACK_VERSION=v1.1
 ARG SPACK_REPO_VERSION=releases/${SPACK_VERSION}
 ARG SPACK_CONFIG_REPO_VERSION=main
