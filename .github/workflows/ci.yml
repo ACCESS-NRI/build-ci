@@ -183,10 +183,7 @@ jobs:
     container:
       image: ghcr.io/access-nri/build-ci-runner${{ inputs.container-image-version }}
       volumes:
-        # FIXME: To be able to support both v0.22 and v1.0 upstreams at the same time
-        # We need to pick the correct upstream volume based on the runner image spack version
-        # This may not be required in the future if we only support v1.0+
-        - /opt/upstream${{ contains(inputs.container-image-version, 'v1') && '-v1' || '' }}:/opt/upstream:ro
+        - /opt/upstream-v1:/opt/upstream:ro
         - /opt/runner_set_buildcache:/opt/runner_set_buildcache:rw
     outputs:
       spec-concretization-graph: ${{ steps.install.outputs.spec }}
