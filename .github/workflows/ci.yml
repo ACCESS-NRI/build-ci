@@ -100,6 +100,13 @@ on:
           The URL to an oci-backed buildcache, available in spack >= v1.0.
           OCI-backed buildcaches are the only option for GitHub-hosted CI, and can be used as a backup for self-hosted CI's runner buildcache.
           For example: 'oci://ghcr.io/ACCESS-NRI/build-ci-buildcache'.
+      run-self-hosted:
+        required: false
+        type: boolean
+        default: true
+        description: |
+          Whether to run the job on a self-hosted runner.
+          For security, workflow runs will hang if this is true but it is not using a valid v* branch or tag for the workflow ref.
     secrets:
       spack-install-command-pat:
         required: false
@@ -178,13 +185,14 @@ on:
 jobs:
   spack-install-and-test:
     name: Install and Test
-    runs-on:
-      group: build-ci
+    runs-on: ${{ inputs.run-self-hosted && fromJson('{"group":"build-ci"}') || 'ubuntu-latest' }}
     container:
-      image: ghcr.io/access-nri/build-ci-runner${{ inputs.container-image-version }}
+      image: ${{ inputs.run-self-hosted && 'ghcr.io/access-nri/build-ci-runner' || 'ghcr.io/access-nri/build-ci-upstream' }}${{ inputs.container-image-version }}
       volumes:
-        - /opt/upstream-v1:/opt/upstream:ro
-        - /opt/runner_set_buildcache:/opt/runner_set_buildcache:rw
+        # For self-hosted runners, mount the proper upstream and buildcache volumes from the kubernetes cluster
+        # For GitHub-hosted runners, mount the dummy volume /dev/null to avoid errors or undefined behavior, eg. fromJson('[]')
+        - ${{ inputs.run-self-hosted && '/opt/upstream-v1:/opt/upstream:ro' || '/dev/null:/dev/null:ro' }}
+        - ${{ inputs.run-self-hosted && '/opt/runner_set_buildcache:/opt/runner_set_buildcache:rw' || '/dev/null:/dev/null:ro' }}
     outputs:
       spec-concretization-graph: ${{ steps.install.outputs.spec }}
       spack-sha: ${{ steps.spack-update.outputs.sha }}

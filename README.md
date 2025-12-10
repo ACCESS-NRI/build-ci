@@ -16,12 +16,12 @@ This repository also contains the resources required to build images that are us
 
 ### Using The Entrypoint Workflows
 
-Generally, the [`ci.yml`](./.github/workflows/ci.yml) workflow can be used by any model component repository in the ACCESS-NRI organisation, it just requires using the reusable workflow from this repository.
+The [`ci.yml`](./.github/workflows/ci.yml) workflow can be used by any model component repository in the ACCESS-NRI organisation using self-hosted runners, it just requires using the reusable workflow from this repository.
 
-Alternatively, for organisations outside of ACCESS-NRI, the `ci-github-hosted.yml` can be used. But...
+Alternatively, for organisations outside of ACCESS-NRI, the `ci.yml` can be used if the `run-self-hosted: false` argument is set. But...
 
 > [!IMPORTANT]
-> Note that the `ci-github-hosted.yml` is slower than the self-hosted variant due to GitHub not caching large images used to initialize compilers and packages, and the lack of a persistent buildcache.
+> Note that the workflow is slower than the self-hosted variant due to GitHub not caching large images used to initialize compilers and packages, and the lack of a persistent buildcache.
 
 Basic templates for model component repositories CI are available under [`model-component-ci-templates`](./model-component-ci-templates/) - more complex use cases are possible and encouraged!
 
