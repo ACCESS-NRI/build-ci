@@ -52,7 +52,7 @@ on:
       builtin-spack-packages-ref:
         required: false
         type: string
-        default: develop
+        # default: ref from spack-config's repos.yaml, or 'develop' otherwise
         description: |
           The branch, tag, or commit SHA of the spack/spack-packages repository to use.
           For example: main, 2025.03.0, 7ey2uy2.
@@ -300,6 +300,17 @@ jobs:
           echo "----- Packages -----"
           spack find
 
+      - name: Spack - Get builtin ref from spack-config
+        if: inputs.builtin-spack-packages-ref == ''
+        id: get-default-builtin
+        # If inputs.builtin-spack-packages-ref is not provided, get the builtin-spack-packages-ref
+        # from spack-config's repos.yaml or use "develop" (the default branch) if not specified there either.
+        run: |
+          . ${{ steps.env.outputs.SPACK_ROOT }}/share/spack/setup-env.sh
+          ref=$(spack config get repos | yq '.repos.builtin | .branch // .tag // .commit // "develop"')
+          echo "Default builtin-spack-packages-ref is $ref"
+          echo "ref=$ref" >> $GITHUB_OUTPUT
+
       - name: Spack - Get spack-packages repo locations
         id: spack-packages-locations
         run: |
@@ -314,7 +325,7 @@ jobs:
         with:
           spack-packages-repository-name: builtin
           spack-packages-repository-path: ${{ steps.spack-packages-locations.outputs.builtin }}
-          ref: ${{ inputs.builtin-spack-packages-ref }}
+          ref: ${{ inputs.builtin-spack-packages-ref || steps.get-default-builtin.outputs.ref }}
           spack-instance-root-path: ${{ steps.env.outputs.SPACK_ROOT }}
 
       - name: Update - access-spack-package version
