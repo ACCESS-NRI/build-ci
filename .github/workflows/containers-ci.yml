@@ -4,6 +4,7 @@ on:
     branches:
       - v*
     paths:
+      # These are the only files that affect image creation
       - containers/upstream/prod
       - containers/compose.prod.yaml
       - containers/Dockerfile
@@ -44,8 +45,14 @@ jobs:
       OS_PROJECT_NAME: ${{ secrets.OS_PROJECT_NAME }}
       OS_PASSWORD: ${{ secrets.OS_PASSWORD }}
       OS_IDENTITY_API_VERSION: 3
+    permissions:
+      # For commenting on a PR
+      pull-requests: write
+      # To write back buildcache entries
+      packages: write
     steps:
       - name: Checkout build-ci
+        # To get openstack requirements file
         uses: actions/checkout@v5
 
       - name: Setup Python
@@ -61,12 +68,15 @@ jobs:
 
       - name: Setup SSH
         id: ssh
+        # Get appropriate runner-buildbox key to SSH into Nectar Instance
         uses: access-nri/actions/.github/actions/setup-ssh@main
         with:
           private-key: ${{ secrets.NECTAR_INSTANCE_SSH_KEY }}
 
       - name: Create Instance
         id: create
+        # Create ephemeral, powerful Nectar Instance, create and assign a floating IP as part of
+        # the private runner-buildbox network so GitHub Actions can SSH into it.
         run: |
           openstack server create ${{ env.NECTAR_INSTANCE_NAME }} \
             --flavor p3.xxlarge \
@@ -83,6 +93,7 @@ jobs:
 
           echo "floating-ip=$floating_ip" >> $GITHUB_OUTPUT
 
+          # We test out SSHing into the server here, as sometimes we get Connection Refused the first attempt.
           openstack server ssh --address-type=floating ${{ env.NECTAR_INSTANCE_NAME }} -- \
             -o StrictHostKeyChecking=accept-new -o IdentitiesOnly=yes \
             -l ${{ secrets.NECTAR_INSTANCE_USER }} -i ${{ steps.ssh.outputs.private-key-path }} \
@@ -90,6 +101,8 @@ jobs:
 
       - name: Build Image
         id: build
+        # Build the build-ci-[upstream|runner] image using the instance
+        # Setup environment-variable secrets for the OCI-backed spack buildcache to make installs faster
         run: |
           openstack server ssh --address-type=floating ${{ env.NECTAR_INSTANCE_NAME }} -- \
             -o StrictHostKeyChecking=accept-new -o IdentitiesOnly=yes -o ServerAliveInterval=5 \
@@ -109,6 +122,7 @@ jobs:
       - name: Push Image
         if: github.event_name == 'push' || inputs.push
         id: push
+        # Push the just built image to GHCR
         run: |
           openstack server ssh --address-type=floating ${{ env.NECTAR_INSTANCE_NAME }} -- \
             -o StrictHostKeyChecking=accept-new -o IdentitiesOnly=yes -o ServerAliveInterval=5 \
@@ -121,6 +135,8 @@ jobs:
 
       - name: Teardown Instance
         if: always()
+        # Disassociate and release the floating IP, and then delete the ephemeral Nectar Instance.
+        # If this somehow doesn't run, the p3 flavor cleans itself up after 24 hours automatically (see Nectar docs)
         run: |
           if [ -n "${{ steps.create.outputs.floating-ip }}" ]; then
             openstack floating ip delete ${{ steps.create.outputs.floating-ip }}
@@ -138,6 +154,7 @@ jobs:
 
       - name: Comment on PR
         if: always() && inputs.pr-for-comment
+        # A QoL thing - maybe for testing we want to link back to a PR with the results of the build?
         env:
           GH_TOKEN: ${{ github.token }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}

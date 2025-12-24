@@ -257,3 +257,23 @@ jobs:
           jq '.spec_concretization_graph' $f
         done
 ```
+
+## `containers-ci.yml` - Build and Push `build-ci-[upstream|runner]` Images
+
+### Overview
+
+This workflow handles building and pushing of images used in `ci.yml` on push to `v*`, or via `workflow_dispatch`.
+
+It stands up and tears down an ephemeral, powerful Nectar VM that builds the image via docker.
+
+### Inputs (via `workflow_dispatch`)
+
+| Name | Type | Description | Required | Default | Example |
+| ---- | ---- | ----------- | -------- | ------- | ------- |
+| `ref` | `string` (git ref) | Git ref for the build-ci repo to pull docker build files and config | `true` | N/A | tag: `rocky-v1.1-2025.12.000`, branch: `v3.1.0`, or commit `77f248c5a5f4af32bc1b1f5baebf08caf34db2d5` |
+| `pr-for-comment` | `string` (PR Number) | Comment the build result to this PR number | `false` | N/A | `12` |
+| `push` | `boolean` | Whether to push the given image once built. Will overwrite image if tags are the same | `true` | `false` | `true` or `false` |
+
+### Outputs
+
+None in GitHub Actions, but the image created by `containers/compose.prod.yaml` is pushed to `ghcr.io`.
