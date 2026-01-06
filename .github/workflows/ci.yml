@@ -564,6 +564,7 @@ jobs:
             "pytest_test_markers": "${{ inputs.pytest-test-markers }}",
             "allow_ssh_into_spack_install": "${{ inputs.allow-ssh-into-spack-install }}",
             "container_image_version": "${{ inputs.container-image-version }}",
+            "run_self_hosted": "${{ inputs.run-self-hosted }}",
 
             "spack_install_result": "${{ steps.install.conclusion }}",
 
