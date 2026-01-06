@@ -3,17 +3,33 @@ run-name: CI Test ${{ github.repository }} at ${{ github.event.number }} (${{ gi
 on:
   workflow_call:
     inputs:
+      spack-manifest-repository:
+        required: false
+        type: string
+        default: ${{ github.repository }}
+        description: |
+          The repository containing the spack manifest to install.
+          By default, this is the caller model component repository, which will work for most use-cases.
+          For example: ACCESS-NRI/access-test-component.
+      spack-manifest-repository-ref:
+        required: false
+        type: string
+        # If the inputs.spack-manifest-repository is the same as the caller repo, use the same heuristic as inputs.ref (use the caller SHA), otherwise use the default ref
+        default: ${{ inputs.spack-manifest-repository == github.repository && (github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha) || '' }}
+        description: |
+          The branch, tag, or commit SHA of the inputs.spack-manifest-repository to use.
+          For example: main, 2025.03.0, r23ij2o3.
       spack-manifest-path:
         required: true
         type: string
         description: |
-          A file path in the caller model component repository that contains the spack manifest template to install.
+          A file path in the inputs.spack-manifest-repository that contains the spack manifest template to install.
           For example: .github/build/manifests/template/access-om2.spack.yaml.j2.
       spack-manifest-data-path:
         required: false
         type: string
         description: |
-          An optional file path in the caller model component repository that contains data to fill in the spack manifest jinja template.
+          An optional file path in the inputs.spack-manifest-repository that contains data to fill in the spack manifest jinja template.
           This doesn't include {{ ref }}, which is filled in automatically.
           For example: .github/build/manifests/data/access-om2.spack.yaml.j2.json.
       spack-manifest-data-pairs:
@@ -30,7 +46,7 @@ on:
         required: false
         type: string
         description: |
-          A file path in the caller model component repository that contains the spack manifest to install local compilers not in the upstream.
+          A file path in the inputs.spack-manifest-repository that contains the spack manifest to install local compilers not in the upstream.
           For example: .github/build/manifests/compilers.spack.yaml.
       ref:
         required: false
@@ -125,6 +141,10 @@ on:
         value: ${{jobs.spack-install-and-test.outputs.spec-concretization-graph }}
         description: |
           A visual representation of the dependencies and constraints of the spack manifest file installed.
+      spack-manifest-repository-sha:
+        value: ${{ jobs.spack-install-and-test.outputs.spack-manifest-repository-sha }}
+        description: |
+          The SHA of the spack manifest repository checked out.
       spack-sha:
         value: ${{ jobs.spack-install-and-test.outputs.spack-sha }}
         description: |
@@ -195,11 +215,12 @@ jobs:
         - ${{ inputs.run-self-hosted && '/opt/runner_set_buildcache:/opt/runner_set_buildcache:rw' || '/dev/null:/dev/null:ro' }}
     outputs:
       spec-concretization-graph: ${{ steps.install.outputs.spec }}
+      spack-manifest-repository-sha: ${{ steps.checkout.outputs.commit }}
       spack-sha: ${{ steps.spack-update.outputs.sha }}
       spack-config-sha: ${{ steps.spack-config-update.outputs.sha }}
       builtin-spack-packages-sha: ${{ steps.builtin-spack-packages-update.outputs.sha }}
       access-spack-packages-sha: ${{ steps.access-spack-packages-update.outputs.sha }}
-      sha: ${{ steps.checkout.outputs.commit }}
+      sha: ${{ steps.checkout-caller.outputs.commit }}
       spack-files-artifact-pattern: ${{ steps.env.outputs.spack-files-artifact-pattern }}
       spack-files-artifact-url: ${{ steps.manifest-upload.outputs.artifact-url }}
       job-output-artifact-pattern: ${{ steps.env.outputs.job-output-artifact-pattern }}
@@ -348,11 +369,20 @@ jobs:
             oci_buildcache ${{ inputs.spack-oci-buildcache-url }}
           spack mirror list
 
-      - name: Manifest - Checkout ${{ github.repository }}
-        id: checkout
+      - name: Manifest - Checkout Caller ${{ github.repository }}
+        id: checkout-caller
         uses: actions/checkout@v4
         with:
           ref: ${{ inputs.ref }}
+          submodules: recursive
+          path: caller
+
+      - name: Manifest - Checkout Manifest From ${{ inputs.spack-manifest-repository }}
+        id: checkout
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.spack-manifest-repository }}
+          ref: ${{ inputs.spack-manifest-repository-ref }}
           submodules: recursive
 
       - name: Manifest - Install Compilers Locally
@@ -521,6 +551,8 @@ jobs:
              --arg pairs "$serialized_spack_manifest_data_pairs" \
           '{
             "spack_manifest_path": "${{ inputs.spack-manifest-path }}",
+            "spack_manifest_repository": "${{ inputs.spack-manifest-repository }}",
+            "spack_manifest_repository_ref": "${{ inputs.spack-manifest-repository-ref }}",
             "spack_manifest_data_path": "${{ inputs.spack-manifest-data-path }}",
             "spack_manifest_data_pairs": $pairs,
             "spack_compiler_manifest_path": "${{ inputs.spack-compiler-manifest-path }}",
@@ -536,11 +568,12 @@ jobs:
             "spack_install_result": "${{ steps.install.conclusion }}",
 
             "spec_concretization_graph": $spec,
+            "spack_manifest_repository_sha": "${{ steps.checkout.outputs.commit }}",
             "spack_sha": "${{ steps.spack-update.outputs.sha }}",
             "spack_config_sha": "${{ steps.spack-config-update.outputs.sha }}",
             "builtin_spack_packages_sha": "${{ steps.builtin-spack-packages-update.outputs.sha }}",
             "access_spack_packages_sha": "${{ steps.access-spack-packages-update.outputs.sha }}",
-            "sha": "${{ steps.checkout.outputs.commit }}",
+            "sha": "${{ steps.checkout-caller.outputs.commit }}",
             "container_id": "${{ steps.env.outputs.container-id }}",
             "short_container_id": "${{ steps.env.outputs.short-container-id }}",
             "spack_files_artifact_pattern": "${{ steps.env.outputs.spack-files-artifact-pattern }}",
