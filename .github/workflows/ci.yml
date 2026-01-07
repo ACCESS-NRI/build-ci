@@ -15,7 +15,8 @@ on:
         required: false
         type: string
         # If the inputs.spack-manifest-repository is the same as the caller repo, use the same heuristic as inputs.ref (use the caller SHA), otherwise use the default ref
-        default: ${{ inputs.spack-manifest-repository == github.repository && (github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha) || '' }}
+        # Unfortunately, we can't set expressions as defaults yet, so this is set in the step that checks out the manifest repository
+        # default: ${{ inputs.spack-manifest-repository == github.repository && (github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha) || '' }}
         description: |
           The branch, tag, or commit SHA of the inputs.spack-manifest-repository to use.
           For example: main, 2025.03.0, r23ij2o3.
@@ -221,32 +222,41 @@ jobs:
       builtin-spack-packages-sha: ${{ steps.builtin-spack-packages-update.outputs.sha }}
       access-spack-packages-sha: ${{ steps.access-spack-packages-update.outputs.sha }}
       sha: ${{ steps.checkout-caller.outputs.commit }}
-      spack-files-artifact-pattern: ${{ steps.env.outputs.spack-files-artifact-pattern }}
+      spack-files-artifact-pattern: ${{ steps.init.outputs.spack-files-artifact-pattern }}
       spack-files-artifact-url: ${{ steps.manifest-upload.outputs.artifact-url }}
-      job-output-artifact-pattern: ${{ steps.env.outputs.job-output-artifact-pattern }}
+      job-output-artifact-pattern: ${{ steps.init.outputs.job-output-artifact-pattern }}
       job-output-artifact-url: ${{ steps.output-upload.outputs.artifact-url }}
-      spack-logs-artifact-pattern: ${{ steps.env.outputs.spack-logs-artifact-pattern }}
+      spack-logs-artifact-pattern: ${{ steps.init.outputs.spack-logs-artifact-pattern }}
       spack-logs-artifact-url: ${{ steps.logs-upload.outputs.artifact-url }}
-      container-id: ${{ steps.env.outputs.container-id }}
-      short-container-id: ${{ steps.env.outputs.short-container-id }}
+      container-id: ${{ steps.init.outputs.container-id }}
+      short-container-id: ${{ steps.init.outputs.short-container-id }}
       # test-artifact-url: ${{ steps.test.outputs.artifact-url }}
     steps:
-      - name: Init - Export environment variables into GitHub Actions format
-        # Environment variables inside containers are not accessible in the `env` context,
-        # a context which would be used in future conditional steps.
-        # This step exports important container environment variables as outputs.
-        # And yes, this loop echoes name-of-var=value-of-var!
-        id: env
+      - name: Init - Initalize dynamic vars
+        id: init
+        # GitHub Actions doesn't allow expressions in the on.workflow_call.inputs.*.default section, so we need to define them here
+        # Furthermore, some outputs depend on the container being started, so we define them here as well
         run: |
-          for var in SPACK_ROOT INITIAL_SPACK_REPO_VERSION; do
-            echo "$var=${!var}" >> $GITHUB_OUTPUT
-          done
+          # Initializing dynamic default of inputs.spack-manifest-repository-ref...
 
-          # The upload step later requires a non-relative path, hence the realpath
-          echo "spack-env-dir=$(realpath $SPACK_ROOT/../environments)" >> $GITHUB_OUTPUT
+          if [[ "${{ inputs.spack-manifest-repository-ref }}" != "" ]]; then
+            spack_manifest_repository_ref=${{ inputs.spack-manifest-repository-ref }}
+          elif [[ "${{ inputs.spack-manifest-repository }}" == "${{ github.repository }}" ]]; then
+            if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+              spack_manifest_repository_ref=${{ github.event.pull_request.head.sha }}
+            else
+              spack_manifest_repository_ref=${{ github.sha }}
+            fi
+          fi
 
+          echo "spack-manifest-repository-ref: $spack_manifest_repository_ref"
+          echo "spack-manifest-repository-ref=$spack_manifest_repository_ref" >> $GITHUB_OUTPUT
+
+          # Initializing container id and associated artifact globs/filenames...
           container_id=${{ job.container.id }}
           short_container_id=${container_id:0:8}
+
+          echo "::notice::Short Container ID used for artifacts in this job: $short_container_id"
 
           # We can only get the job.container.id after the container is started, so we set it as the file name here
           echo "job-output-artifact-name=job-output-$short_container_id" >> $GITHUB_OUTPUT
@@ -260,6 +270,20 @@ jobs:
 
           echo "container-id=$container_id" >> $GITHUB_OUTPUT
           echo "short-container-id=$short_container_id" >> $GITHUB_OUTPUT
+
+      - name: Init - Export environment variables into GitHub Actions format
+        # Environment variables inside containers are not accessible in the `env` context,
+        # a context which would be used in future conditional steps.
+        # This step exports important container environment variables as outputs.
+        # And yes, this loop echoes name-of-var=value-of-var!
+        id: env
+        run: |
+          for var in SPACK_ROOT INITIAL_SPACK_REPO_VERSION; do
+            echo "$var=${!var}" >> $GITHUB_OUTPUT
+          done
+
+          # The upload step later requires a non-relative path, hence the realpath
+          echo "spack-env-dir=$(realpath $SPACK_ROOT/../environments)" >> $GITHUB_OUTPUT
 
       - name: Update - spack-config version
         id: spack-config-update
@@ -382,7 +406,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: ${{ inputs.spack-manifest-repository }}
-          ref: ${{ inputs.spack-manifest-repository-ref }}
+          ref: ${{ steps.init.outputs.spack-manifest-repository-ref }}
           submodules: recursive
 
       - name: Manifest - Install Compilers Locally
@@ -472,7 +496,7 @@ jobs:
         # Upload spack manifest and lock files
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ steps.env.outputs.spack-files-artifact-name }}
+          name: ${{ steps.init.outputs.spack-files-artifact-name }}
           path: ${{ steps.env.outputs.spack-env-dir }}/default/spack.*
           if-no-files-found: error
 
@@ -508,7 +532,7 @@ jobs:
         id: logs-upload
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ steps.env.outputs.spack-logs-artifact-name }}
+          name: ${{ steps.init.outputs.spack-logs-artifact-name }}
           path: logs/*.log
           if-no-files-found: warn
 
@@ -552,7 +576,7 @@ jobs:
           '{
             "spack_manifest_path": "${{ inputs.spack-manifest-path }}",
             "spack_manifest_repository": "${{ inputs.spack-manifest-repository }}",
-            "spack_manifest_repository_ref": "${{ inputs.spack-manifest-repository-ref }}",
+            "spack_manifest_repository_ref": "${{ steps.init.outputs.spack-manifest-repository-ref }}",
             "spack_manifest_data_path": "${{ inputs.spack-manifest-data-path }}",
             "spack_manifest_data_pairs": $pairs,
             "spack_compiler_manifest_path": "${{ inputs.spack-compiler-manifest-path }}",
@@ -575,20 +599,20 @@ jobs:
             "builtin_spack_packages_sha": "${{ steps.builtin-spack-packages-update.outputs.sha }}",
             "access_spack_packages_sha": "${{ steps.access-spack-packages-update.outputs.sha }}",
             "sha": "${{ steps.checkout-caller.outputs.commit }}",
-            "container_id": "${{ steps.env.outputs.container-id }}",
-            "short_container_id": "${{ steps.env.outputs.short-container-id }}",
-            "spack_files_artifact_pattern": "${{ steps.env.outputs.spack-files-artifact-pattern }}",
+            "container_id": "${{ steps.init.outputs.container-id }}",
+            "short_container_id": "${{ steps.init.outputs.short-container-id }}",
+            "spack_files_artifact_pattern": "${{ steps.init.outputs.spack-files-artifact-pattern }}",
             "spack_files_artifact_url": "${{ steps.manifest-upload.outputs.artifact-url }}",
-            "job_output_artifact_pattern": "${{ steps.env.outputs.job-output-artifact-pattern }}",
+            "job_output_artifact_pattern": "${{ steps.init.outputs.job-output-artifact-pattern }}",
             "spack_logs_artifact_url": "${{ steps.logs-upload.outputs.artifact-url }}",
-            "spack_logs_artifact_pattern": "${{ steps.env.outputs.artifact-pattern }}"
-          }' > ./${{ steps.env.outputs.job-output-artifact-name }}
+            "spack_logs_artifact_pattern": "${{ steps.init.outputs.spack-logs-artifact-pattern }}"
+          }' > ./${{ steps.init.outputs.job-output-artifact-name }}
 
       - name: Job Outputs - Upload
         if: always() && (steps.install.conclusion == 'failure' || steps.install.conclusion == 'success')
         id: output-upload
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ steps.env.outputs.job-output-artifact-name }}
-          path: ./${{ steps.env.outputs.job-output-artifact-name }}
+          name: ${{ steps.init.outputs.job-output-artifact-name }}
+          path: ./${{ steps.init.outputs.job-output-artifact-name }}
           if-no-files-found: error
