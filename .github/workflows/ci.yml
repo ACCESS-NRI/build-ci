@@ -193,7 +193,7 @@ jobs:
     name: Install and Test
     runs-on: ${{ inputs.run-self-hosted && fromJson('{"group":"build-ci"}') || 'ubuntu-latest' }}
     container:
-      image: ${{ inputs.run-self-hosted && 'ghcr.io/access-nri/build-ci-runner' || 'ghcr.io/access-nri/build-ci-upstream' }}${{ inputs.container-image-version }}
+      image: ghcr.io/access-nri/build-ci-runner${{ inputs.container-image-version }}
       volumes:
         # For self-hosted runners, mount the proper upstream and buildcache volumes from the kubernetes cluster
         # For GitHub-hosted runners, mount the dummy volume /dev/null to avoid errors or undefined behavior, eg. fromJson('[]')
