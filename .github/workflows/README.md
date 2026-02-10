@@ -10,8 +10,10 @@ This workflow handles building and running short CI tests on a given spack manif
 
 | Name | Type | Description | Required | Default | Example |
 | ---- | ---- | ----------- | -------- | ------- | ------- |
+| `spack-manifest-repository` | `string` (`OWNER/REPO` format) | The repository containing the spack manifest to install | `false` | `github.repository` (AKA, the caller repository) | For example: ACCESS-NRI/access-test-component |
+| `spack-manifest-repository-ref` | `string` (Git ref) | The branch, tag, or commit SHA of the `inputs.spack-manifest-repository` to use | `false` | For a `inputs.spack-manifest-repository` the same as the caller repository, it will attempt to use the callers SHA, otherwise it will default to the default branch of the `inputs.spack-manifest-repository` | `main`, `2025.03.0`, `r23ij2o3` |
 | `spack-manifest-path` | `string` (Path relative to component repository root) |  File path in the caller model component repository that contains the spack manifest jinja template to install | `true` | N/A | `".github/build/manifests/template/access-om2.spack.yaml.j2"`, `".github/some.spack.yaml"` |
-| `spack-manifest-data-path`| `string` (Path relative to component repository root) | File path in the caller model component repository that contains jinja data to fill in to the spack manifest jinja template given by `inputs.spack-manifest-path`. This doesn't include the pull request ref (`{{ pr }}`), which is filled in automatically | `false` | N/A | `".github/build/data/template-data.json"` |
+| `spack-manifest-data-path`| `string` (Path relative to component repository root) | File path in the caller model component repository that contains jinja data to fill in to the spack manifest jinja template given by `inputs.spack-manifest-path`. This doesn't include the pull request ref (`{{ ref }}`), which is filled in automatically | `false` | N/A | `".github/build/data/template-data.json"` |
 | `spack-compiler-manifest-path` | `string` (Path relative to component repository root) | A file path in the caller model component repository that contains the spack manifest to install local compilers not in the upstream | `false` | N/A | `".github/build/compilers/intel-2021.11.0.spack.yml"` |
 | `spack-manifest-data-pairs` | `string` | An optional, multi-line string of space-separated key-value pairs to fill in `inputs.spack-manifest-path`. This is useful for filling in template values created dynamically by earlier jobs needed by this workflow. This doesn't include `{{ ref }}`, which is filled in automatically. | `false` | N/A | `"package mom5`(newline)`compiler intel"` |
 | `ref` | `string` (Git ref) | The branch, tag, or commit SHA of the caller model component repository | `false` | `github.event.pull_request.head.sha` for PRs, `github.sha` otherwise | `"c0fef23fc1e69d3a31ec18fd8b7102acdf95f651"`, `"main"`, `"2025.01.000"` |
@@ -48,6 +50,7 @@ This workflow handles building and running short CI tests on a given spack manif
 | `spack-config-sha` | `string` (Git commit SHA) | The SHA of the `ACCESS-NRI/spack-config` repository checked out | `"c0fef23fc1e69d3a31ec18fd8b7102acdf95f651"` |
 | `builtin-spack-packages-sha` | `string` (Git commit SHA) | The SHA of the `spack/spack-packages` repository checked out | `"9225ee95da5c6e212a80d933db8aca44271417a3"` |
 | `access-spack-packages-sha` | `string` (Git commit SHA) | The SHA of the `ACCESS-NRI/access-spack-packages` repository checked out | `"2acb57187fc75c0fc83c898d1dd47bdaced2fca9"` |
+| `spack-manifest-repository-sha` | `string` (Git commit SHA) | The SHA of the spack manifest repository checked out | `24ef5da423028a9a25133884e6e402900e87a3aa` |
 | `sha` | `string` (Git commit SHA) | The SHA of the caller model component repository checked out | `"43ef5da423028a9a25133884e6e402900e87a3ce"` |
 | `container-id` | `string` | The ID of the container where the spack packages have been installed | `"ohfn2ofy2h2uyfg2uyg3uyg3uh"` |
 | `spack-files-artifact-pattern` | `string` (glob) | Wildcard pattern to match all spack file artifacts across a matrix job | `'spack-files-*'` |
@@ -82,6 +85,8 @@ jobs:
   test:
     uses: access-nri/build-ci/.github/workflows/ci.yml@v3
     with:
+      spack-manifest-repository: some-org/build-ci-manifests
+      spack-manifest-repository-ref: main
       spack-manifest-path: .github/build/spack.yaml.j2
       spack-manifest-data-path: .github/build/data/data.json
       spack-compiler-manifest-path: .github/build/compiler/intel.spack.yaml
