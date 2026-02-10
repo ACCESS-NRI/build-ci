@@ -1,4 +1,6 @@
 name: Image CI
+# NOTE: Information on secrets.[NECTAR_INSTANCE_SSH_KEY|NECTAR_INSTANCE_USER|GHCR_IMAGE_PUSH_TOKEN]
+# can be found in 'build-ci Image CI Secrets' in the secrets manager.
 on:
   push:
     branches:
