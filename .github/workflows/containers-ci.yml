@@ -163,4 +163,4 @@ jobs:
         run: |
           gh pr comment ${{ inputs.pr-for-comment }} \
             --repo ${{ github.repository }} \
-            --body "Image at ${{ inputs.ref }} had build status `${{ steps.build.outcome }}` and push status `${{ steps.push.outcome }}`. See details at ${{ env.RUN_URL }}"
+            --body "Image at ${{ inputs.ref }} had build status `${{ steps.build.outcome }}` and push status `${{ steps.push.outcome }}`. If successful, image can be found in https://github.com/orgs/ACCESS-NRI/packages?tab=packages&q=build-ci-. See details at ${{ env.RUN_URL }}"
