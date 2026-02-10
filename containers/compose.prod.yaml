@@ -47,8 +47,8 @@ volumes:
 
 secrets:
   oci-username:
-    file: ./upstream/secrets/oci-username.txt
+    environment: BUILD_CI_BUILDCACHE_OCI_USERNAME
   oci-password:
-    file: ./upstream/secrets/oci-password.txt
+    environment: BUILD_CI_BUILDCACHE_OCI_PASSWORD
   oci-url:
-    file: ./upstream/secrets/oci-url.txt
+    environment: BUILD_CI_BUILDCACHE_OCI_URL
