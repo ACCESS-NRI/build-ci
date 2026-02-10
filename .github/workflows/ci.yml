@@ -214,7 +214,7 @@ jobs:
       # test-artifact-url: ${{ steps.test.outputs.artifact-url }}
     env:
       # Common directory for outputs to be added to artifact
-      artifact-content-dir: ./tmp/artifact-output
+      artifact-content-dir: /tmp/artifact-output
     steps:
       - name: Init - Initalize dynamic vars
         id: init
