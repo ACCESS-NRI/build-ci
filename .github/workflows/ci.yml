@@ -175,30 +175,15 @@ on:
         description: |
           The short ID of the container where the spack packages have been installed - used for artifact disambiguation.
       ## These outputs contain information on data uploaded as artifacts
-      spack-files-artifact-pattern:
-        value: ${{ jobs.spack-install-and-test.outputs.spack-files-artifact-pattern }}
+      artifact-pattern:
+        value: ${{ jobs.spack-install-and-test.outputs.artifact-pattern }}
         description: |
-          Wildcard pattern to match all spack file artifacts across a matrix job.
-      spack-files-artifact-url:
-        value: ${{ jobs.spack-install-and-test.outputs.spack-files-artifact-url }}
+          Wildcard pattern to match all artifacts across a matrix job.
+      artifact-url:
+        value: ${{ jobs.spack-install-and-test.outputs.artifact-url }}
         description: |
-          The URL of the spack file artifact, which contains the spack files created.
-      job-output-artifact-pattern:
-        value: ${{ jobs.spack-install-and-test.outputs.job-output-artifact-pattern }}
-        description: |
-          Wildcard pattern to match all job output artifacts across a matrix job.
-      job-output-artifact-url:
-        value: ${{ jobs.spack-install-and-test.outputs.job-output-artifact-url }}
-        description: |
-          The URL of the job output artifact, which contains the job outputs in JSON format.
-      spack-logs-artifact-pattern:
-        value: ${{ jobs.spack-install-and-test.outputs.spack-logs-artifact-pattern }}
-        description: |
-          Wildcard pattern to match all spack log artifacts across a matrix job.
-      spack-logs-artifact-url:
-        value: ${{ jobs.spack-install-and-test.outputs.spack-logs-artifact-url }}
-        description: |
-          The URL of the spack log artifact, which contains the spack logs created.
+          The URL of the artifact, which contains all outputs of the job.
+          This contains spack files and outputs of the job itself for post-matrix processing.
       # test-artifact-url:
       #   value: ${{}}
       #   description: |
@@ -222,15 +207,14 @@ jobs:
       builtin-spack-packages-sha: ${{ steps.builtin-spack-packages-update.outputs.sha }}
       access-spack-packages-sha: ${{ steps.access-spack-packages-update.outputs.sha }}
       sha: ${{ steps.checkout-caller.outputs.commit }}
-      spack-files-artifact-pattern: ${{ steps.init.outputs.spack-files-artifact-pattern }}
-      spack-files-artifact-url: ${{ steps.manifest-upload.outputs.artifact-url }}
-      job-output-artifact-pattern: ${{ steps.init.outputs.job-output-artifact-pattern }}
-      job-output-artifact-url: ${{ steps.output-upload.outputs.artifact-url }}
-      spack-logs-artifact-pattern: ${{ steps.init.outputs.spack-logs-artifact-pattern }}
-      spack-logs-artifact-url: ${{ steps.logs-upload.outputs.artifact-url }}
+      artifact-pattern: ${{ steps.init.outputs.artifact-pattern }}
+      artifact-url: ${{ steps.upload.outputs.artifact-url }}
       container-id: ${{ steps.init.outputs.container-id }}
       short-container-id: ${{ steps.init.outputs.short-container-id }}
       # test-artifact-url: ${{ steps.test.outputs.artifact-url }}
+    env:
+      # Common directory for outputs to be added to artifact
+      artifact-content-dir: /tmp/artifact-output
     steps:
       - name: Init - Initalize dynamic vars
         id: init
@@ -259,17 +243,14 @@ jobs:
           echo "::notice::Short Container ID used for artifacts in this job: $short_container_id"
 
           # We can only get the job.container.id after the container is started, so we set it as the file name here
-          echo "job-output-artifact-name=job-output-$short_container_id" >> $GITHUB_OUTPUT
-          echo "job-output-artifact-pattern=job-output-*" >> $GITHUB_OUTPUT
-
-          echo "spack-files-artifact-name=spack-files-$short_container_id" >> $GITHUB_OUTPUT
-          echo "spack-files-artifact-pattern=spack-files-*" >> $GITHUB_OUTPUT
-
-          echo "spack-logs-artifact-name=spack-logs-$short_container_id" >> $GITHUB_OUTPUT
-          echo "spack-logs-artifact-pattern=spack-logs-*" >> $GITHUB_OUTPUT
+          echo "artifact-name=output-$short_container_id" >> $GITHUB_OUTPUT
+          echo "artifact-pattern=output-*" >> $GITHUB_OUTPUT
 
           echo "container-id=$container_id" >> $GITHUB_OUTPUT
           echo "short-container-id=$short_container_id" >> $GITHUB_OUTPUT
+
+          # Initialize artifact content directory
+          mkdir -p ${{ env.artifact-content-dir }}
 
       - name: Init - Export environment variables into GitHub Actions format
         # Environment variables inside containers are not accessible in the `env` context,
@@ -490,52 +471,6 @@ jobs:
           . ${{ steps.env.outputs.SPACK_ROOT }}/share/spack/setup-env.sh
           spack -e default buildcache push --unsigned --only=dependencies oci_buildcache
 
-      - name: Manifest - Upload
-        if: always() && (steps.install.conclusion == 'failure' || steps.install.conclusion == 'success')
-        id: manifest-upload
-        # Upload spack manifest and lock files
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ steps.init.outputs.spack-files-artifact-name }}
-          path: ${{ steps.env.outputs.spack-env-dir }}/default/spack.*
-          if-no-files-found: error
-
-      - name: Manifest - Logs Create
-        if: always() && (steps.install.conclusion == 'failure' || steps.install.conclusion == 'success')
-        id: logs-create
-        # Logs may not be available if the spack install failed before concretization, so we'd rather direct users to the
-        # above install failure than have this step fail.
-        continue-on-error: true
-        run: |
-          . ${{ steps.env.outputs.SPACK_ROOT }}/share/spack/setup-env.sh
-
-          mkdir logs
-
-          if [ ! -f ${{ steps.env.outputs.spack-env-dir }}/default/spack.lock ]; then
-            echo "Spack lock file not found, skipping log creation."
-            exit 0
-          fi
-
-          # Get all the top-level hashes from the manifest
-          hashes="$(jq --raw-output '.roots[].hash' ${{ steps.env.outputs.spack-env-dir }}/default/spack.lock)"
-          echo "Found top-level hashes:"
-          echo "$hashes"
-
-          i=0
-          while read -r hash; do
-            spack -e default logs /$hash > "logs/spec_${i}.log" || true
-            i=$((i + 1))
-          done <<< "$hashes"
-
-      - name: Manifest - Logs Upload
-        if: always() && (steps.install.conclusion == 'failure' || steps.install.conclusion == 'success')
-        id: logs-upload
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ steps.init.outputs.spack-logs-artifact-name }}
-          path: logs/*.log
-          if-no-files-found: warn
-
       - name: Tmate - Create session
         # Only create the session if the spack installation was attempted, and we want a tmate session
         if: >-
@@ -561,9 +496,39 @@ jobs:
       #     python -m pytest -v -m "${{ inputs.pytest-test-markers }}" --junitxml=pytest.xml
       #     echo "pytest=$(cat pytest.xml)" >> $GITHUB_OUTPUT
 
-      - name: Job Outputs - Create
+
+      - name: Outputs - Consolidate Spack Outputs
         if: always() && (steps.install.conclusion == 'failure' || steps.install.conclusion == 'success')
-        id: output-create
+        # Logs or manifests may not be available if the spack install failed before concretization, so we'd rather direct users to the
+        # above install failure than have this step fail.
+        continue-on-error: true
+        run: |
+          # Consolidate Manifest
+          if compgen -G "${{ steps.env.outputs.spack-env-dir }}/default/spack.*" > /dev/null; then
+            cp -v ${{ steps.env.outputs.spack-env-dir }}/default/spack.* ${{ env.artifact-content-dir }}
+          fi
+
+          # Consolidate Logs
+          . ${{ steps.env.outputs.SPACK_ROOT }}/share/spack/setup-env.sh
+
+          if [ ! -f ${{ steps.env.outputs.spack-env-dir }}/default/spack.lock ]; then
+            echo "Spack lock file not found, skipping log creation."
+            exit 0
+          fi
+
+          # Get all the top-level hashes from the manifest
+          hashes="$(jq --raw-output '.roots[].hash' ${{ steps.env.outputs.spack-env-dir }}/default/spack.lock)"
+          echo "Found top-level hashes:"
+          echo "$hashes"
+
+          i=0
+          while read -r hash; do
+            spack -e default logs /$hash > "${{ env.artifact-content-dir }}/spec_install_log_${i}.log" || true
+            i=$((i + 1))
+          done <<< "$hashes"
+
+      - name: Outputs - Consolidate Job Outputs
+        if: always() && (steps.install.conclusion == 'failure' || steps.install.conclusion == 'success')
         # The outputs of the job also contain the inputs to the job, so that they can be used in future jobs.
         # We need to serialize the spec concretization graph and data pairs to a single line, so that it can be used in JSON.
         run: |
@@ -601,18 +566,14 @@ jobs:
             "sha": "${{ steps.checkout-caller.outputs.commit }}",
             "container_id": "${{ steps.init.outputs.container-id }}",
             "short_container_id": "${{ steps.init.outputs.short-container-id }}",
-            "spack_files_artifact_pattern": "${{ steps.init.outputs.spack-files-artifact-pattern }}",
-            "spack_files_artifact_url": "${{ steps.manifest-upload.outputs.artifact-url }}",
-            "job_output_artifact_pattern": "${{ steps.init.outputs.job-output-artifact-pattern }}",
-            "spack_logs_artifact_url": "${{ steps.logs-upload.outputs.artifact-url }}",
-            "spack_logs_artifact_pattern": "${{ steps.init.outputs.spack-logs-artifact-pattern }}"
-          }' > ./${{ steps.init.outputs.job-output-artifact-name }}
+            "artifact_pattern": "${{ steps.init.outputs.artifact-pattern }}"
+          }' > ${{ env.artifact-content-dir }}/job_outputs.json
 
-      - name: Job Outputs - Upload
+      - name: Outputs - Upload
         if: always() && (steps.install.conclusion == 'failure' || steps.install.conclusion == 'success')
-        id: output-upload
-        uses: actions/upload-artifact@v4
+        id: upload
+        uses: actions/upload-artifact@v6
         with:
-          name: ${{ steps.init.outputs.job-output-artifact-name }}
-          path: ./${{ steps.init.outputs.job-output-artifact-name }}
+          name: ${{ steps.init.outputs.artifact-name }}
+          path: ${{ env.artifact-content-dir }}
           if-no-files-found: error
