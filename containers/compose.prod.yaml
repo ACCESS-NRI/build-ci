@@ -9,7 +9,7 @@ x-common-args: &common-args
 services:
   upstream:
     container_name: Upstream
-    image: ghcr.io/access-nri/build-ci-upstream:rocky-v1.1-2026.02.000
+    image: ghcr.io/access-nri/build-ci-upstream:rocky-v1.1-2026.02.001
     tty: true
     build:
       context: .
@@ -27,7 +27,7 @@ services:
 
   runner:
     container_name: Runner
-    image: ghcr.io/access-nri/build-ci-runner:rocky-v1.1-2026.02.000
+    image: ghcr.io/access-nri/build-ci-runner:rocky-v1.1-2026.02.001
     tty: true
     depends_on:
     - upstream
