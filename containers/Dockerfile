@@ -58,11 +58,6 @@ RUN dnf update -y \
  # Install yq
  && curl -L https://github.com/mikefarah/yq/releases/download/v4.45.1/yq_linux_amd64 -o /usr/bin/yq \
  && chmod +x /usr/bin/yq \
-# Install tmate in the image for remote access during workflows via mxschmitt/action-tmate
- && curl -L https://github.com/tmate-io/tmate/releases/download/2.4.0/tmate-2.4.0-static-linux-amd64.tar.xz -o static-tmate.tar.xz \
- && tar -xvf static-tmate.tar.xz --strip-components=1 \
- && mv tmate /usr/local/bin/tmate \
- && rm -rf static-tmate.tar.xz \
  # Install gh
  && curl -fsSL https://cli.github.com/packages/rpm/gh-cli.repo | tee /etc/yum.repos.d/github-cli.repo \
  && dnf -y install gh \
@@ -203,8 +198,6 @@ RUN spack bootstrap now
 # Install compilers and other common packages
 FROM base-spack AS base-upstream
 
-LABEL org.opencontainers.image.source=https://github.com/ACCESS-NRI/build-ci
-
 # Install compilers and low-level, common packages
 COPY ${SOURCE_COMPILERS_SPACK_MANIFEST} ${ENV_COMPILERS_SPACK_MANIFEST}
 RUN --mount=type=secret,id=oci-username,env=OCI_USERNAME \
@@ -267,6 +260,9 @@ fi
 EOF
 
 FROM base-upstream AS upstream
+
+LABEL org.opencontainers.image.source=https://github.com/ACCESS-NRI/build-ci
+
 # Install tmate in the image for remote access during workflows via mxschmitt/action-tmate
 RUN <<EOF
 curl -L https://github.com/tmate-io/tmate/releases/download/2.4.0/tmate-2.4.0-static-linux-amd64.tar.xz -o static-tmate.tar.xz
@@ -281,6 +277,7 @@ FROM base-spack AS runner
 
 LABEL org.opencontainers.image.source=https://github.com/ACCESS-NRI/build-ci
 
+# Install tmate in the image for remote access during workflows via mxschmitt/action-tmate
 RUN <<EOF
 curl -L https://github.com/tmate-io/tmate/releases/download/2.4.0/tmate-2.4.0-static-linux-amd64.tar.xz -o static-tmate.tar.xz
 tar -xvf static-tmate.tar.xz --strip-components=1
