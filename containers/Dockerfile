@@ -66,7 +66,7 @@ RUN dnf update -y \
  && dnf clean all
 
 ################################################################################
-FROM opensuse/leap:15.5 AS base-os-suse
+FROM opensuse/leap:15.6 AS base-os-suse
 
 # csh currently required for some build scripts e.g. MOM5
 RUN zypper ref \
