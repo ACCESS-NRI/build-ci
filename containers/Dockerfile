@@ -56,8 +56,9 @@ RUN dnf update -y \
     xz \
     zstd \
  # Install gh
- && curl -fsSL https://cli.github.com/packages/rpm/gh-cli.repo | tee /etc/yum.repos.d/github-cli.repo \
- && dnf -y install gh \
+ && dnf -y install 'dnf-command(config-manager)' \
+ && dnf config-manager --add-repo https://cli.github.com/packages/rpm/gh-cli.repo \
+ && dnf -y install gh --repo gh-cli \
  # dnf cleanup
  && rm -rf /var/cache/dnf \
  && dnf clean all
