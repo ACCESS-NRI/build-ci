@@ -55,9 +55,6 @@ RUN dnf update -y \
     which \
     xz \
     zstd \
- # Install yq
- && curl -L https://github.com/mikefarah/yq/releases/download/v4.45.1/yq_linux_amd64 -o /usr/bin/yq \
- && chmod +x /usr/bin/yq \
  # Install gh
  && curl -fsSL https://cli.github.com/packages/rpm/gh-cli.repo | tee /etc/yum.repos.d/github-cli.repo \
  && dnf -y install gh \
@@ -107,9 +104,6 @@ RUN zypper ref \
     subversion \
     tcsh \
     vim \
- # Install yq
- && curl -L https://github.com/mikefarah/yq/releases/download/v4.45.1/yq_linux_amd64 -o /usr/bin/yq \
- && chmod +x /usr/bin/yq \
  # Install gh
  && zypper addrepo https://cli.github.com/packages/rpm/gh-cli.repo \
  && zypper ref \
@@ -117,9 +111,22 @@ RUN zypper ref \
  # zypper cleanup
  &&  zypper clean
 
+################################################################################
+FROM base-os-$OS AS common-additional-tools
+
+# Install tmate in the image for remote access during workflows via mxschmitt/action-tmate
+RUN <<EOF
+curl -L https://github.com/tmate-io/tmate/releases/download/2.4.0/tmate-2.4.0-static-linux-amd64.tar.xz -o static-tmate.tar.xz
+tar -xvf static-tmate.tar.xz --strip-components=1
+mv tmate /usr/local/bin/tmate
+rm -rf static-tmate.tar.xz
+EOF
+
+ # Install yq for manifest interrogation
+RUN curl -L https://github.com/mikefarah/yq/releases/download/v4.45.1/yq_linux_amd64 -o /usr/bin/yq && chmod +x /usr/bin/yq
 
 ################################################################################
-FROM base-os-$OS AS base-spack
+FROM common-additional-tools AS base-spack
 
 ARG SPACK_GIT_URL=https://github.com/ACCESS-NRI/spack.git
 # Default spack version - must be changed across ci*.yml as well
@@ -195,8 +202,10 @@ SHELL ["docker-shell"]
 RUN spack bootstrap now
 
 ################################################################################
-# Install compilers and other common packages
-FROM base-spack AS base-upstream
+# Install compilers and other common packages for the upstream image
+FROM base-spack AS upstream
+
+LABEL org.opencontainers.image.source=https://github.com/ACCESS-NRI/build-ci
 
 # Install compilers and low-level, common packages
 COPY ${SOURCE_COMPILERS_SPACK_MANIFEST} ${ENV_COMPILERS_SPACK_MANIFEST}
@@ -259,31 +268,11 @@ if [ -n "$REQUESTS_OCI_MIRROR" ]; then
 fi
 EOF
 
-FROM base-upstream AS upstream
-
-LABEL org.opencontainers.image.source=https://github.com/ACCESS-NRI/build-ci
-
-# Install tmate in the image for remote access during workflows via mxschmitt/action-tmate
-RUN <<EOF
-curl -L https://github.com/tmate-io/tmate/releases/download/2.4.0/tmate-2.4.0-static-linux-amd64.tar.xz -o static-tmate.tar.xz
-tar -xvf static-tmate.tar.xz --strip-components=1
-mv tmate /usr/local/bin/tmate
-rm -rf static-tmate.tar.xz
-EOF
-
-
 ################################################################################
+# Set up the lightweight spack image that uses the upstream image
 FROM base-spack AS runner
 
 LABEL org.opencontainers.image.source=https://github.com/ACCESS-NRI/build-ci
-
-# Install tmate in the image for remote access during workflows via mxschmitt/action-tmate
-RUN <<EOF
-curl -L https://github.com/tmate-io/tmate/releases/download/2.4.0/tmate-2.4.0-static-linux-amd64.tar.xz -o static-tmate.tar.xz
-tar -xvf static-tmate.tar.xz --strip-components=1
-mv tmate /usr/local/bin/tmate
-rm -rf static-tmate.tar.xz
-EOF
 
 # Set up ACCESS Spack buildcache
 RUN spack mirror add --scope=site --autopush --unsigned runner_set_buildcache /opt/runner_set_buildcache
