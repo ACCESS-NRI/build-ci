@@ -189,7 +189,7 @@ SHELL ["docker-shell"]
 RUN spack bootstrap now
 
 ################################################################################
-FROM base-spack AS common-additional-tools
+FROM base-spack AS base-ci
 
 # Install tmate in the image for remote access during workflows via mxschmitt/action-tmate
 RUN <<EOF
@@ -204,7 +204,7 @@ RUN curl -L https://github.com/mikefarah/yq/releases/download/v4.45.1/yq_linux_a
 
 ################################################################################
 # Install compilers and other common packages for the upstream image
-FROM common-additional-tools AS upstream
+FROM base-ci AS upstream
 
 LABEL org.opencontainers.image.source=https://github.com/ACCESS-NRI/build-ci
 
@@ -271,7 +271,7 @@ EOF
 
 ################################################################################
 # Set up the lightweight spack image that uses the upstream image
-FROM common-additional-tools AS runner
+FROM base-ci AS runner
 
 LABEL org.opencontainers.image.source=https://github.com/ACCESS-NRI/build-ci
 
