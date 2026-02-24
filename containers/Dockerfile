@@ -112,21 +112,7 @@ RUN zypper ref \
  &&  zypper clean
 
 ################################################################################
-FROM base-os-$OS AS common-additional-tools
-
-# Install tmate in the image for remote access during workflows via mxschmitt/action-tmate
-RUN <<EOF
-curl -L https://github.com/tmate-io/tmate/releases/download/2.4.0/tmate-2.4.0-static-linux-amd64.tar.xz -o static-tmate.tar.xz
-tar -xvf static-tmate.tar.xz --strip-components=1
-mv tmate /usr/local/bin/tmate
-rm -rf static-tmate.tar.xz
-EOF
-
- # Install yq for manifest interrogation
-RUN curl -L https://github.com/mikefarah/yq/releases/download/v4.45.1/yq_linux_amd64 -o /usr/bin/yq && chmod +x /usr/bin/yq
-
-################################################################################
-FROM common-additional-tools AS base-spack
+FROM base-os-$OS AS base-spack
 
 ARG SPACK_GIT_URL=https://github.com/ACCESS-NRI/spack.git
 # Default spack version - must be changed across ci*.yml as well
@@ -202,8 +188,22 @@ SHELL ["docker-shell"]
 RUN spack bootstrap now
 
 ################################################################################
+FROM base-spack AS common-additional-tools
+
+# Install tmate in the image for remote access during workflows via mxschmitt/action-tmate
+RUN <<EOF
+curl -L https://github.com/tmate-io/tmate/releases/download/2.4.0/tmate-2.4.0-static-linux-amd64.tar.xz -o static-tmate.tar.xz
+tar -xvf static-tmate.tar.xz --strip-components=1
+mv tmate /usr/local/bin/tmate
+rm -rf static-tmate.tar.xz
+EOF
+
+ # Install yq for manifest interrogation
+RUN curl -L https://github.com/mikefarah/yq/releases/download/v4.45.1/yq_linux_amd64 -o /usr/bin/yq && chmod +x /usr/bin/yq
+
+################################################################################
 # Install compilers and other common packages for the upstream image
-FROM base-spack AS upstream
+FROM common-additional-tools AS upstream
 
 LABEL org.opencontainers.image.source=https://github.com/ACCESS-NRI/build-ci
 
@@ -270,7 +270,7 @@ EOF
 
 ################################################################################
 # Set up the lightweight spack image that uses the upstream image
-FROM base-spack AS runner
+FROM common-additional-tools AS runner
 
 LABEL org.opencontainers.image.source=https://github.com/ACCESS-NRI/build-ci
 
