@@ -1,7 +1,7 @@
-# Copyright 2023-2025 ACCESS-NRI and contributors. See the top-level COPYRIGHT file for details.
+# Copyright 2023-2026 ACCESS-NRI and contributors. See the top-level COPYRIGHT file for details.
 # SPDX-License-Identifier: Apache-2.0
 #
-# Contains build targets: base-os-rocky, base-os-suse, base-spack, ci, dev
+# Contains build targets: base-os-rocky, base-os-suse, base-spack, base-ci, upstream, runner
 
 ################################################################################
 # OS = {rocky,suse}
