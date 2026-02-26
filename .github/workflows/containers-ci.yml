@@ -108,20 +108,14 @@ jobs:
 
           echo "floating-ip=$floating_ip" >> $GITHUB_OUTPUT
 
-          # We test out SSHing into the server here, as sometimes we get Connection Refused the first attempt.
-          openstack server ssh --address-type=floating ${{ env.NECTAR_INSTANCE_NAME }} -- \
-            -o StrictHostKeyChecking=accept-new -o IdentitiesOnly=yes \
-            -l ${{ secrets.NECTAR_INSTANCE_USER }} -i ${{ steps.ssh.outputs.private-key-path }} \
-            true
-
       - name: Build Image
         id: build
         # Build the build-ci-[upstream|runner] image using the instance
         # Setup environment-variable secrets for the OCI-backed spack buildcache to make installs faster
         run: |
-          openstack server ssh --address-type=floating ${{ env.NECTAR_INSTANCE_NAME }} -- \
+          ssh ${{ secrets.NECTAR_INSTANCE_USER }}@${{ steps.create.outputs.floating-ip }} \
             -o StrictHostKeyChecking=accept-new -o IdentitiesOnly=yes -o ServerAliveInterval=5 \
-            -l ${{ secrets.NECTAR_INSTANCE_USER }} -i ${{ steps.ssh.outputs.private-key-path }} \
+            -i ${{ steps.ssh.outputs.private-key-path }} \
             /bin/bash << EOT
               # Secrets ingested by docker compose while building to make use of an OCI buildcache
               export BUILD_CI_BUILDCACHE_OCI_USERNAME=${{ github.actor }}
@@ -139,9 +133,9 @@ jobs:
         id: push
         # Push the just built image to GHCR
         run: |
-          openstack server ssh --address-type=floating ${{ env.NECTAR_INSTANCE_NAME }} -- \
+          ssh ${{ secrets.NECTAR_INSTANCE_USER }}@${{ steps.create.outputs.floating-ip }} \
             -o StrictHostKeyChecking=accept-new -o IdentitiesOnly=yes -o ServerAliveInterval=5 \
-            -l ${{ secrets.NECTAR_INSTANCE_USER }} -i ${{ steps.ssh.outputs.private-key-path }} \
+            -i ${{ steps.ssh.outputs.private-key-path }} \
             /bin/bash << EOT
               cd build-ci
               echo ${{ secrets.GHCR_IMAGE_PUSH_TOKEN }} | sudo docker login ghcr.io -u ${{ github.actor }} --password-stdin
