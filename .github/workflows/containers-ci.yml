@@ -30,6 +30,7 @@ on:
           Whether to push the given image once built. Will overwrite image if tags are the same.
 env:
   NECTAR_INSTANCE_NAME: runner-buildbox-${{ github.run_id }}
+  NECTAR_VOLUME_NAME: runner-buildbox-${{ github.run_id }}
 jobs:
   build-image-via-nectar:
     name: Build
@@ -77,21 +78,33 @@ jobs:
 
       - name: Create Instance
         id: create
-        # Create ephemeral, powerful Nectar Instance, create and assign a floating IP as part of
-        # the private runner-buildbox network so GitHub Actions can SSH into it.
+        # Create ephemeral, powerful Nectar Instance, booted from a large volume.
+        # Create and assign a floating IP as part of the private runner-buildbox
+        # network so GitHub Actions can SSH into it.
         run: |
+          openstack volume create ${{ env.NECTAR_VOLUME_NAME }} \
+            --size 40 \
+            --image "NeCTAR Ubuntu 22.04 LTS (Jammy) amd64 (with Docker)" \
+            --availability-zone ardc-syd-1 \
+            --description "Ephemeral boot volume for build-ci image build ${{ github.run_id }}" \
+            --bootable \
+            &> /dev/null
+          echo "Created boot volume."
+
           openstack server create ${{ env.NECTAR_INSTANCE_NAME }} \
             --flavor p3.xxlarge \
-            --image "NeCTAR Ubuntu 22.04 LTS (Jammy) amd64 (with Docker)" \
             --key-name runner-buildbox \
             --availability-zone ardc-syd-1 \
             --security-group ssh \
             --nic net-id=${{ secrets.NECTAR_INSTANCE_NETWORK_ID }} \
+            --volume ${{ env.NECTAR_VOLUME_NAME }} \
             --wait \
             &> /dev/null
+          echo "Created instance."
 
           floating_ip=$(openstack floating ip create ardc-syd --format value --column floating_ip_address)
           openstack server add floating ip ${{ env.NECTAR_INSTANCE_NAME }} $floating_ip
+          echo "Created floating IP for instance."
 
           echo "floating-ip=$floating_ip" >> $GITHUB_OUTPUT
 
@@ -152,6 +165,13 @@ jobs:
             echo "Nectar Instance from this run deleted."
           else
             echo "No Nectar Instance to delete from this run."
+          fi
+
+          if openstack volume show ${{ env.NECTAR_VOLUME_NAME }} &> /dev/null; then
+            openstack volume delete ${{ env.NECTAR_VOLUME_NAME }}
+            echo "Nectar Volume from this run deleted."
+          else
+            echo "No Nectar Volume to delete from this run."
           fi
 
       - name: Comment on PR
