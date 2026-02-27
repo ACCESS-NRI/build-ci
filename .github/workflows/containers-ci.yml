@@ -30,6 +30,7 @@ on:
           Whether to push the given image once built. Will overwrite image if tags are the same.
 env:
   NECTAR_INSTANCE_NAME: runner-buildbox-${{ github.run_id }}
+  NECTAR_VOLUME_NAME: runner-buildbox-${{ github.run_id }}
 jobs:
   build-image-via-nectar:
     name: Build
@@ -77,38 +78,64 @@ jobs:
 
       - name: Create Instance
         id: create
-        # Create ephemeral, powerful Nectar Instance, create and assign a floating IP as part of
-        # the private runner-buildbox network so GitHub Actions can SSH into it.
+        # Create ephemeral, powerful Nectar Instance, booted from a large volume.
+        # Create and assign a floating IP as part of the private runner-buildbox
+        # network so GitHub Actions can SSH into it.
         run: |
+          echo "Creating boot volume..."
+          openstack volume create ${{ env.NECTAR_VOLUME_NAME }} \
+            --size 40 \
+            --image "NeCTAR Ubuntu 22.04 LTS (Jammy) amd64 (with Docker)" \
+            --availability-zone ardc-syd-1 \
+            --description "Ephemeral boot volume for build-ci image build ${{ github.run_id }}" \
+            --bootable \
+            &> /dev/null
+          echo "Created boot volume."
+
+          echo "Creating instance..."
           openstack server create ${{ env.NECTAR_INSTANCE_NAME }} \
             --flavor p3.xxlarge \
-            --image "NeCTAR Ubuntu 22.04 LTS (Jammy) amd64 (with Docker)" \
             --key-name runner-buildbox \
             --availability-zone ardc-syd-1 \
             --security-group ssh \
             --nic net-id=${{ secrets.NECTAR_INSTANCE_NETWORK_ID }} \
+            --volume ${{ env.NECTAR_VOLUME_NAME }} \
             --wait \
             &> /dev/null
+          echo "Created instance."
 
+          echo "Creating floating IP for instance..."Q
           floating_ip=$(openstack floating ip create ardc-syd --format value --column floating_ip_address)
+          echo "::add-mask::$floating_ip"
           openstack server add floating ip ${{ env.NECTAR_INSTANCE_NAME }} $floating_ip
+          echo "Created floating IP for instance."
+
+          # We need test the floating IP
+
+          set +e
+          for i in {1..5}; do
+            echo "Attempt $i of 5 of connecting to the instance..."
+            ssh ${{ secrets.NECTAR_INSTANCE_USER }}@${floating_ip} \
+              -o StrictHostKeyChecking=accept-new -o IdentitiesOnly=yes -o ServerAliveInterval=5 \
+              -i ${{ steps.ssh.outputs.private-key-path }} \
+              exit && break
+            echo "Failed, sleeping for 10s before trying again..."
+            sleep 10
+          done
+          set -e
 
           echo "floating-ip=$floating_ip" >> $GITHUB_OUTPUT
 
-          # We test out SSHing into the server here, as sometimes we get Connection Refused the first attempt.
-          openstack server ssh --address-type=floating ${{ env.NECTAR_INSTANCE_NAME }} -- \
-            -o StrictHostKeyChecking=accept-new -o IdentitiesOnly=yes \
-            -l ${{ secrets.NECTAR_INSTANCE_USER }} -i ${{ steps.ssh.outputs.private-key-path }} \
-            true
+
 
       - name: Build Image
         id: build
         # Build the build-ci-[upstream|runner] image using the instance
         # Setup environment-variable secrets for the OCI-backed spack buildcache to make installs faster
         run: |
-          openstack server ssh --address-type=floating ${{ env.NECTAR_INSTANCE_NAME }} -- \
+          ssh ${{ secrets.NECTAR_INSTANCE_USER }}@${{ steps.create.outputs.floating-ip }} \
             -o StrictHostKeyChecking=accept-new -o IdentitiesOnly=yes -o ServerAliveInterval=5 \
-            -l ${{ secrets.NECTAR_INSTANCE_USER }} -i ${{ steps.ssh.outputs.private-key-path }} \
+            -i ${{ steps.ssh.outputs.private-key-path }} \
             /bin/bash << EOT
               # Secrets ingested by docker compose while building to make use of an OCI buildcache
               export BUILD_CI_BUILDCACHE_OCI_USERNAME=${{ github.actor }}
@@ -126,9 +153,9 @@ jobs:
         id: push
         # Push the just built image to GHCR
         run: |
-          openstack server ssh --address-type=floating ${{ env.NECTAR_INSTANCE_NAME }} -- \
+          ssh ${{ secrets.NECTAR_INSTANCE_USER }}@${{ steps.create.outputs.floating-ip }} \
             -o StrictHostKeyChecking=accept-new -o IdentitiesOnly=yes -o ServerAliveInterval=5 \
-            -l ${{ secrets.NECTAR_INSTANCE_USER }} -i ${{ steps.ssh.outputs.private-key-path }} \
+            -i ${{ steps.ssh.outputs.private-key-path }} \
             /bin/bash << EOT
               cd build-ci
               echo ${{ secrets.GHCR_IMAGE_PUSH_TOKEN }} | sudo docker login ghcr.io -u ${{ github.actor }} --password-stdin
@@ -152,6 +179,13 @@ jobs:
             echo "Nectar Instance from this run deleted."
           else
             echo "No Nectar Instance to delete from this run."
+          fi
+
+          if openstack volume show ${{ env.NECTAR_VOLUME_NAME }} &> /dev/null; then
+            openstack volume delete ${{ env.NECTAR_VOLUME_NAME }}
+            echo "Nectar Volume from this run deleted."
+          else
+            echo "No Nectar Volume to delete from this run."
           fi
 
       - name: Comment on PR
