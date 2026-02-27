@@ -82,6 +82,7 @@ jobs:
         # Create and assign a floating IP as part of the private runner-buildbox
         # network so GitHub Actions can SSH into it.
         run: |
+          echo "Creating boot volume..."
           openstack volume create ${{ env.NECTAR_VOLUME_NAME }} \
             --size 40 \
             --image "NeCTAR Ubuntu 22.04 LTS (Jammy) amd64 (with Docker)" \
@@ -91,6 +92,7 @@ jobs:
             &> /dev/null
           echo "Created boot volume."
 
+          echo "Creating instance..."
           openstack server create ${{ env.NECTAR_INSTANCE_NAME }} \
             --flavor p3.xxlarge \
             --key-name runner-buildbox \
@@ -102,15 +104,29 @@ jobs:
             &> /dev/null
           echo "Created instance."
 
+          echo "Creating floating IP for instance..."Q
           floating_ip=$(openstack floating ip create ardc-syd --format value --column floating_ip_address)
-          echo "::addmask::$floating_ip"
+          echo "::add-mask::$floating_ip"
           openstack server add floating ip ${{ env.NECTAR_INSTANCE_NAME }} $floating_ip
           echo "Created floating IP for instance."
 
+          # We need test the floating IP
+
+          set +e
+          for i in {1..5}; do
+            echo "Attempt $i of 5 of connecting to the instance..."
+            ssh ${{ secrets.NECTAR_INSTANCE_USER }}@${floating_ip} \
+              -o StrictHostKeyChecking=accept-new -o IdentitiesOnly=yes -o ServerAliveInterval=5 \
+              -i ${{ steps.ssh.outputs.private-key-path }} \
+              exit && break
+            echo "Failed, sleeping for 10s before trying again..."
+            sleep 10
+          done
+          set -e
+
           echo "floating-ip=$floating_ip" >> $GITHUB_OUTPUT
 
-          # We need to sleep to make sure the floating IP is ready
-          sleep 5
+
 
       - name: Build Image
         id: build
