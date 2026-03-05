@@ -26,6 +26,7 @@ spack:
     - [$%compilers]
     - [$targets]
 
+  # Only major.minor version specified. Patch version selected by Spack.
   - python@3.11 target=x86_64 %gcc@13.2.0
 
   packages:
