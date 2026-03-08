@@ -333,7 +333,8 @@ jobs:
         # from spack-config's repos.yaml or use "develop" (the default branch) if not specified there either.
         run: |
           . ${{ steps.env.outputs.SPACK_ROOT }}/share/spack/setup-env.sh
-          ref=$(spack config get repos | yq '.repos.builtin | .branch // .tag // .commit // "develop"')
+          # Accept both the overridden .builtin: and regular .builtin key. See ACCESS-NRI/spack-config#105 for more info.
+          ref=$(spack config get repos | yq '.repos | .builtin // ."builtin:" | .branch // .tag // .commit // "develop"')
           echo "Default builtin-spack-packages-ref is $ref"
           echo "ref=$ref" >> $GITHUB_OUTPUT
 
