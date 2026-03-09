@@ -316,7 +316,7 @@ jobs:
             exit 2
           fi
 
-          ln --symbolic --relative --verbose --force ${{ steps.env.outputs.SPACK_ROOT }}/../spack-config/${spack_branch}/ci-${{ inputs.run-self-hosted && 'runner' || 'upstream' }}/* ${{ steps.env.outputs.SPACK_ROOT }}/etc/spack/
+          ln --symbolic --relative --verbose --force ${{ steps.env.outputs.SPACK_ROOT }}/../spack-config/${spack_branch}/ci-runner/* ${{ steps.env.outputs.SPACK_ROOT }}/etc/spack/
 
       - name: Spack - Initial Enable
         run: |
