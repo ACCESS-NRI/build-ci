@@ -372,6 +372,7 @@ jobs:
       - name: Manifest - Install Compilers Locally
         # Some compilers may not be available upstream, so we install them locally in a separate spack.yaml
         if: inputs.spack-compiler-manifest-path != ''
+        id: compilers
         env:
           # For pulling OCI buildcache
           OCI_USERNAME: ${{ secrets.spack-oci-buildcache-username || github.actor }}
@@ -387,6 +388,17 @@ jobs:
             spack compiler find --scope=user
           done
           spack compiler list
+
+      - name: Manifest - Push Local Compilers to Buildcache
+        env:
+          # For pulling and pushing OCI buildcache
+          # If secrets.GITHUB_TOKEN has permissions.packages:write, one would not have to specify secrets.spack-oci-buildcache-password
+          OCI_USERNAME: ${{ secrets.spack-oci-buildcache-username || github.actor }}
+          OCI_PASSWORD: ${{ secrets.spack-oci-buildcache-password || secrets.GITHUB_TOKEN }}
+        if: inputs.spack-oci-buildcache-url != '' && steps.compilers.outcome == 'success'
+        run: |
+          . ${{ steps.env.outputs.SPACK_ROOT }}/share/spack/setup-env.sh
+          spack -e local_compilers buildcache push --unsigned oci_buildcache
 
       - name: Manifest - Install jinja-cli
         run: python3 -m pip install jinja-cli==1.2.2
