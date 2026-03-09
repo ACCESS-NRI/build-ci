@@ -406,7 +406,7 @@ jobs:
           spack mirror rm runner_set_buildcache
           spack config blame mirrors
 
-          spack --debug install --fail-fast --deprecated
+          spack --debug install --fail-fast --deprecated --cache-only
           spack env deactivate
           yq '.spack.specs[]' ${{ inputs.spack-compiler-manifest-path }} | while read compiler; do
             spack load $compiler
