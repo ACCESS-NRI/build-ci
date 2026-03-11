@@ -423,7 +423,7 @@ jobs:
         if: inputs.spack-oci-buildcache-url != '' && steps.compilers.outcome == 'success'
         run: |
           . ${{ steps.env.outputs.SPACK_ROOT }}/share/spack/setup-env.sh
-          spack -e local_compilers buildcache push --unsigned oci_buildcache
+          spack -e local_compilers buildcache push --unsigned --private oci_buildcache
 
       - name: Manifest - Install jinja-cli
         run: python3 -m pip install jinja-cli==1.2.2
