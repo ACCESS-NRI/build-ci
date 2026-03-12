@@ -264,7 +264,7 @@ RUN --mount=type=secret,id=oci-username,env=OCI_USERNAME \
 if [ -n "$OCI_USERNAME" ] || [ -n "$OCI_PASSWORD" ] || [ -n "$OCI_URL" ]; then
   REQUESTS_OCI_MIRROR=1
   spack mirror add \
-    --scope=site \
+    --scope=spack \
     --autopush \
     --unsigned \
     --oci-username-variable OCI_USERNAME \
@@ -281,7 +281,7 @@ spack env deactivate
 spack clean --downloads --stage
 
 if [ -n "$REQUESTS_OCI_MIRROR" ]; then
-  spack mirror remove --scope=site docker_build_buildcache
+  spack mirror remove --scope=spack docker_build_buildcache
 fi
 EOF
 
@@ -295,7 +295,7 @@ RUN --mount=type=secret,id=oci-username,env=OCI_USERNAME \
 if [ -n "$OCI_USERNAME" ] || [ -n "$OCI_PASSWORD" ] || [ -n "$OCI_URL" ]; then
   REQUESTS_OCI_MIRROR=1
   spack mirror add \
-    --scope=site \
+    --scope=spack \
     --autopush \
     --unsigned \
     --oci-username-variable OCI_USERNAME \
@@ -312,7 +312,7 @@ spack env deactivate
 spack clean --downloads --stage
 
 if [ -n "$REQUESTS_OCI_MIRROR" ]; then
-  spack mirror remove --scope=site docker_build_buildcache
+  spack mirror remove --scope=spack docker_build_buildcache
 fi
 EOF
 
@@ -323,7 +323,7 @@ FROM base-ci AS runner
 LABEL org.opencontainers.image.source=https://github.com/ACCESS-NRI/build-ci
 
 # Set up ACCESS Spack buildcache
-RUN spack mirror add --scope=site --autopush --unsigned runner_set_buildcache /opt/runner_set_buildcache
+RUN spack mirror add --scope=spack --autopush --unsigned runner_set_buildcache /opt/runner_set_buildcache
 
 
 ENTRYPOINT ["/bin/bash", "/opt/spack/share/spack/docker/entrypoint.bash"]
