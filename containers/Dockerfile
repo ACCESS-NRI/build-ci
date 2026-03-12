@@ -150,6 +150,12 @@ LABEL au.org.access-nri.image.spack-config-repo-version=${SPACK_CONFIG_REPO_VERS
 SHELL ["/bin/bash", "-c"]
 
 # Install spack
+
+# In the transition between spack v0.X and v1.X, scopes were changed:
+# The 'site' scope was moved: $spack/etc/spack -> $spack/etc/spack/site
+# The old $spack/etc/spack scope is a new scope called 'spack'
+# Scope precedence is now: spack > user > site, so we need to move our spack-config scope
+# to 'site' so we can use the 'user' scope appropriately again.
 RUN <<EOF
 git clone ${SPACK_GIT_URL} ${SPACK_ROOT} --branch ${SPACK_REPO_VERSION}
 
@@ -157,7 +163,12 @@ git clone ${SPACK_GIT_URL} ${SPACK_ROOT} --branch ${SPACK_REPO_VERSION}
 git clone  https://github.com/ACCESS-NRI/spack-config.git /opt/spack-config --branch ${SPACK_CONFIG_REPO_VERSION}
 
 # Exit with ENOENT 2 "No such file or directory", if the directory does not exist
-if [ -d "${SPACK_CONFIG_DIR}" ]; then ln -s -r -v ${SPACK_CONFIG_DIR}/* ${SPACK_ROOT}/etc/spack/; else echo "${SPACK_CONFIG_DIR} does not exist!"; exit 2; fi
+if [ -d "${SPACK_CONFIG_DIR}" ]; then
+  ln -s -r -v ${SPACK_CONFIG_DIR}/* ${SPACK_ROOT}/etc/spack/site/
+else
+  echo "${SPACK_CONFIG_DIR} does not exist!"
+  exit 2
+fi
 EOF
 
 # Enables setting Spack setup type via SHELL command
