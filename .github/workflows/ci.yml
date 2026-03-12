@@ -266,15 +266,22 @@ jobs:
           # The upload step later requires a non-relative path, hence the realpath
           echo "spack-env-dir=$(realpath $SPACK_ROOT/../environments)" >> $GITHUB_OUTPUT
 
-      - name: Init - Disable upstream
+      - name: Init - Disable self-hosted runner features
         if: ${{ ! inputs.run-self-hosted }}
         # For GitHub-hosted versions of build-ci, we don't have an upstream, so we disable in our user scope
         # NOTE: In future may be able to be replaced by spack config --scope=user add upstreams::{}
         run: |
           . ${{ steps.env.outputs.SPACK_ROOT }}/share/spack/setup-env.sh
+
+          echo "--- Disable upstream ---"
           upstream_location=$(spack config --scope=user edit upstreams --print-file)
           mkdir -p $(dirname $upstream_location)
           echo "upstreams:: {}" > $upstream_location
+          spack config blame upstreams
+
+          echo "--- Disable self-hosted runner buildcache"
+          spack mirror rm runner_set_buildcache
+          spack config blame mirrors
 
       - name: Update - spack-config version
         id: spack-config-update
@@ -412,9 +419,6 @@ jobs:
         run: |
           . ${{ steps.env.outputs.SPACK_ROOT }}/share/spack/setup-env.sh
           spack env activate local_compilers --create --prompt --envfile ${{ inputs.spack-compiler-manifest-path }}
-
-          spack mirror rm runner_set_buildcache
-          spack config blame mirrors
 
           spack --debug install --fail-fast --deprecated
           spack env deactivate
