@@ -266,6 +266,13 @@ jobs:
           # The upload step later requires a non-relative path, hence the realpath
           echo "spack-env-dir=$(realpath $SPACK_ROOT/../runner/environments)" >> $GITHUB_OUTPUT
 
+      - name: Init - Disable upstream
+        if: ${{ ! inputs.run-self-hosted }}
+        # For GitHub-hosted versions of build-ci, we don't have an upstream, so we disable in our user scope
+        run: |
+          . ${{ steps.env.outputs.SPACK_ROOT }}/share/spack/setup-env.sh
+          echo "upstreams:: {}" > $(spack config --scope=user edit --print-file upstreams)
+
       - name: Update - spack-config version
         id: spack-config-update
         uses: access-nri/build-ci/.github/actions/git-checkout-updated-ref@v3
