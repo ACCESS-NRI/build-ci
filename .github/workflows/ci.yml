@@ -365,7 +365,8 @@ jobs:
 
       - name: Update - builtin spack-package version
         id: builtin-spack-packages-update
-        uses: access-nri/build-ci/.github/actions/spack-checkout-updated-ref@v3
+        #FIXME: Temp ref for debugging
+        uses: access-nri/build-ci/.github/actions/spack-checkout-updated-ref@268-github-hosted-pull-fix
         with:
           spack-packages-repository-name: builtin
           spack-packages-repository-path: ${{ steps.spack-packages-locations.outputs.builtin }}
