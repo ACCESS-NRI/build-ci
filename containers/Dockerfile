@@ -136,14 +136,6 @@ ENV ENV_PACKAGES_SPACK_MANIFEST=/opt/packages.spack.yaml
 ENV INITIAL_SPACK_CONFIG_REPO_VERSION=${SPACK_CONFIG_REPO_VERSION}
 ENV INITIAL_SPACK_REPO_VERSION=${SPACK_REPO_VERSION}
 
-# Export the spack config directory for the runner target
-ENV SPACK_CONFIG_DIR=${SPACK_CONFIG_DIR}
-
-# TODO: Ideally we want spack-enable.bash to be the only source of these
-#       definitions. See if spack-enable.bash can be used instead.
-# NOTE: In the meantime, keep in-sync with spack-config/spack-enable.bash
-ENV SPACK_USER_CACHE_PATH=${SPACK_ROOT}/..
-
 LABEL au.org.access-nri.image.spack-repo-version=${SPACK_REPO_VERSION}
 LABEL au.org.access-nri.image.spack-config-repo-version=${SPACK_CONFIG_REPO_VERSION}
 
@@ -155,9 +147,6 @@ git clone ${SPACK_GIT_URL} ${SPACK_ROOT} --branch ${SPACK_REPO_VERSION}
 
 # Install ACCESS-NRIs spack-config repo
 git clone  https://github.com/ACCESS-NRI/spack-config.git /opt/spack-config --branch ${SPACK_CONFIG_REPO_VERSION}
-
-# Exit with ENOENT 2 "No such file or directory", if the directory does not exist
-if [ -d "${SPACK_CONFIG_DIR}" ]; then ln -s -r -v ${SPACK_CONFIG_DIR}/* ${SPACK_ROOT}/etc/spack/; else echo "${SPACK_CONFIG_DIR} does not exist!"; exit 2; fi
 EOF
 
 # Enables setting Spack setup type via SHELL command
