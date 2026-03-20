@@ -116,21 +116,20 @@ RUN zypper ref \
 FROM base-os-$OS AS base-spack
 
 ARG SPACK_GIT_URL=https://github.com/ACCESS-NRI/spack.git
+ARG SPACK_CONFIG_GIT_URL=https://github.com/ACCESS-NRI/spack-config.git
 # Default spack version - must be changed across ci*.yml as well
 ARG SPACK_VERSION=v1.1
 ARG SPACK_REPO_VERSION=releases/${SPACK_VERSION}
 ARG SPACK_CONFIG_REPO_VERSION=main
 ARG SPACK_TARGET=x86_64
-ARG SPACK_CONFIG_DIR=/opt/spack-config/${SPACK_VERSION}/ci
 ARG SOURCE_COMPILERS_SPACK_MANIFEST=upstream/compilers.spack.yaml
 ARG SOURCE_PACKAGES_SPACK_MANIFEST=upstream/packages.spack.yaml
 
 ENV SPACK_VERSION=${SPACK_VERSION}
 ENV SPACK_ROOT=/opt/spack
+ENV SPACK_CONFIG_ROOT=${SPACK_ROOT}/../spack-config
 ENV GNUPGHOME=${SPACK_ROOT}/opt/spack/gpg
 ENV ENV_SPACK_TARGET=${SPACK_TARGET}
-ENV ENV_COMPILERS_SPACK_MANIFEST=/opt/compilers.spack.yaml
-ENV ENV_PACKAGES_SPACK_MANIFEST=/opt/packages.spack.yaml
 
 # Export the repo versions for comparison in the runner target
 ENV INITIAL_SPACK_CONFIG_REPO_VERSION=${SPACK_CONFIG_REPO_VERSION}
@@ -146,7 +145,7 @@ RUN <<EOF
 git clone ${SPACK_GIT_URL} ${SPACK_ROOT} --branch ${SPACK_REPO_VERSION}
 
 # Install ACCESS-NRIs spack-config repo
-git clone  https://github.com/ACCESS-NRI/spack-config.git /opt/spack-config --branch ${SPACK_CONFIG_REPO_VERSION}
+git clone ${SPACK_CONFIG_GIT_URL} ${SPACK_CONFIG_ROOT} --branch ${SPACK_CONFIG_REPO_VERSION}
 EOF
 
 # Enables setting Spack setup type via SHELL command
@@ -233,6 +232,11 @@ FROM base-ci AS upstream
 
 LABEL org.opencontainers.image.source=https://github.com/ACCESS-NRI/build-ci
 
+ARG SOURCE_COMPILERS_SPACK_MANIFEST=upstream/prod/compilers.spack.yaml
+ARG SOURCE_PACKAGES_SPACK_MANIFEST=upstream/prod/packages.spack.yaml
+ENV ENV_COMPILERS_SPACK_MANIFEST=/opt/compilers.spack.yaml
+ENV ENV_PACKAGES_SPACK_MANIFEST=/opt/packages.spack.yaml
+
 # Install compilers and low-level, common packages
 COPY ${SOURCE_COMPILERS_SPACK_MANIFEST} ${ENV_COMPILERS_SPACK_MANIFEST}
 RUN --mount=type=secret,id=oci-username,env=OCI_USERNAME \
@@ -242,7 +246,7 @@ RUN --mount=type=secret,id=oci-username,env=OCI_USERNAME \
 if [ -n "$OCI_USERNAME" ] || [ -n "$OCI_PASSWORD" ] || [ -n "$OCI_URL" ]; then
   REQUESTS_OCI_MIRROR=1
   spack mirror add \
-    --scope=site \
+    --scope=user \
     --autopush \
     --unsigned \
     --oci-username-variable OCI_USERNAME \
@@ -259,7 +263,7 @@ spack env deactivate
 spack clean --downloads --stage
 
 if [ -n "$REQUESTS_OCI_MIRROR" ]; then
-  spack mirror remove --scope=site docker_build_buildcache
+  spack mirror remove --scope=user docker_build_buildcache
 fi
 EOF
 
@@ -273,7 +277,7 @@ RUN --mount=type=secret,id=oci-username,env=OCI_USERNAME \
 if [ -n "$OCI_USERNAME" ] || [ -n "$OCI_PASSWORD" ] || [ -n "$OCI_URL" ]; then
   REQUESTS_OCI_MIRROR=1
   spack mirror add \
-    --scope=site \
+    --scope=user \
     --autopush \
     --unsigned \
     --oci-username-variable OCI_USERNAME \
@@ -290,7 +294,7 @@ spack env deactivate
 spack clean --downloads --stage
 
 if [ -n "$REQUESTS_OCI_MIRROR" ]; then
-  spack mirror remove --scope=site docker_build_buildcache
+  spack mirror remove --scope=user docker_build_buildcache
 fi
 EOF
 
@@ -301,7 +305,7 @@ FROM base-ci AS runner
 LABEL org.opencontainers.image.source=https://github.com/ACCESS-NRI/build-ci
 
 # Set up ACCESS Spack buildcache
-RUN spack mirror add --scope=site --autopush --unsigned runner_set_buildcache /opt/runner_set_buildcache
+RUN spack mirror add --scope=user --autopush --unsigned runner_set_buildcache /opt/runner_set_buildcache
 
 
 ENTRYPOINT ["/bin/bash", "/opt/spack/share/spack/docker/entrypoint.bash"]
