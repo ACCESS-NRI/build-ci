@@ -304,6 +304,8 @@ FROM base-ci AS runner
 
 LABEL org.opencontainers.image.source=https://github.com/ACCESS-NRI/build-ci
 
+ENV SPACK_CI_CONFIG=1
+
 # Set up ACCESS Spack buildcache
 RUN spack mirror add --scope=user --autopush --unsigned runner_set_buildcache /opt/runner_set_buildcache
 
