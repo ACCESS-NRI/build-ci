@@ -1,0 +1,69 @@
+name: Github Cache Eviction
+on:
+  workflow_call:
+    inputs:
+      buildcache-package-org:
+        type: string
+        required: true
+        description: |
+          Organisation that owns the package that is used as an OCI-backed spack buildcache
+      buildcache-package-name:
+        type: string
+        required: true
+        description: |
+          Name of the package that is used as an OCI-backed spack buildcache
+      eviction-threshold:
+        type: number
+        required: true
+        description: |
+          Number of days after which a buildcache entry is considered stale and can be evicted
+    secrets:
+      token:
+        required: true
+        description: |
+          GitHub token with permissions to delete packages in the registry, typically a PAT with `delete:packages` scope.
+          This is needed to delete old buildcache entries from the OCI registry.
+jobs:
+  eviction:
+    name: Evict Old Entries
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.token }}
+    steps:
+      - name: Get all entries in buildcache older than ${{ inputs.eviction-threshold }} days
+        id: entries
+        # The date format is ISO 8601 date/time string with a literal Z for UTC - as GitHub uses. Eg. 2025-08-07T01:50:59Z
+        run: |
+          eviction_time=$(date --universal --date "-${{ inputs.eviction-threshold }} days" +%FT%TZ)
+          echo "::notice::Evicting entries older than ${eviction_time}"
+
+          # See https://docs.github.com/en/rest/packages/packages?apiVersion=2026-03-10#list-package-versions-for-a-package-owned-by-an-organization
+          gh api --paginate --slurp \
+            /orgs/${{ inputs.buildcache-package-org }}/packages/container/${{ inputs.buildcache-package-name }}/versions
+            > versions.json
+
+          jq --compact-output --raw-output --arg e "$eviction_time" \
+            '[.[][] | select(.modified_at < $e)]' \
+            versions.json
+            > evictions.json
+
+          eviction_ids=$(jq --compact-output --raw-output \
+            '[.[] | .id] | join(" ")'
+            evictions.json
+          )
+
+          number_of_evictions=$(wc -w <<< "$eviction_ids")
+          eviction_descriptions=$(jq '[.[] | .description] | @sh' evictions.json)"
+          echo "::warning::Going to delete the following ${number_of_evictions} entries: ${eviction_descriptions}"
+
+          echo "eviction-ids=$eviction_ids" >> $GITHUB_OUTPUT
+
+      - name: Evict entries in buildcache older than ${{ inputs.eviction-threshold }} days
+        run: |
+          for entry in ${{ steps.entries.outputs.eviction-ids }}; do
+            echo "Evicting $entry..."
+
+            # See https://docs.github.com/en/rest/packages/packages?apiVersion=2026-03-10#delete-package-version-for-an-organization
+            gh api --method DELETE \
+              /orgs/${{ inputs.buildcache-package-org }}/packages/container/${{ inputs.buildcache-package-name }}/versions/$entry
+          done
