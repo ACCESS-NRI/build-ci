@@ -53,12 +53,8 @@ This workflow handles building and running short CI tests on a given spack manif
 | `spack-manifest-repository-sha` | `string` (Git commit SHA) | The SHA of the spack manifest repository checked out | `24ef5da423028a9a25133884e6e402900e87a3aa` |
 | `sha` | `string` (Git commit SHA) | The SHA of the caller model component repository checked out | `"43ef5da423028a9a25133884e6e402900e87a3ce"` |
 | `container-id` | `string` | The ID of the container where the spack packages have been installed | `"ohfn2ofy2h2uyfg2uyg3uyg3uh"` |
-| `spack-files-artifact-pattern` | `string` (glob) | Wildcard pattern to match all spack file artifacts across a matrix job | `'spack-files-*'` |
-| `spack-files-artifact-url` | `string` (URL) | The URL of the spack manifest and lock files artifact | `"https://github.com/ACCESS-NRI/MOM5/actions/runs/15890554355/artifacts/3406449135"` |
-| `job-output-artifact-pattern` | `string` (glob) | Wildcard pattern to match all job output artifacts across a matrix job | `'job-output-*'` |
-| `job-output-artifact-url` | `string` (URL) | The URL of the job output artifact, which contains the job outputs in JSON format | `"https://github.com/ACCESS-NRI/MOM5/actions/runs/15890554355/artifacts/3406449136"` |
-| `spack-logs-artifact-pattern` | `string` (glob) | Wildcard pattern to match all spack log artifacts across a matrix job | `'spack-logs-*'` |
-| `spack-logs-artifact-url` | `string` (URL) | The URL of the spack logs artifact, which contains the spack logs for each input spec | `"https://github.com/ACCESS-NRI/MOM5/actions/runs/15890554355/artifacts/3406449137"` |
+| `artifact-pattern` | `string` (glob) | Wildcard pattern to match all artifacts across a matrix job | `'output-*'` |
+| `artifact-url` | `string` (URL) | The URL of the artifact | `"https://github.com/ACCESS-NRI/MOM5/actions/runs/15890554355/artifacts/3406449135"` |
 
 #### Future Outputs
 
