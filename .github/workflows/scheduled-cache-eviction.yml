@@ -1,0 +1,15 @@
+name: Scheduled Cache Eviction
+on:
+  schedule:
+    - cron: 30 2 3 * *
+jobs:
+  eviction:
+    permissions:
+      packages: write
+    uses: ./.github/workflows/github-cache-eviction.yml
+    with:
+      buildcache-package-org: ${{ github.repository_owner }}
+      buildcache-package-name: build-ci-buildcache
+      eviction-threshold: 90
+    secrets:
+      token: ${{ github.token }}
