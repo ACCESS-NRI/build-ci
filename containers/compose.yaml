@@ -4,12 +4,12 @@ name: Spack Instance
 # to reduce duplication in the file
 x-common-args: &common-args
   OS: rocky
-  SOURCE_COMPILERS_SPACK_MANIFEST: upstream/dev/compilers.spack.yaml
-  SOURCE_PACKAGES_SPACK_MANIFEST: upstream/dev/packages.spack.yaml
+  SOURCE_COMPILERS_SPACK_MANIFEST: upstream/compilers.spack.yaml
+  SOURCE_PACKAGES_SPACK_MANIFEST: upstream/packages.spack.yaml
 services:
   upstream:
     container_name: Upstream
-    image: ghcr.io/access-nri/build-ci-upstream:rocky
+    image: ghcr.io/access-nri/build-ci-upstream:rocky-v1.1-2026.02.003
     tty: true
     build:
       context: .
@@ -22,12 +22,12 @@ services:
         - oci-password
         - oci-url
     volumes:
-      - dev-upstream:/opt/upstream:rw
-      - dev-buildcache:/opt/runner_set_buildcache:rw
+      - upstream:/opt/upstream:rw
+      - buildcache:/opt/runner_set_buildcache:rw
 
   runner:
     container_name: Runner
-    image: ghcr.io/access-nri/build-ci-runner:rocky
+    image: ghcr.io/access-nri/build-ci-runner:rocky-v1.1-2026.02.003
     tty: true
     depends_on:
     - upstream
@@ -38,12 +38,12 @@ services:
         <<: *common-args
         SPACK_CONFIG_DIR: /opt/spack-config/v1.1/ci-runner
     volumes:
-      - dev-upstream:/opt/upstream:ro
-      - dev-buildcache:/opt/runner_set_buildcache:rw
+      - upstream:/opt/upstream:ro
+      - buildcache:/opt/runner_set_buildcache:rw
 
 volumes:
-  dev-upstream:
-  dev-buildcache:
+  upstream:
+  buildcache:
 
 secrets:
   oci-username:
