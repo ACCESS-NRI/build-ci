@@ -308,3 +308,9 @@ This workflow deletes package from a GitHub-based Spack Buildcache for the purpo
 ### Outputs
 
 None in GitHub Actions, but the entries are deleted from the buildcache.
+
+## `scheduled-cache-eviction.yml` - Scheduled Eviction Of Entries From `ACCESS-NRI` `build-ci-buildcache`
+
+### Overview
+
+Scheduled trigger for the eviction of stale entries in the buildcache. Calls [`github-cache-eviction.yml`](#github-cache-evictionyml---evict-entries-from-a-github-spack-buildcache-based-on-date-modified).
