@@ -1,12 +1,16 @@
-# Entrypoint Workflows
+# Workflows
 
-## `ci.yml` - Build and Test Workflow Entrypoint
+## Entrypoint Workflows
 
-### Overview
+Entrypoint workflows are reusable workflows that are the starting point for the build and test framework.
+
+### `ci.yml` - Build and Test Workflow Entrypoint
+
+#### Overview
 
 This workflow handles building and running short CI tests on a given spack manifest. It offers customisation of `spack`, `spack-config`, and spack packages repos, and allows SSH access to the installation to the author of the PR.
 
-### Inputs
+#### Inputs
 
 | Name | Type | Description | Required | Default | Example |
 | ---- | ---- | ----------- | -------- | ------- | ------- |
@@ -25,14 +29,14 @@ This workflow handles building and running short CI tests on a given spack manif
 | `spack-oci-buildcache-url` | `string` (OCI URL) | The URL to an oci-backed buildcache, available in spack >= v1.0. OCI-backed buildcaches are the only option for GitHub-hosted CI, and can be used as a backup for self-hosted CI's runner buildcache | `false` | N/A | `"oci://ghcr.io/ACCESS-NRI/build-ci-buildcache"`, `"oci://ghcr.io/ORG/IMAGE"` |
 | `run-self-hosted` | `boolean` | Whether to run the job on a self-hosted runner. For security, workflow runs will hang if this is `true` but it is not using a valid `v*` branch or tag for the workflow ref | `false` | `true` | `true`, `false` |
 
-#### Future Inputs
+##### Future Inputs
 
 | Name | Type | Description | Required | Default | Example |
 | ---- | ---- | ----------- | -------- | ------- | ------- |
 | `pytest-test-directory-path` | `string` (Directory path relative to component repository root) | Directory path in the caller model component repository that contains pytests to run against the built manifests | `false` | N/A | `".github/build/tests/"` |
 | `pytest-test-markers` | `string` (Pytest-style markers) | A string of pytest markers to use to filter tests in the caller model component repository | `false` | `""` (runs all tests) | `"not slow and not mpi"` |
 
-### Secrets
+#### Secrets
 
 | Name | Type | Description | Required | Default | Example |
 | ---- | ---- | ----------- | -------- | ------- | ------- |
@@ -41,7 +45,7 @@ This workflow handles building and running short CI tests on a given spack manif
 
 | `spack-oci-buildcache-password` | `string` (GitHub Personal Access Token if `oci://ghcr.io`) | A password (or GitHub PAT for `oci://ghcr.io` buildcaches) to use for reading and writing to the spack OCI buildcache, if `inputs.spack-oci-buildcache-url` is defined | `false` (attempts with `secrets.GITHUB_TOKEN`) | N/A | `"github_pat_XXXXX"` |
 
-### Outputs
+#### Outputs
 
 | Name | Type | Description | Example |
 | ---- | ---- | ----------- | ------- |
@@ -56,15 +60,15 @@ This workflow handles building and running short CI tests on a given spack manif
 | `artifact-pattern` | `string` (glob) | Wildcard pattern to match all artifacts across a matrix job | `'output-*'` |
 | `artifact-url` | `string` (URL) | The URL of the artifact | `"https://github.com/ACCESS-NRI/MOM5/actions/runs/15890554355/artifacts/3406449135"` |
 
-#### Future Outputs
+##### Future Outputs
 
 | Name | Type | Description | Example |
 | ---- | ---- | ----------- | ------- |
 | `test-artifact-url` | `string` (URL) | The URL of the pytest result artifact | `"https://github.com/ACCESS-NRI/MOM5/actions/runs/15890554355/artifacts/3406449136"` |
 
-### Examples
+#### Examples
 
-#### Minimal
+##### Minimal
 
 ```yaml
 jobs:
@@ -74,7 +78,7 @@ jobs:
       spack-manifest-path: .github/build/spack.yaml.j2
 ```
 
-#### Complex
+##### Complex
 
 ```yaml
 jobs:
@@ -96,7 +100,7 @@ jobs:
       spack-install-command-pat: ${{ secrets.GH_PAT }}
 ```
 
-#### Simple Matrix
+##### Simple Matrix
 
 ```yaml
 jobs:
@@ -117,7 +121,7 @@ jobs:
       spack-manifest-path: ${{ matrix.manifest }}
 ```
 
-#### Complex Matrix (Each Element With Multiple Attributes)
+##### Complex Matrix (Each Element With Multiple Attributes)
 
 ```yaml
 jobs:
@@ -138,7 +142,7 @@ jobs:
       spack-compiler-manifest-path: ${{ matrix.values.compiler }}
 ```
 
-#### Complex Matrix (Each Element As A Combination of Attributes)
+##### Complex Matrix (Each Element As A Combination of Attributes)
 
 ```yaml
 jobs:
@@ -156,9 +160,9 @@ jobs:
       spack-compiler-manifest-path: ${{ matrix.values.compiler }}
 ```
 
-### More Information
+#### More Information
 
-#### Jinja Templates and Data
+##### Jinja Templates and Data
 
 The `inputs.spack-manifest-path` is a path to a jinja-templatable spack manifest.
 
@@ -205,7 +209,7 @@ spack:
   - 'mom5@git.u2re8e3 %intel@2021.10.0'
 ```
 
-#### Compiler Spack Manifests
+##### Compiler Spack Manifests
 
 We use an upstream spack installation that contains common compilers used. If one wants to use other compilers that have not yet been added to that upstream spack, they can add a spack manifest that installs compilers before installing the given model component spack manifest, through `inputs.spack-compiler-manifest-path`.
 
@@ -222,7 +226,7 @@ spack:
     unify: false
 ```
 
-#### Using outputs of a Matrix Job
+##### Using outputs of a Matrix Job
 
 If you need to aggregate data across multiple instances of a matrix job, you will need to use the `job-output-artifact-pattern` output rather than individual job outputs through `needs`, due to GitHubs insistence of jobs overwriting the sole matrix job output. This pattern, when used as an argument to `actions/download-artifact`, will have all the inputs, outputs and conclusion of each instance of the matrix job, in JSON. In a dependent later job, you will need to merge all these artifacts together and parse them. For example:
 
@@ -259,15 +263,17 @@ jobs:
         done
 ```
 
-## `containers-ci.yml` - Build and Push `build-ci-[upstream|runner]` Images
+## Other Workflows
 
-### Overview
+### `containers-ci.yml` - Build and Push `build-ci-[upstream|runner]` Images
+
+#### Overview
 
 This workflow handles building and pushing of images used in `ci.yml` on push to `v*`, or via `workflow_dispatch`.
 
 It stands up and tears down an ephemeral, powerful Nectar VM that builds the image via docker.
 
-### Inputs (via `workflow_dispatch`)
+#### Inputs (via `workflow_dispatch`)
 
 | Name | Type | Description | Required | Default | Example |
 | ---- | ---- | ----------- | -------- | ------- | ------- |
@@ -275,6 +281,30 @@ It stands up and tears down an ephemeral, powerful Nectar VM that builds the ima
 | `pr-for-comment` | `string` (PR Number) | Comment the build result to this PR number | `false` | N/A | `12` |
 | `push` | `boolean` | Whether to push the given image once built. Will overwrite image if tags are the same | `true` | `false` | `true` or `false` |
 
-### Outputs
+#### Outputs
 
 None in GitHub Actions, but the image created by `containers/compose.yaml` is pushed to `ghcr.io`.
+
+## `github-cache-eviction.yml` - Evict Entries From A GitHub Spack Buildcache Based On Date Modified
+
+### Overview
+
+This workflow deletes package from a GitHub-based Spack Buildcache for the purposes of evicting old, unused entries from the cache.
+
+### Inputs
+
+| Name | Type | Description | Required | Default | Example |
+| ---- | ---- | ----------- | -------- | ------- | ------- |
+| `buildcache-package-org` | `string` | Organisation that owns the package that is used as an OCI-backed spack buildcache | `true` | N/A | `ACCESS-NRI`, `some-org` |
+| `buildcache-package-name` | `string` | Name of the package that is used as an OCI-backed spack buildcache | `true` | N/A | `build-ci-buildcache`, `custom-buildcache` |
+| `eviction-threshold` | `number` (days) | Number of days after which a buildcache entry is considered stale and can be evicted | `true` | `90` | `30`, `90`, `365` |
+
+### Secrets
+
+| Name | Type | Description | Required | Default | Example |
+| ---- | ---- | ----------- | -------- | ------- | ------- |
+| `token` | `string` (GitHub token / PAT) | GitHub token with permissions to delete packages in the registry, typically a PAT with `delete:packages` scope. This is needed to delete old buildcache entries from the OCI registry. | `true` | N/A | `gh_pat_XXX...` |
+
+### Outputs
+
+None in GitHub Actions, but the entries are deleted from the buildcache.
