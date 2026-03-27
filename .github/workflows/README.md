@@ -297,7 +297,7 @@ This workflow deletes package from a GitHub-based Spack Buildcache for the purpo
 | ---- | ---- | ----------- | -------- | ------- | ------- |
 | `buildcache-package-org` | `string` | Organisation that owns the package that is used as an OCI-backed spack buildcache | `true` | N/A | `ACCESS-NRI`, `some-org` |
 | `buildcache-package-name` | `string` | Name of the package that is used as an OCI-backed spack buildcache | `true` | N/A | `build-ci-buildcache`, `custom-buildcache` |
-| `eviction-threshold` | `number` (days) | Number of days after which a buildcache entry is considered stale and can be evicted | `true` | `90` | `30`, `90`, `365` |
+| `eviction-threshold-days` | `number` (days) | Number of days after which a buildcache entry is considered stale and can be evicted | `true` | `90` | `30`, `90`, `365` |
 
 ### Secrets
 

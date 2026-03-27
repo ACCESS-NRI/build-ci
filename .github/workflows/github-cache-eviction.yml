@@ -12,7 +12,7 @@ on:
         required: true
         description: |
           Name of the package that is used as an OCI-backed spack buildcache
-      eviction-threshold:
+      eviction-threshold-days:
         type: number
         required: true
         description: |
@@ -30,11 +30,11 @@ jobs:
     env:
       GH_TOKEN: ${{ secrets.token }}
     steps:
-      - name: Get all entries in buildcache older than ${{ inputs.eviction-threshold }} days
+      - name: Get all entries in buildcache older than ${{ inputs.eviction-threshold-days }} days
         id: entries
         # The date format is ISO 8601 date/time string with a literal Z for UTC - as GitHub uses. Eg. 2025-08-07T01:50:59Z
         run: |
-          eviction_time=$(date --universal --date "-${{ inputs.eviction-threshold }} days" +%FT%TZ)
+          eviction_time=$(date --universal --date "-${{ inputs.eviction-threshold-days }} days" +%FT%TZ)
           echo "::notice::Evicting entries older than ${eviction_time}"
 
           # See https://docs.github.com/en/rest/packages/packages?apiVersion=2026-03-10#list-package-versions-for-a-package-owned-by-an-organization
@@ -58,7 +58,7 @@ jobs:
 
           echo "eviction-ids=$eviction_ids" >> $GITHUB_OUTPUT
 
-      - name: Evict entries in buildcache older than ${{ inputs.eviction-threshold }} days
+      - name: Evict entries in buildcache older than ${{ inputs.eviction-threshold-days }} days
         run: |
           for entry in ${{ steps.entries.outputs.eviction-ids }}; do
             echo "Evicting $entry..."

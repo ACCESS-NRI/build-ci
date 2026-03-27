@@ -10,6 +10,6 @@ jobs:
     with:
       buildcache-package-org: ${{ github.repository_owner }}
       buildcache-package-name: build-ci-buildcache
-      eviction-threshold: 90
+      eviction-threshold-days: 90
     secrets:
       token: ${{ github.token }}
