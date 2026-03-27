@@ -43,7 +43,7 @@ jobs:
             > versions.json
 
           jq --compact-output --raw-output --arg e "$eviction_time" \
-            '[.[][] | select(.modified_at < $e)]' \
+            '[.[][] | select(.updated_at < $e)]' \
             versions.json
             > evictions.json
 
