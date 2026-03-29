@@ -35,7 +35,7 @@ jobs:
         # The date format is ISO 8601 date/time string with a literal Z for UTC - as GitHub uses. Eg. 2025-08-07T01:50:59Z
         run: |
           eviction_time=$(date --universal --date "-${{ inputs.eviction-threshold-days }} days" +%FT%TZ)
-          echo "::notice::Evicting entries older than ${eviction_time}"
+          echo "::notice::Evicting entries last-updated before ${eviction_time}"
 
           # See https://docs.github.com/en/rest/packages/packages?apiVersion=2026-03-10#list-package-versions-for-a-package-owned-by-an-organization
           gh api --paginate --slurp \
