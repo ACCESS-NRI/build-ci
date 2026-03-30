@@ -227,8 +227,8 @@ jobs:
       short-container-id: ${{ steps.init.outputs.short-container-id }}
       # Job outputs only used in the test job
       artifact-name: ${{ steps.init.outputs.artifact-name }}
-      builtin-spack-packages-location: ${{ steps.spack-packages-locations.outputs.builtin }}
-      access-spack-packages-location: ${{ steps.spack-packages-locations.outputs.access-spack-packages }}
+      # builtin-spack-packages-location: ${{ steps.spack-packages-locations.outputs.builtin }}
+      # access-spack-packages-location: ${{ steps.spack-packages-locations.outputs.access-spack-packages }}
     steps:
       - name: Init - Clone build-ci for custom actions
         uses: actions/checkout@v6
@@ -700,11 +700,19 @@ jobs:
 
           ln --symbolic --relative --verbose --force ${{ steps.env.outputs.SPACK_ROOT }}/../spack-config/${spack_branch}/ci-runner/* ${{ steps.env.outputs.SPACK_ROOT }}/etc/spack/\
 
+      - name: Spack - Get spack-packages repo locations
+        id: spack-packages-locations
+        run: |
+          . ${{ steps.env.outputs.SPACK_ROOT }}/share/spack/setup-env.sh
+
+          echo "builtin=$(spack location --repo builtin)" >> $GITHUB_OUTPUT
+          echo "access-spack-packages=$(spack location --repo access.nri)" >> $GITHUB_OUTPUT
+
       - name: Update - builtin spack-package version
         uses: access-nri/build-ci/.github/actions/spack-checkout-updated-ref@v3
         with:
           spack-packages-repository-name: builtin
-          spack-packages-repository-path: ${{ needs.spack-install.outputs.builtin-spack-packages-location }}
+          spack-packages-repository-path: ${{ steps.spack-packages-locations.outputs.builtin-spack-packages-location }}
           ref: ${{ needs.spack-install.outputs.builtin-spack-packages-sha }}
           spack-instance-root-path: ${{ steps.env.outputs.SPACK_ROOT }}
 
@@ -712,7 +720,7 @@ jobs:
         uses: access-nri/build-ci/.github/actions/spack-checkout-updated-ref@v3
         with:
           spack-packages-repository-name: access_spack_packages
-          spack-packages-repository-path: ${{ needs.spack-install.outputs.access-spack-packages-location }}
+          spack-packages-repository-path: ${{ steps.spack-packages-locations.outputs.access-spack-packages-location }}
           ref: ${{ needs.spack-install.outputs.access-spack-packages-sha }}
           spack-instance-root-path: ${{ steps.env.outputs.SPACK_ROOT }}
 
