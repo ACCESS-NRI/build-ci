@@ -163,22 +163,10 @@ RUN ln -s ${SPACK_ROOT}/share/spack/docker/entrypoint.bash \
 # Setup Spack environment for subsequent RUN steps
 SHELL ["docker-shell"]
 
-# https://spack.readthedocs.io/en/latest/bootstrapping.html
-# Spack is configured to bootstrap its dependencies and repositories lazily by default;
-# i.e. the first time they are needed and can't be found.
-
-# Bootstrap spack and clone relevant spack-packages repos
-
-# Currently, the version of spack-config informs the initial versions of the spack-packages repos to use.
-# If we wanted to do it manually, add this post-bootstrap
-#   builtin_spack_packages_sha=$(git -C $(spack location --repo builtin) rev-parse "${BUILTIN_SPACK_PACKAGES_REPO_VERSION}}^{}")
-#   access_spack_packages_sha=$(git -C $(spack location --repo access.nri) rev-parse "${ACCESS_SPACK_PACKAGES_REPO_VERSION}}^{}")
-#   spack repo update builtin --commit $builtin_spack_packages_sha
-#   spack repo update access.nri --commit $access_spack_packages_sha
-RUN spack bootstrap now
-
 ################################################################################
 FROM base-spack AS dev
+
+RUN spack bootstrap now
 
 RUN <<EOF
 spack install gcc@13.2.0 ~binutils target=x86_64
@@ -232,10 +220,20 @@ FROM base-ci AS upstream
 
 LABEL org.opencontainers.image.source=https://github.com/ACCESS-NRI/build-ci
 
+<<<<<<< HEAD
 ARG SOURCE_COMPILERS_SPACK_MANIFEST=upstream/prod/compilers.spack.yaml
 ARG SOURCE_PACKAGES_SPACK_MANIFEST=upstream/prod/packages.spack.yaml
 ENV ENV_COMPILERS_SPACK_MANIFEST=/opt/compilers.spack.yaml
 ENV ENV_PACKAGES_SPACK_MANIFEST=/opt/packages.spack.yaml
+=======
+ENV SPACK_UPSTREAM_CONFIG=1
+# https://spack.readthedocs.io/en/latest/bootstrapping.html
+# Spack is configured to bootstrap its dependencies and repositories lazily by default;
+# i.e. the first time they are needed and can't be found.
+
+# Bootstrap spack and clone relevant spack-packages repos
+RUN spack bootstrap now
+>>>>>>> 7e2d9b0 (Push down bootstrap to dev/upstream/runner, remove copy ops in base-spack)
 
 # Install compilers and low-level, common packages
 COPY ${SOURCE_COMPILERS_SPACK_MANIFEST} ${ENV_COMPILERS_SPACK_MANIFEST}
@@ -306,9 +304,15 @@ LABEL org.opencontainers.image.source=https://github.com/ACCESS-NRI/build-ci
 
 ENV SPACK_CI_CONFIG=1
 
+# https://spack.readthedocs.io/en/latest/bootstrapping.html
+# Spack is configured to bootstrap its dependencies and repositories lazily by default;
+# i.e. the first time they are needed and can't be found.
+
+# Bootstrap spack and clone relevant spack-packages repos
+RUN spack bootstrap now
+
 # Set up ACCESS Spack buildcache
 RUN spack mirror add --scope=user --autopush --unsigned runner_set_buildcache /opt/runner_set_buildcache
-
 
 ENTRYPOINT ["/bin/bash", "/opt/spack/share/spack/docker/entrypoint.bash"]
 CMD ["interactive-shell"]
