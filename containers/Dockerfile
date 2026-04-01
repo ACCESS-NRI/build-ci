@@ -220,20 +220,19 @@ FROM base-ci AS upstream
 
 LABEL org.opencontainers.image.source=https://github.com/ACCESS-NRI/build-ci
 
-<<<<<<< HEAD
-ARG SOURCE_COMPILERS_SPACK_MANIFEST=upstream/prod/compilers.spack.yaml
-ARG SOURCE_PACKAGES_SPACK_MANIFEST=upstream/prod/packages.spack.yaml
+ARG SOURCE_COMPILERS_SPACK_MANIFEST=upstream/compilers.spack.yaml
+ARG SOURCE_PACKAGES_SPACK_MANIFEST=upstream/packages.spack.yaml
 ENV ENV_COMPILERS_SPACK_MANIFEST=/opt/compilers.spack.yaml
 ENV ENV_PACKAGES_SPACK_MANIFEST=/opt/packages.spack.yaml
-=======
+
 ENV SPACK_UPSTREAM_CONFIG=1
+
 # https://spack.readthedocs.io/en/latest/bootstrapping.html
 # Spack is configured to bootstrap its dependencies and repositories lazily by default;
 # i.e. the first time they are needed and can't be found.
 
 # Bootstrap spack and clone relevant spack-packages repos
 RUN spack bootstrap now
->>>>>>> 7e2d9b0 (Push down bootstrap to dev/upstream/runner, remove copy ops in base-spack)
 
 # Install compilers and low-level, common packages
 COPY ${SOURCE_COMPILERS_SPACK_MANIFEST} ${ENV_COMPILERS_SPACK_MANIFEST}
