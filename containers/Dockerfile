@@ -155,9 +155,6 @@ git clone ${SPACK_GIT_URL} ${SPACK_ROOT} --branch ${SPACK_REPO_VERSION}
 
 # Install ACCESS-NRIs spack-config repo
 git clone  https://github.com/ACCESS-NRI/spack-config.git /opt/spack-config --branch ${SPACK_CONFIG_REPO_VERSION}
-
-# Exit with ENOENT 2 "No such file or directory", if the directory does not exist
-if [ -d "${SPACK_CONFIG_DIR}" ]; then ln -s -r -v ${SPACK_CONFIG_DIR}/* ${SPACK_ROOT}/etc/spack/; else echo "${SPACK_CONFIG_DIR} does not exist!"; exit 2; fi
 EOF
 
 # Enables setting Spack setup type via SHELL command
@@ -175,22 +172,10 @@ RUN ln -s ${SPACK_ROOT}/share/spack/docker/entrypoint.bash \
 # Setup Spack environment for subsequent RUN steps
 SHELL ["docker-shell"]
 
-# https://spack.readthedocs.io/en/latest/bootstrapping.html
-# Spack is configured to bootstrap its dependencies and repositories lazily by default;
-# i.e. the first time they are needed and can't be found.
-
-# Bootstrap spack and clone relevant spack-packages repos
-
-# Currently, the version of spack-config informs the initial versions of the spack-packages repos to use.
-# If we wanted to do it manually, add this post-bootstrap
-#   builtin_spack_packages_sha=$(git -C $(spack location --repo builtin) rev-parse "${BUILTIN_SPACK_PACKAGES_REPO_VERSION}}^{}")
-#   access_spack_packages_sha=$(git -C $(spack location --repo access.nri) rev-parse "${ACCESS_SPACK_PACKAGES_REPO_VERSION}}^{}")
-#   spack repo update builtin --commit $builtin_spack_packages_sha
-#   spack repo update access.nri --commit $access_spack_packages_sha
-RUN spack bootstrap now
-
 ################################################################################
 FROM base-spack AS dev
+
+RUN spack bootstrap now
 
 RUN <<EOF
 spack install gcc@13.2.0 ~binutils target=x86_64
@@ -244,6 +229,14 @@ FROM base-ci AS upstream
 
 LABEL org.opencontainers.image.source=https://github.com/ACCESS-NRI/build-ci
 
+ENV SPACK_UPSTREAM_CONFIG=1
+# https://spack.readthedocs.io/en/latest/bootstrapping.html
+# Spack is configured to bootstrap its dependencies and repositories lazily by default;
+# i.e. the first time they are needed and can't be found.
+
+# Bootstrap spack and clone relevant spack-packages repos
+RUN spack bootstrap now
+
 # Install compilers and low-level, common packages
 COPY ${SOURCE_COMPILERS_SPACK_MANIFEST} ${ENV_COMPILERS_SPACK_MANIFEST}
 RUN --mount=type=secret,id=oci-username,env=OCI_USERNAME \
@@ -253,7 +246,7 @@ RUN --mount=type=secret,id=oci-username,env=OCI_USERNAME \
 if [ -n "$OCI_USERNAME" ] || [ -n "$OCI_PASSWORD" ] || [ -n "$OCI_URL" ]; then
   REQUESTS_OCI_MIRROR=1
   spack mirror add \
-    --scope=site \
+    --scope=user \
     --autopush \
     --unsigned \
     --oci-username-variable OCI_USERNAME \
@@ -270,7 +263,7 @@ spack env deactivate
 spack clean --downloads --stage
 
 if [ -n "$REQUESTS_OCI_MIRROR" ]; then
-  spack mirror remove --scope=site docker_build_buildcache
+  spack mirror remove --scope=user docker_build_buildcache
 fi
 EOF
 
@@ -284,7 +277,7 @@ RUN --mount=type=secret,id=oci-username,env=OCI_USERNAME \
 if [ -n "$OCI_USERNAME" ] || [ -n "$OCI_PASSWORD" ] || [ -n "$OCI_URL" ]; then
   REQUESTS_OCI_MIRROR=1
   spack mirror add \
-    --scope=site \
+    --scope=user \
     --autopush \
     --unsigned \
     --oci-username-variable OCI_USERNAME \
@@ -301,7 +294,7 @@ spack env deactivate
 spack clean --downloads --stage
 
 if [ -n "$REQUESTS_OCI_MIRROR" ]; then
-  spack mirror remove --scope=site docker_build_buildcache
+  spack mirror remove --scope=user docker_build_buildcache
 fi
 EOF
 
@@ -311,9 +304,15 @@ FROM base-ci AS runner
 
 LABEL org.opencontainers.image.source=https://github.com/ACCESS-NRI/build-ci
 
-# Set up ACCESS Spack buildcache
-RUN spack mirror add --scope=site --autopush --unsigned runner_set_buildcache /opt/runner_set_buildcache
+# https://spack.readthedocs.io/en/latest/bootstrapping.html
+# Spack is configured to bootstrap its dependencies and repositories lazily by default;
+# i.e. the first time they are needed and can't be found.
 
+# Bootstrap spack and clone relevant spack-packages repos
+RUN spack bootstrap now
+
+# Set up ACCESS Spack buildcache
+RUN spack mirror add --scope=user --autopush --unsigned runner_set_buildcache /opt/runner_set_buildcache
 
 ENTRYPOINT ["/bin/bash", "/opt/spack/share/spack/docker/entrypoint.bash"]
 CMD ["interactive-shell"]
