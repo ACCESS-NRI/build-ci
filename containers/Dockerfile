@@ -229,7 +229,7 @@ FROM base-ci AS upstream
 
 LABEL org.opencontainers.image.source=https://github.com/ACCESS-NRI/build-ci
 
-ENV SPACK_UPSTREAM_CONFIG=1
+ENV ACCESS_SPACK_ADMIN=1
 # https://spack.readthedocs.io/en/latest/bootstrapping.html
 # Spack is configured to bootstrap its dependencies and repositories lazily by default;
 # i.e. the first time they are needed and can't be found.
