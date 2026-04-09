@@ -22,7 +22,7 @@ services:
         - oci-password
         - oci-url
     volumes:
-      - upstream:/opt/upstream:rw
+      - upstream:/opt/release:rw
       - buildcache:/opt/runner_set_buildcache:rw
 
   runner:
@@ -38,7 +38,7 @@ services:
         <<: *common-args
         SPACK_CONFIG_DIR: /opt/spack-config/v1.1/ci-runner
     volumes:
-      - upstream:/opt/upstream:ro
+      - upstream:/opt/release:rw
       - buildcache:/opt/runner_set_buildcache:rw
 
 volumes:
