@@ -121,7 +121,6 @@ ARG SPACK_VERSION=v1.1
 ARG SPACK_REPO_VERSION=releases/${SPACK_VERSION}
 ARG SPACK_CONFIG_REPO_VERSION=main
 ARG SPACK_TARGET=x86_64
-ARG SPACK_CONFIG_DIR=/opt/spack-config/${SPACK_VERSION}/ci
 ARG SOURCE_COMPILERS_SPACK_MANIFEST=upstream/compilers.spack.yaml
 ARG SOURCE_PACKAGES_SPACK_MANIFEST=upstream/packages.spack.yaml
 
@@ -136,12 +135,6 @@ ENV ENV_PACKAGES_SPACK_MANIFEST=/opt/packages.spack.yaml
 ENV INITIAL_SPACK_CONFIG_REPO_VERSION=${SPACK_CONFIG_REPO_VERSION}
 ENV INITIAL_SPACK_REPO_VERSION=${SPACK_REPO_VERSION}
 
-# Export the spack config directory for the runner target
-ENV SPACK_CONFIG_DIR=${SPACK_CONFIG_DIR}
-
-# TODO: Ideally we want spack-enable.bash to be the only source of these
-#       definitions. See if spack-enable.bash can be used instead.
-# NOTE: In the meantime, keep in-sync with spack-config/spack-enable.bash
 ENV SPACK_USER_CACHE_PATH=${SPACK_ROOT}/..
 
 LABEL au.org.access-nri.image.spack-repo-version=${SPACK_REPO_VERSION}
