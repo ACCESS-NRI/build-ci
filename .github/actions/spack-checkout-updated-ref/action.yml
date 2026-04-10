@@ -52,6 +52,7 @@ runs:
       run: |
         . ${{ inputs.spack-instance-root-path }}/share/spack/setup-env.sh
         spack repo update ${{ inputs.spack-packages-repository-name }} --commit ${{ steps.ref-sha.outputs.sha }}
+        spack config blame repos
 
     - name: Force Update ref via Git if Failure
       if: steps.update.outcome == 'failure'
