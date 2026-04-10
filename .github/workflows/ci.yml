@@ -197,7 +197,7 @@ jobs:
       volumes:
         # For self-hosted runners, mount the proper upstream and buildcache volumes from the kubernetes cluster
         # For GitHub-hosted runners, mount the dummy volume /dev/null to avoid errors or undefined behavior, eg. fromJson('[]')
-        - ${{ inputs.run-self-hosted && '/opt/upstream-v1:/opt/upstream:ro' || '/dev/null:/dev/null:ro' }}
+        - ${{ inputs.run-self-hosted && '/opt/upstream-v1:/opt/release:ro' || '/dev/null:/dev/null:ro' }}
         - ${{ inputs.run-self-hosted && '/opt/runner_set_buildcache:/opt/runner_set_buildcache:rw' || '/dev/null:/dev/null:ro' }}
     outputs:
       spec-concretization-graph: ${{ steps.install.outputs.spec }}
