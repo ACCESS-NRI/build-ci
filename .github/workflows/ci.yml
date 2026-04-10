@@ -297,6 +297,12 @@ jobs:
           echo "----- Packages -----"
           spack find
 
+      - name: Spack - Enable Runner Set Buildcache
+        if: inputs.run-self-hosted
+        run: |
+          spack mirror add --scope=user --autopush --unsigned runner_set_buildcache /opt/runner_set_buildcache
+          spack mirror list
+
       - name: Spack - Get builtin ref from spack-config
         if: inputs.builtin-spack-packages-ref == ''
         id: get-default-builtin

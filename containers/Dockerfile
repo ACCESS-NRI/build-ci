@@ -304,8 +304,5 @@ LABEL org.opencontainers.image.source=https://github.com/ACCESS-NRI/build-ci
 # Bootstrap spack and clone relevant spack-packages repos
 RUN spack bootstrap now
 
-# Set up ACCESS Spack buildcache
-RUN spack mirror add --scope=user --autopush --unsigned runner_set_buildcache /opt/runner_set_buildcache
-
 ENTRYPOINT ["/bin/bash", "/opt/spack/share/spack/docker/entrypoint.bash"]
 CMD ["interactive-shell"]
