@@ -225,7 +225,11 @@ FROM base-ci AS upstream
 
 LABEL org.opencontainers.image.source=https://github.com/ACCESS-NRI/build-ci
 
+# This environment variable is used by our spack-config to delineate between a normal user
+# and an admin or service user that has custom config.install_trees (among other things).
+# See https://github.com/ACCESS-NRI/spack-config/blob/main/v1.1/include/defaults.yaml
 ENV ACCESS_SPACK_ADMIN=1
+
 # https://spack.readthedocs.io/en/latest/bootstrapping.html
 # Spack is configured to bootstrap its dependencies and repositories lazily by default;
 # i.e. the first time they are needed and can't be found.
