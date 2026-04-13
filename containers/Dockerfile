@@ -166,6 +166,11 @@ SHELL ["docker-shell"]
 ################################################################################
 FROM base-spack AS dev
 
+# https://spack.readthedocs.io/en/latest/bootstrapping.html
+# Spack is configured to bootstrap its dependencies and repositories lazily by default;
+# i.e. the first time they are needed and can't be found.
+
+# Bootstrap spack and clone relevant spack-packages repos
 RUN spack bootstrap now
 
 RUN <<EOF
