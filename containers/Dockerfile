@@ -166,6 +166,10 @@ SHELL ["docker-shell"]
 ################################################################################
 FROM base-spack AS dev
 
+# For spack < 1.0
+ARG SPACK_CONFIG_DIR=/opt/spack-config/${SPACK_VERSION}/ci
+ENV SPACK_CONFIG_DIR=${SPACK_CONFIG_DIR}
+
 # https://spack.readthedocs.io/en/latest/bootstrapping.html
 # Spack is configured to bootstrap its dependencies and repositories lazily by default;
 # i.e. the first time they are needed and can't be found.
