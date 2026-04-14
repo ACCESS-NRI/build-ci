@@ -8,6 +8,7 @@ on:
     paths:
       # These are the only files that affect image creation
       - containers/upstream
+      - containers/.env
       - containers/compose.yaml
       - containers/Dockerfile
   workflow_dispatch:
