@@ -9,25 +9,24 @@ x-common-args: &common-args
 services:
   upstream:
     container_name: Upstream
-    image: ghcr.io/access-nri/build-ci-upstream:rocky-v1.1-2026.02.003
+    image: ghcr.io/access-nri/build-ci-upstream:${IMAGE_VERSION:-latest}
     tty: true
     build:
       context: .
       target: upstream
       args:
         <<: *common-args
-        SPACK_CONFIG_DIR: /opt/spack-config/v1.1/ci-upstream
       secrets:
         - oci-username
         - oci-password
         - oci-url
     volumes:
-      - upstream:/opt/upstream:rw
+      - upstream:/opt/release:rw
       - buildcache:/opt/runner_set_buildcache:rw
 
   runner:
     container_name: Runner
-    image: ghcr.io/access-nri/build-ci-runner:rocky-v1.1-2026.02.003
+    image: ghcr.io/access-nri/build-ci-runner:${IMAGE_VERSION:-latest}
     tty: true
     depends_on:
     - upstream
@@ -36,9 +35,8 @@ services:
       target: runner
       args:
         <<: *common-args
-        SPACK_CONFIG_DIR: /opt/spack-config/v1.1/ci-runner
     volumes:
-      - upstream:/opt/upstream:ro
+      - upstream:/opt/release:ro
       - buildcache:/opt/runner_set_buildcache:rw
 
 volumes:

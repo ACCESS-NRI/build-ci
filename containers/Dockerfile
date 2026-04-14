@@ -121,7 +121,6 @@ ARG SPACK_VERSION=v1.1
 ARG SPACK_REPO_VERSION=releases/${SPACK_VERSION}
 ARG SPACK_CONFIG_REPO_VERSION=main
 ARG SPACK_TARGET=x86_64
-ARG SPACK_CONFIG_DIR=/opt/spack-config/${SPACK_VERSION}/ci
 ARG SOURCE_COMPILERS_SPACK_MANIFEST=upstream/compilers.spack.yaml
 ARG SOURCE_PACKAGES_SPACK_MANIFEST=upstream/packages.spack.yaml
 
@@ -136,14 +135,6 @@ ENV ENV_PACKAGES_SPACK_MANIFEST=/opt/packages.spack.yaml
 ENV INITIAL_SPACK_CONFIG_REPO_VERSION=${SPACK_CONFIG_REPO_VERSION}
 ENV INITIAL_SPACK_REPO_VERSION=${SPACK_REPO_VERSION}
 
-# Export the spack config directory for the runner target
-ENV SPACK_CONFIG_DIR=${SPACK_CONFIG_DIR}
-
-# TODO: Ideally we want spack-enable.bash to be the only source of these
-#       definitions. See if spack-enable.bash can be used instead.
-# NOTE: In the meantime, keep in-sync with spack-config/spack-enable.bash
-ENV SPACK_USER_CACHE_PATH=${SPACK_ROOT}/..
-
 LABEL au.org.access-nri.image.spack-repo-version=${SPACK_REPO_VERSION}
 LABEL au.org.access-nri.image.spack-config-repo-version=${SPACK_CONFIG_REPO_VERSION}
 
@@ -155,9 +146,6 @@ git clone ${SPACK_GIT_URL} ${SPACK_ROOT} --branch ${SPACK_REPO_VERSION}
 
 # Install ACCESS-NRIs spack-config repo
 git clone  https://github.com/ACCESS-NRI/spack-config.git /opt/spack-config --branch ${SPACK_CONFIG_REPO_VERSION}
-
-# Exit with ENOENT 2 "No such file or directory", if the directory does not exist
-if [ -d "${SPACK_CONFIG_DIR}" ]; then ln -s -r -v ${SPACK_CONFIG_DIR}/* ${SPACK_ROOT}/etc/spack/; else echo "${SPACK_CONFIG_DIR} does not exist!"; exit 2; fi
 EOF
 
 # Enables setting Spack setup type via SHELL command
@@ -175,22 +163,19 @@ RUN ln -s ${SPACK_ROOT}/share/spack/docker/entrypoint.bash \
 # Setup Spack environment for subsequent RUN steps
 SHELL ["docker-shell"]
 
+################################################################################
+FROM base-spack AS dev
+
+# For spack < 1.0
+ARG SPACK_CONFIG_DIR=/opt/spack-config/${SPACK_VERSION}/ci
+ENV SPACK_CONFIG_DIR=${SPACK_CONFIG_DIR}
+
 # https://spack.readthedocs.io/en/latest/bootstrapping.html
 # Spack is configured to bootstrap its dependencies and repositories lazily by default;
 # i.e. the first time they are needed and can't be found.
 
 # Bootstrap spack and clone relevant spack-packages repos
-
-# Currently, the version of spack-config informs the initial versions of the spack-packages repos to use.
-# If we wanted to do it manually, add this post-bootstrap
-#   builtin_spack_packages_sha=$(git -C $(spack location --repo builtin) rev-parse "${BUILTIN_SPACK_PACKAGES_REPO_VERSION}}^{}")
-#   access_spack_packages_sha=$(git -C $(spack location --repo access.nri) rev-parse "${ACCESS_SPACK_PACKAGES_REPO_VERSION}}^{}")
-#   spack repo update builtin --commit $builtin_spack_packages_sha
-#   spack repo update access.nri --commit $access_spack_packages_sha
 RUN spack bootstrap now
-
-################################################################################
-FROM base-spack AS dev
 
 RUN <<EOF
 spack install gcc@13.2.0 ~binutils target=x86_64
@@ -221,6 +206,7 @@ spack env deactivate
 spack clean --downloads --stage
 EOF
 
+# https://www.docker.com/blog/docker-best-practices-choosing-between-run-cmd-and-entrypoint/
 ENTRYPOINT ["/bin/bash", "/opt/spack/share/spack/docker/entrypoint.bash"]
 CMD ["interactive-shell"]
 
@@ -244,6 +230,18 @@ FROM base-ci AS upstream
 
 LABEL org.opencontainers.image.source=https://github.com/ACCESS-NRI/build-ci
 
+# This environment variable is used by our spack-config to delineate between a normal user
+# and an admin or service user that has custom config.install_trees (among other things).
+# See https://github.com/ACCESS-NRI/spack-config/blob/main/v1.1/include/defaults.yaml
+ENV ACCESS_SPACK_ADMIN=1
+
+# https://spack.readthedocs.io/en/latest/bootstrapping.html
+# Spack is configured to bootstrap its dependencies and repositories lazily by default;
+# i.e. the first time they are needed and can't be found.
+
+# Bootstrap spack and clone relevant spack-packages repos
+RUN spack bootstrap now
+
 # Install compilers and low-level, common packages
 COPY ${SOURCE_COMPILERS_SPACK_MANIFEST} ${ENV_COMPILERS_SPACK_MANIFEST}
 RUN --mount=type=secret,id=oci-username,env=OCI_USERNAME \
@@ -253,7 +251,7 @@ RUN --mount=type=secret,id=oci-username,env=OCI_USERNAME \
 if [ -n "$OCI_USERNAME" ] || [ -n "$OCI_PASSWORD" ] || [ -n "$OCI_URL" ]; then
   REQUESTS_OCI_MIRROR=1
   spack mirror add \
-    --scope=site \
+    --scope=user \
     --autopush \
     --unsigned \
     --oci-username-variable OCI_USERNAME \
@@ -270,7 +268,7 @@ spack env deactivate
 spack clean --downloads --stage
 
 if [ -n "$REQUESTS_OCI_MIRROR" ]; then
-  spack mirror remove --scope=site docker_build_buildcache
+  spack mirror remove --scope=user docker_build_buildcache
 fi
 EOF
 
@@ -284,7 +282,7 @@ RUN --mount=type=secret,id=oci-username,env=OCI_USERNAME \
 if [ -n "$OCI_USERNAME" ] || [ -n "$OCI_PASSWORD" ] || [ -n "$OCI_URL" ]; then
   REQUESTS_OCI_MIRROR=1
   spack mirror add \
-    --scope=site \
+    --scope=user \
     --autopush \
     --unsigned \
     --oci-username-variable OCI_USERNAME \
@@ -301,9 +299,13 @@ spack env deactivate
 spack clean --downloads --stage
 
 if [ -n "$REQUESTS_OCI_MIRROR" ]; then
-  spack mirror remove --scope=site docker_build_buildcache
+  spack mirror remove --scope=user docker_build_buildcache
 fi
 EOF
+
+# https://www.docker.com/blog/docker-best-practices-choosing-between-run-cmd-and-entrypoint/
+ENTRYPOINT ["/bin/bash", "/opt/spack/share/spack/docker/entrypoint.bash"]
+CMD ["interactive-shell"]
 
 ################################################################################
 # Set up the lightweight spack image that uses the upstream image
@@ -311,9 +313,13 @@ FROM base-ci AS runner
 
 LABEL org.opencontainers.image.source=https://github.com/ACCESS-NRI/build-ci
 
-# Set up ACCESS Spack buildcache
-RUN spack mirror add --scope=site --autopush --unsigned runner_set_buildcache /opt/runner_set_buildcache
+# https://spack.readthedocs.io/en/latest/bootstrapping.html
+# Spack is configured to bootstrap its dependencies and repositories lazily by default;
+# i.e. the first time they are needed and can't be found.
 
+# Bootstrap spack and clone relevant spack-packages repos
+RUN spack bootstrap now
 
+# https://www.docker.com/blog/docker-best-practices-choosing-between-run-cmd-and-entrypoint/
 ENTRYPOINT ["/bin/bash", "/opt/spack/share/spack/docker/entrypoint.bash"]
 CMD ["interactive-shell"]

@@ -49,9 +49,14 @@ runs:
       shell: bash
       id: update
       continue-on-error: true
+      # We need to explicitly set the repo in the user scope as without that step, it will only add
+      # the commit section to the repos.yaml (not the existing git or destination section) as the upstream
+      # repos.REPO:: section ignores lower precedence scopes (where those other sections are set)
       run: |
         . ${{ inputs.spack-instance-root-path }}/share/spack/setup-env.sh
-        spack repo update ${{ inputs.spack-packages-repository-name }} --commit ${{ steps.ref-sha.outputs.sha }}
+        spack repo set --scope=user ${{ inputs.spack-packages-repository-name }}
+        spack repo update --scope=user ${{ inputs.spack-packages-repository-name }} --commit ${{ steps.ref-sha.outputs.sha }}
+        spack config blame repos
 
     - name: Force Update ref via Git if Failure
       if: steps.update.outcome == 'failure'
