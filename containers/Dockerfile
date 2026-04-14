@@ -302,6 +302,9 @@ if [ -n "$REQUESTS_OCI_MIRROR" ]; then
 fi
 EOF
 
+ENTRYPOINT ["/bin/bash", "/opt/spack/share/spack/docker/entrypoint.bash"]
+CMD ["interactive-shell"]
+
 ################################################################################
 # Set up the lightweight spack image that uses the upstream image
 FROM base-ci AS runner
