@@ -21,7 +21,7 @@ Images are automatically built and pushed to the [GitHub Container Registry (GHC
 
 ### Image Tags
 
-Images are tagged using the format `<OS>-v<spack-version>-<spack-packages-version>` (e.g. `rocky-v1.1-2026.04.000`). The `IMAGE_VERSION` in [`containers/.env`](./.env) reflects the currently published version. Available tags can be browsed on the GHCR packages page linked above.
+Images are tagged using the format `<OS>-v<spack-version>-<calver>` (e.g. `rocky-v1.1-2026.04.000`). The `IMAGE_VERSION` in [`containers/.env`](./.env) reflects the currently published version. Available tags can be browsed on the GHCR packages page linked above.
 
 ### Running with Docker Compose (Recommended)
 
