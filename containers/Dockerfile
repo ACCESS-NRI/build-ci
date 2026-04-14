@@ -206,6 +206,7 @@ spack env deactivate
 spack clean --downloads --stage
 EOF
 
+# https://www.docker.com/blog/docker-best-practices-choosing-between-run-cmd-and-entrypoint/
 ENTRYPOINT ["/bin/bash", "/opt/spack/share/spack/docker/entrypoint.bash"]
 CMD ["interactive-shell"]
 
@@ -302,6 +303,7 @@ if [ -n "$REQUESTS_OCI_MIRROR" ]; then
 fi
 EOF
 
+# https://www.docker.com/blog/docker-best-practices-choosing-between-run-cmd-and-entrypoint/
 ENTRYPOINT ["/bin/bash", "/opt/spack/share/spack/docker/entrypoint.bash"]
 CMD ["interactive-shell"]
 
@@ -318,5 +320,6 @@ LABEL org.opencontainers.image.source=https://github.com/ACCESS-NRI/build-ci
 # Bootstrap spack and clone relevant spack-packages repos
 RUN spack bootstrap now
 
+# https://www.docker.com/blog/docker-best-practices-choosing-between-run-cmd-and-entrypoint/
 ENTRYPOINT ["/bin/bash", "/opt/spack/share/spack/docker/entrypoint.bash"]
 CMD ["interactive-shell"]
