@@ -786,6 +786,7 @@ jobs:
           echo "total=$(jq --raw-output '.summary.total' ${{ env.pytest-report-path }})" >> $GITHUB_OUTPUT
 
       - name: Outputs - Consolidate Job Outputs
+        if: always() && steps.test.outcome != 'skipped'
         run: |
           jq --null-input \
             --slurpfile outputs ${{ env.artifact-content-dir }}/job_outputs.json \
