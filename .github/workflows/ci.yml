@@ -264,7 +264,7 @@ jobs:
           done
 
           # The upload step later requires a non-relative path, hence the realpath
-          echo "spack-env-dir=$(realpath $SPACK_ROOT/../environments)" >> $GITHUB_OUTPUT
+          echo "spack-env-dir=$(realpath $SPACK_ROOT/../runner/environments)" >> $GITHUB_OUTPUT
 
       - name: Update - spack-config version
         id: spack-config-update
