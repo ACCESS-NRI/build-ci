@@ -732,7 +732,7 @@ jobs:
         id: download-install-artifact
         uses: actions/download-artifact@v6
         with:
-          name: ${{ needs.spack-install.outputs.artifact-url }}
+          name: ${{ needs.spack-install.outputs.artifact-name }}
           path: ${{ env.artifact-content-dir }}
 
       - name: Manifest - Install Compilers Locally
