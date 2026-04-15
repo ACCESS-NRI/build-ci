@@ -36,7 +36,9 @@ runs:
 
     - name: Fetch latest for repo
       shell: bash
-      run: git -C ${{ inputs.spack-packages-repository-path }} fetch --force --tags
+      # We don't fetch blobs (repo content) as spack repo update can handle that if required.
+      # NOTE: This won't be required if there is a spack repo update --force option in the future.
+      run: git -C ${{ inputs.spack-packages-repository-path }} fetch --force --tags --filter=blob:none
 
     - name: Get SHA for ref
       id: ref-sha
