@@ -616,23 +616,22 @@ jobs:
 
       - name: Test - Pytest
         id: test
-        env:
-          pytest-report-path: ${{ env.artifact-content-dir }}/pytest_report.json
         run: |
+          report_path=${{ env.artifact-content-dir }}/pytest_report.json
+          echo "report-path=$report_path" >> $GITHUB_OUTPUT
+
           . ${{ steps.setup.outputs.SPACK_ROOT }}/share/spack/setup-env.sh
           spack env activate default
-          pytest ${{ inputs.pytest-args }} --json-report --json-report-file=${{ env.pytest-report-path }}
+          pytest ${{ inputs.pytest-args }} --json-report --json-report-file=$report_path
 
-          jq --raw-output '.summary' ${{ env.pytest-report-path }}
-          jq --raw-output '.summary.passed // 0' ${{ env.pytest-report-path }}
-          jq --raw-output '.summary.failed // 0' ${{ env.pytest-report-path }}
-          jq --raw-output '.summary.error // 0' ${{ env.pytest-report-path }}
-          jq --raw-output '.summary.total // 0' ${{ env.pytest-report-path }}
-
-          echo "passed=$(jq --raw-output '.summary.passed // 0' ${{ env.pytest-report-path }})" >> $GITHUB_OUTPUT
-          echo "failed=$(jq --raw-output '.summary.failed // 0' ${{ env.pytest-report-path }})" >> $GITHUB_OUTPUT
-          echo "error=$(jq --raw-output '.summary.error // 0' ${{ env.pytest-report-path }})" >> $GITHUB_OUTPUT
-          echo "total=$(jq --raw-output '.summary.total // 0' ${{ env.pytest-report-path }})" >> $GITHUB_OUTPUT
+      - name: Test - Results
+        id: results
+        if: always() && steps.test.outcome != 'skipped'
+        run: |
+          echo "passed=$(jq --raw-output '.summary.passed // 0' ${{ steps.test.outputs.report-path }})" >> $GITHUB_OUTPUT
+          echo "failed=$(jq --raw-output '.summary.failed // 0' ${{ steps.test.outputs.report-path }})" >> $GITHUB_OUTPUT
+          echo "error=$(jq --raw-output '.summary.error // 0' ${{ steps.test.outputs.report-path }})" >> $GITHUB_OUTPUT
+          echo "total=$(jq --raw-output '.summary.total // 0' ${{ steps.test.outputs.report-path }})" >> $GITHUB_OUTPUT
 
       - name: Outputs - Consolidate Job Outputs
         if: always() && steps.test.outcome != 'skipped'
@@ -641,10 +640,10 @@ jobs:
             --slurpfile outputs ${{ env.artifact-content-dir }}/job_outputs.json \
             '$outputs + {
               "test_build_result" : "${{ steps.test.outcome }}",
-              "tests_passed": ${{ steps.test.outputs.passed }},
-              "tests_failed": ${{ steps.test.outputs.failed }},
-              "tests_error": ${{ steps.test.outputs.error }},
-              "tests_total": ${{ steps.test.outputs.total }}
+              "tests_passed": ${{ steps.results.outputs.passed }},
+              "tests_failed": ${{ steps.results.outputs.failed }},
+              "tests_error": ${{ steps.results.outputs.error }},
+              "tests_total": ${{ steps.results.outputs.total }}
             }' \
             ${{ env.artifact-content-dir }}/job_outputs.json.tmp
 
