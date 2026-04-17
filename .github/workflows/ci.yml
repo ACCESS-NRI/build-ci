@@ -638,14 +638,14 @@ jobs:
         run: |
           jq --null-input \
             --slurpfile outputs ${{ env.artifact-content-dir }}/job_outputs.json \
-            '$outputs + {
+            '$outputs[] + {
               "test_build_result" : "${{ steps.test.outcome }}",
               "tests_passed": ${{ steps.results.outputs.passed }},
               "tests_failed": ${{ steps.results.outputs.failed }},
               "tests_error": ${{ steps.results.outputs.error }},
               "tests_total": ${{ steps.results.outputs.total }}
             }' \
-            ${{ env.artifact-content-dir }}/job_outputs.json.tmp
+            > ${{ env.artifact-content-dir }}/job_outputs.json.tmp
 
           mv ${{ env.artifact-content-dir }}/job_outputs.json.tmp ${{ env.artifact-content-dir }}/job_outputs.json
 
