@@ -131,11 +131,6 @@ on:
         description: |
           Whether to enable post-build testing of the manifest.
           All visible pytests under inputs.spack-manifest-repository will be run.
-      pytest-args:
-        type: string
-        required: false
-        description: |
-          A list of pytest flags to affect the invocation of pytest. For example, addition of markers with '-m "marker_one and marker_two"'
     secrets:
       spack-install-command-pat:
         required: false
@@ -614,6 +609,14 @@ jobs:
       - name: Test - Install pytest
         run: python3 -m pip install pytest pytest-json-report
 
+      - name: Test - Read Potential Pytest Args From Reserved Definitions
+        id: reserved-defs
+        # Accepts _pytest-args arrays of the form: ['-m marker -k MyClass'] or ['-m marker', '-k MyClass']
+        run: |
+          args=$(yq '.spack.definitions[]._pytest-args // [] | join(" ")' ${{ env.artifact-content-dir }}/spack.yaml)
+          echo "Pytest args extracted from reserved definitions: $args"
+          echo "args=$args" >> $GITHUB_OUTPUT
+
       - name: Test - Pytest
         id: test
         run: |
@@ -622,7 +625,7 @@ jobs:
 
           . ${{ steps.setup.outputs.SPACK_ROOT }}/share/spack/setup-env.sh
           spack env activate default
-          pytest ${{ inputs.pytest-args }} --json-report --json-report-file=$report_path
+          pytest ${{ steps.reserved-defs.outputs.args }} --json-report --json-report-file=$report_path
 
       - name: Test - Results
         id: results
