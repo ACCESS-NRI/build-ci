@@ -269,12 +269,12 @@ jobs:
       - name: Init - Disable Self-Hosted Upstreams
         if: ${{ ! inputs.run-self-hosted }}
         # For GitHub-hosted versions of build-ci, we don't have an upstream, so we disable in our user scope
-        # NOTE: In future may be able to be replaced by spack config --scope=user add upstreams::{}
+        # NOTE: In future may be able to be replaced by spack config --scope=access.nri.ci.user add upstreams::{}
         run: |
           . ${{ steps.env.outputs.SPACK_ROOT }}/share/spack/setup-env.sh
 
           echo "--- Disable upstream ---"
-          upstream_location=$(spack config --scope=user edit upstreams --print-file)
+          upstream_location=$(spack config --scope=access.nri.ci.user edit upstreams --print-file)
           mkdir -p $(dirname $upstream_location)
           echo "upstreams:: {}" > $upstream_location
           spack config blame upstreams
@@ -314,7 +314,7 @@ jobs:
         if: inputs.run-self-hosted
         run: |
           . ${{ steps.env.outputs.SPACK_ROOT }}/share/spack/setup-env.sh
-          spack mirror add --scope=user --autopush --unsigned runner_set_buildcache /opt/runner_set_buildcache
+          spack mirror add --scope=access.nri.ci.user --autopush --unsigned runner_set_buildcache /opt/runner_set_buildcache
           spack mirror list
 
       - name: Spack - Get builtin ref from spack-config
@@ -359,7 +359,7 @@ jobs:
         if: inputs.spack-oci-buildcache-url != ''
         run: |
           . ${{ steps.env.outputs.SPACK_ROOT }}/share/spack/setup-env.sh
-          spack mirror add --scope=user \
+          spack mirror add --scope=access.nri.ci.user \
             --unsigned \
             --oci-username-variable OCI_USERNAME \
             --oci-password-variable OCI_PASSWORD \
@@ -398,7 +398,7 @@ jobs:
           spack env deactivate
           yq '.spack.specs[]' ${{ inputs.spack-compiler-manifest-path }} | while read compiler; do
             spack load $compiler
-            spack compiler find --scope=user
+            spack compiler find --scope=access.nri.ci.user
           done
           spack compiler list
 

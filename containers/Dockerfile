@@ -251,7 +251,7 @@ RUN --mount=type=secret,id=oci-username,env=OCI_USERNAME \
 if [ -n "$OCI_USERNAME" ] || [ -n "$OCI_PASSWORD" ] || [ -n "$OCI_URL" ]; then
   REQUESTS_OCI_MIRROR=1
   spack mirror add \
-    --scope=user \
+    --scope=access.nri.admin \
     --autopush \
     --unsigned \
     --oci-username-variable OCI_USERNAME \
@@ -268,7 +268,7 @@ spack env deactivate
 spack clean --downloads --stage
 
 if [ -n "$REQUESTS_OCI_MIRROR" ]; then
-  spack mirror remove --scope=user docker_build_buildcache
+  spack mirror remove --scope=access.nri.admin docker_build_buildcache
 fi
 EOF
 
@@ -282,7 +282,7 @@ RUN --mount=type=secret,id=oci-username,env=OCI_USERNAME \
 if [ -n "$OCI_USERNAME" ] || [ -n "$OCI_PASSWORD" ] || [ -n "$OCI_URL" ]; then
   REQUESTS_OCI_MIRROR=1
   spack mirror add \
-    --scope=user \
+    --scope=access.nri.admin \
     --autopush \
     --unsigned \
     --oci-username-variable OCI_USERNAME \
@@ -299,7 +299,7 @@ spack env deactivate
 spack clean --downloads --stage
 
 if [ -n "$REQUESTS_OCI_MIRROR" ]; then
-  spack mirror remove --scope=user docker_build_buildcache
+  spack mirror remove --scope=access.nri.admin docker_build_buildcache
 fi
 EOF
 
