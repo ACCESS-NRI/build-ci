@@ -130,7 +130,14 @@ on:
         default: false
         description: |
           Whether to enable post-build testing of the manifest.
-          All visible pytests under inputs.spack-manifest-repository will be run.
+      pytest-search-path:
+        type: string
+        required: false
+        default: .
+        description: |
+          The path to search for pytest tests, relative to the caller repository root.
+          Note that hidden directories are not searched in this default.
+          For example: .github/build/tests.
     secrets:
       spack-install-command-pat:
         required: false
@@ -625,7 +632,9 @@ jobs:
 
           . ${{ steps.setup.outputs.SPACK_ROOT }}/share/spack/setup-env.sh
           spack env activate default
-          pytest ${{ steps.reserved-defs.outputs.args }} --json-report --json-report-file=$report_path
+          pytest ${{ inputs.pytest-search-path }} \
+            ${{ steps.reserved-defs.outputs.args }} \
+            --json-report --json-report-file=$report_path
 
       - name: Test - Results
         id: results

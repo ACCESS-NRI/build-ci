@@ -28,7 +28,8 @@ This workflow handles building and running short CI tests on a given spack manif
 | `container-image-version` | `string` (Docker version ref) | The version of the container image to use for the runner. Can be either a `:TAG` or a `@sha256:SHA`. | `false` | `":rocky"` | `':8.9'` (tag), `'@sha256:1234...'` (SHA) |
 | `spack-oci-buildcache-url` | `string` (OCI URL) | The URL to an oci-backed buildcache, available in spack >= v1.0. OCI-backed buildcaches are the only option for GitHub-hosted CI, and can be used as a backup for self-hosted CI's runner buildcache | `false` | N/A | `"oci://ghcr.io/ACCESS-NRI/build-ci-buildcache"`, `"oci://ghcr.io/ORG/IMAGE"` |
 | `run-self-hosted` | `boolean` | Whether to run the job on a self-hosted runner. For security, workflow runs will hang if this is `true` but it is not using a valid `v*` branch or tag for the workflow ref | `false` | `true` | `true`, `false` |
-| `enable-pytest` | `boolean` | Whether to enable post-build testing of the manifest. All visible pytests under inputs.spack-manifest-repository will be run | `false` | `false` | `true`, `false` |
+| `enable-pytest` | `boolean` | Whether to enable post-build testing of the manifest | `false` | `false` | `true`, `false` |
+| `pytest-search-path` | `string` | The path to search for pytest tests, relative to the caller repository root. Note that hidden directories are not searched in this default. | `false` | `.` | `.github/build/tests`, `tests/` |
 
 #### Secrets
 
@@ -253,7 +254,7 @@ jobs:
 
 ##### Post-Build Testing via Pytest
 
-Using `inputs.enable-pytest` and having tests discoverable by `pytest` in the MCR, one can run post-build testing of the given manifest. We use `pytest` as a sort of testing meta-framework - so we have a central interface for testing many different model components with many different testing frameworks.
+Using `inputs.enable-pytest` and having tests discoverable by `pytest` under `inputs.pytest-search-path` in the MCR, one can run post-build testing of the given manifest. We use `pytest` as a sort of testing meta-framework - so we have a central interface for testing many different model components with many different testing frameworks.
 
 In order to add args to the `pytest` invocation, one can add a Reserved Definition (a section used by spack for reusable package definitions, etc, but prepended with a `_` to note that it is unused in the manifest), like so:
 
