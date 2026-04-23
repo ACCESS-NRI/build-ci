@@ -174,6 +174,9 @@ ENV SPACK_CONFIG_DIR=${SPACK_CONFIG_DIR}
 # Spack is configured to bootstrap its dependencies and repositories lazily by default;
 # i.e. the first time they are needed and can't be found.
 
+# We can't yet set the SPACK_USER_CACHE_PATH via spack config files, so we set it here.
+ENV SPACK_USER_CACHE_PATH=${SPACK_ROOT}/../runner/spack-user-cache
+
 # Bootstrap spack and clone relevant spack-packages repos
 RUN spack bootstrap now
 
@@ -234,6 +237,9 @@ LABEL org.opencontainers.image.source=https://github.com/ACCESS-NRI/build-ci
 # and an admin or service user that has custom config.install_trees (among other things).
 # See https://github.com/ACCESS-NRI/spack-config/blob/main/v1.1/include/defaults.yaml
 ENV ACCESS_SPACK_ADMIN=1
+
+# We can't yet set the SPACK_USER_CACHE_PATH via spack config files, so we set it here.
+ENV SPACK_USER_CACHE_PATH=${SPACK_ROOT}/../spack-admin-cache
 
 # https://spack.readthedocs.io/en/latest/bootstrapping.html
 # Spack is configured to bootstrap its dependencies and repositories lazily by default;
@@ -312,6 +318,9 @@ CMD ["interactive-shell"]
 FROM base-ci AS runner
 
 LABEL org.opencontainers.image.source=https://github.com/ACCESS-NRI/build-ci
+
+# We can't yet set the SPACK_USER_CACHE_PATH via spack config files, so we set it here.
+ENV SPACK_USER_CACHE_PATH=${SPACK_ROOT}/../runner/spack-user-cache
 
 # https://spack.readthedocs.io/en/latest/bootstrapping.html
 # Spack is configured to bootstrap its dependencies and repositories lazily by default;
