@@ -627,23 +627,38 @@ jobs:
       - name: Test - Pytest
         id: test
         run: |
-          report_path=${{ env.artifact-content-dir }}/pytest_report.json
-          echo "report-path=$report_path" >> $GITHUB_OUTPUT
+          json_report_path=${{ env.artifact-content-dir }}/pytest_report.json
+          xml_report_path=${{ env.artifact-content-dir }}/pytest_report.xml
+          echo "json-report-path=$json_report_path" >> $GITHUB_OUTPUT
+          echo "xml-report-path=$xml_report_path" >> $GITHUB_OUTPUT
 
           . ${{ steps.setup.outputs.SPACK_ROOT }}/share/spack/setup-env.sh
           spack env activate default
           pytest ${{ inputs.pytest-search-path }} \
             ${{ steps.reserved-defs.outputs.args }} \
-            --json-report --json-report-file=$report_path
+            --json-report --json-report-file=$json_report_path \
+            --junit-xml=$xml_report_path
 
       - name: Test - Results
         id: results
         if: always() && steps.test.outcome != 'skipped'
         run: |
-          echo "passed=$(jq --raw-output '.summary.passed // 0' ${{ steps.test.outputs.report-path }})" >> $GITHUB_OUTPUT
-          echo "failed=$(jq --raw-output '.summary.failed // 0' ${{ steps.test.outputs.report-path }})" >> $GITHUB_OUTPUT
-          echo "error=$(jq --raw-output '.summary.error // 0' ${{ steps.test.outputs.report-path }})" >> $GITHUB_OUTPUT
-          echo "total=$(jq --raw-output '.summary.total // 0' ${{ steps.test.outputs.report-path }})" >> $GITHUB_OUTPUT
+          echo "passed=$(jq --raw-output '.summary.passed // 0' ${{ steps.test.outputs.json-report-path }})" >> $GITHUB_OUTPUT
+          echo "failed=$(jq --raw-output '.summary.failed // 0' ${{ steps.test.outputs.json-report-path }})" >> $GITHUB_OUTPUT
+          echo "error=$(jq --raw-output '.summary.error // 0' ${{ steps.test.outputs.json-report-path }})" >> $GITHUB_OUTPUT
+          echo "total=$(jq --raw-output '.summary.total // 0' ${{ steps.test.outputs.json-report-path }})" >> $GITHUB_OUTPUT
+
+      - name: Test- Parse Test Report
+        id: tests
+        uses: EnricoMi/publish-unit-test-result-action/linux@c950f6fb443cb5af20a377fd0dfaa78838901040  #v2.23.0
+        with:
+          files: ${{ steps.test.outputs.xml-report-path }}
+          comment_mode: off
+          check_run: true
+          check_name: Pytest Results
+          compare_to_earlier_commit: false
+          report_individual_runs: true
+          report_suite_logs: any
 
       - name: Outputs - Consolidate Job Outputs
         if: always() && steps.test.outcome != 'skipped'
