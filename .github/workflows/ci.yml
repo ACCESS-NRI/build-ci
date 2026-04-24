@@ -613,6 +613,12 @@ jobs:
           spack env activate default --create --prompt --envfile ${{ env.artifact-content-dir }}/spack.lock
           spack --debug install --fail-fast --deprecated --use-cache
 
+      - name: Test - Install Python
+        uses: actions/setup-python@v6.2.0
+        with:
+          cache: pip
+          python-version: 3.11
+
       - name: Test - Install pytest
         run: python3 -m pip install pytest pytest-json-report
 
