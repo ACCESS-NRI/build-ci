@@ -637,6 +637,7 @@ jobs:
 
           . ${{ steps.setup.outputs.SPACK_ROOT }}/share/spack/setup-env.sh
           spack env activate default
+          . .ci-venv/bin/activate
           pytest ${{ inputs.pytest-search-path }} \
             ${{ steps.reserved-defs.outputs.args }} \
             --json-report --json-report-file=$json_report_path \
