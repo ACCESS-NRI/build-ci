@@ -121,15 +121,11 @@ ARG SPACK_VERSION=v1.1
 ARG SPACK_REPO_VERSION=releases/${SPACK_VERSION}
 ARG SPACK_CONFIG_REPO_VERSION=main
 ARG SPACK_TARGET=x86_64
-ARG SOURCE_COMPILERS_SPACK_MANIFEST=upstream/compilers.spack.yaml
-ARG SOURCE_PACKAGES_SPACK_MANIFEST=upstream/packages.spack.yaml
 
 ENV SPACK_VERSION=${SPACK_VERSION}
 ENV SPACK_ROOT=/opt/spack
 ENV GNUPGHOME=${SPACK_ROOT}/opt/spack/gpg
 ENV ENV_SPACK_TARGET=${SPACK_TARGET}
-ENV ENV_COMPILERS_SPACK_MANIFEST=/opt/compilers.spack.yaml
-ENV ENV_PACKAGES_SPACK_MANIFEST=/opt/packages.spack.yaml
 
 # Export the repo versions for comparison in the runner target
 ENV INITIAL_SPACK_CONFIG_REPO_VERSION=${SPACK_CONFIG_REPO_VERSION}
@@ -231,12 +227,13 @@ RUN curl -L https://github.com/mikefarah/yq/releases/download/v4.45.1/yq_linux_a
 # Install compilers and other common packages for the upstream image
 FROM base-ci AS upstream
 
-LABEL org.opencontainers.image.source=https://github.com/ACCESS-NRI/build-ci
+ARG SOURCE_COMPILERS_SPACK_MANIFEST=upstream/compilers.spack.yaml
+ARG SOURCE_PACKAGES_SPACK_MANIFEST=upstream/packages.spack.yaml
 
-# This environment variable is used by our spack-config to delineate between a normal user
-# and an admin or service user that has custom config.install_trees (among other things).
-# See https://github.com/ACCESS-NRI/spack-config/blob/main/v1.1/include/defaults.yaml
-ENV ACCESS_SPACK_ADMIN=1
+ENV ENV_COMPILERS_SPACK_MANIFEST=/opt/compilers.spack.yaml
+ENV ENV_PACKAGES_SPACK_MANIFEST=/opt/packages.spack.yaml
+
+LABEL org.opencontainers.image.source=https://github.com/ACCESS-NRI/build-ci
 
 # We can't yet set the SPACK_USER_CACHE_PATH via spack config files, so we set it here.
 ENV SPACK_USER_CACHE_PATH=${SPACK_ROOT}/../spack-admin-cache

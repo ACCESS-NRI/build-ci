@@ -3,19 +3,21 @@ name: Spack Instance
 # docker compose ignores 'x-' keys, but they can be used as anchors (&common-args)
 # to reduce duplication in the file
 x-common-args: &common-args
-  OS: rocky
-  SOURCE_COMPILERS_SPACK_MANIFEST: upstream/compilers.spack.yaml
-  SOURCE_PACKAGES_SPACK_MANIFEST: upstream/packages.spack.yaml
+  OS: ${OS}
+  SPACK_VERSION: ${SPACK_VERSION}
 services:
   upstream:
     container_name: Upstream
-    image: ghcr.io/access-nri/build-ci-upstream:${IMAGE_VERSION:-latest}
+    image: ghcr.io/access-nri/build-ci-upstream:${OS}-${SPACK_VERSION}-${IMAGE_VERSION}
     tty: true
     build:
       context: .
       target: upstream
       args:
         <<: *common-args
+        SOURCE_COMPILERS_SPACK_MANIFEST: upstream/compilers.spack.yaml
+        SOURCE_PACKAGES_SPACK_MANIFEST: upstream/packages.spack.yaml
+        SPACK_REPO_VERSION: releases/${SPACK_VERSION}-admin
       secrets:
         - oci-username
         - oci-password
@@ -26,7 +28,7 @@ services:
 
   runner:
     container_name: Runner
-    image: ghcr.io/access-nri/build-ci-runner:${IMAGE_VERSION:-latest}
+    image: ghcr.io/access-nri/build-ci-runner:${OS}-${SPACK_VERSION}-${IMAGE_VERSION}
     tty: true
     depends_on:
     - upstream
@@ -35,6 +37,7 @@ services:
       target: runner
       args:
         <<: *common-args
+        SPACK_REPO_VERSION: releases/${SPACK_VERSION}
     volumes:
       - upstream:/opt/release:ro
       - buildcache:/opt/runner_set_buildcache:rw
