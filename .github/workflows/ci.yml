@@ -396,10 +396,7 @@ jobs:
 
           spack --debug install --fail-fast --deprecated
           spack env deactivate
-          yq '.spack.specs[]' ${{ inputs.spack-compiler-manifest-path }} | while read compiler; do
-            spack load $compiler
-            spack compiler find --scope=access.nri.ci.user
-          done
+          
           spack compiler list
 
       - name: Manifest - Push Local Compilers to Buildcache
