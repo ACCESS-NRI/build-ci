@@ -118,7 +118,8 @@ FROM base-os-$OS AS base-spack
 ARG SPACK_GIT_URL=https://github.com/ACCESS-NRI/spack.git
 # Default spack version - must be changed across ci*.yml as well
 ARG SPACK_VERSION=v1.1
-ARG SPACK_REPO_VERSION=access/releases/${SPACK_VERSION}
+# Remember to override this in the case one is building non-compose runner images
+ARG SPACK_REPO_VERSION=access/releases/${SPACK_VERSION}-admin
 ARG SPACK_CONFIG_REPO_VERSION=main
 ARG SPACK_TARGET=x86_64
 
@@ -162,6 +163,8 @@ SHELL ["docker-shell"]
 ################################################################################
 FROM base-spack AS dev
 
+# dev images use the admin configuration of spack
+
 # For spack < 1.0
 ARG SPACK_CONFIG_DIR=/opt/spack-config/${SPACK_VERSION}/ci
 ENV SPACK_CONFIG_DIR=${SPACK_CONFIG_DIR}
@@ -171,7 +174,7 @@ ENV SPACK_CONFIG_DIR=${SPACK_CONFIG_DIR}
 # i.e. the first time they are needed and can't be found.
 
 # We can't yet set the SPACK_USER_CACHE_PATH via spack config files, so we set it here.
-ENV SPACK_USER_CACHE_PATH=${SPACK_ROOT}/../runner/spack-user-cache
+ENV SPACK_USER_CACHE_PATH=${SPACK_ROOT}/../spack-admin-cache
 
 # Bootstrap spack and clone relevant spack-packages repos
 RUN spack bootstrap now
