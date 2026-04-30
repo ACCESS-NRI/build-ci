@@ -84,7 +84,7 @@ on:
         required: false
         type: string
         # Default spack version - must be changed across the Dockerfile as well
-        default: releases/v1.1
+        default: access/releases/v1.1
         description: |
           The branch, tag, or commit SHA of the access-nri/spack repository to use.
           For example: develop, releases/0.22, 7ey2uy2.

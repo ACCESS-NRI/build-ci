@@ -17,7 +17,7 @@ services:
         <<: *common-args
         SOURCE_COMPILERS_SPACK_MANIFEST: upstream/compilers.spack.yaml
         SOURCE_PACKAGES_SPACK_MANIFEST: upstream/packages.spack.yaml
-        SPACK_REPO_VERSION: releases/${SPACK_VERSION}-admin
+        SPACK_REPO_VERSION: access/releases/${SPACK_VERSION}-admin
       secrets:
         - oci-username
         - oci-password
@@ -37,7 +37,7 @@ services:
       target: runner
       args:
         <<: *common-args
-        SPACK_REPO_VERSION: releases/${SPACK_VERSION}
+        SPACK_REPO_VERSION: access/releases/${SPACK_VERSION}
     volumes:
       - upstream:/opt/release:ro
       - buildcache:/opt/runner_set_buildcache:rw
