@@ -368,7 +368,7 @@ jobs:
 
       - name: Manifest - Checkout Caller ${{ github.repository }}
         id: checkout-caller
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: ${{ inputs.ref }}
           submodules: recursive
@@ -376,7 +376,7 @@ jobs:
 
       - name: Manifest - Checkout Manifest From ${{ inputs.spack-manifest-repository }}
         id: checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: ${{ inputs.spack-manifest-repository }}
           ref: ${{ steps.init.outputs.spack-manifest-repository-ref }}
@@ -396,7 +396,7 @@ jobs:
 
           spack --debug install --fail-fast --deprecated
           spack env deactivate
-          
+
           spack compiler list
 
       - name: Manifest - Push Local Compilers to Buildcache
