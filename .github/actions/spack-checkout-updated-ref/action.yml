@@ -56,8 +56,8 @@ runs:
       # repos.REPO:: section ignores lower precedence scopes (where those other sections are set)
       run: |
         . ${{ inputs.spack-instance-root-path }}/share/spack/setup-env.sh
-        spack repo set --scope=user ${{ inputs.spack-packages-repository-name }}
-        spack repo update --scope=user ${{ inputs.spack-packages-repository-name }} --commit ${{ steps.ref-sha.outputs.sha }}
+        spack repo set --scope=access.nri.ci.user ${{ inputs.spack-packages-repository-name }}
+        spack repo update --scope=access.nri.ci.user ${{ inputs.spack-packages-repository-name }} --commit ${{ steps.ref-sha.outputs.sha }}
         spack config blame repos
 
     - name: Force Update ref via Git if Failure

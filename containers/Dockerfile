@@ -118,18 +118,15 @@ FROM base-os-$OS AS base-spack
 ARG SPACK_GIT_URL=https://github.com/ACCESS-NRI/spack.git
 # Default spack version - must be changed across ci*.yml as well
 ARG SPACK_VERSION=v1.1
-ARG SPACK_REPO_VERSION=releases/${SPACK_VERSION}
+# Remember to override this in the case one is building non-compose runner images
+ARG SPACK_REPO_VERSION=access/releases/${SPACK_VERSION}-admin
 ARG SPACK_CONFIG_REPO_VERSION=main
 ARG SPACK_TARGET=x86_64
-ARG SOURCE_COMPILERS_SPACK_MANIFEST=upstream/compilers.spack.yaml
-ARG SOURCE_PACKAGES_SPACK_MANIFEST=upstream/packages.spack.yaml
 
 ENV SPACK_VERSION=${SPACK_VERSION}
 ENV SPACK_ROOT=/opt/spack
 ENV GNUPGHOME=${SPACK_ROOT}/opt/spack/gpg
 ENV ENV_SPACK_TARGET=${SPACK_TARGET}
-ENV ENV_COMPILERS_SPACK_MANIFEST=/opt/compilers.spack.yaml
-ENV ENV_PACKAGES_SPACK_MANIFEST=/opt/packages.spack.yaml
 
 # Export the repo versions for comparison in the runner target
 ENV INITIAL_SPACK_CONFIG_REPO_VERSION=${SPACK_CONFIG_REPO_VERSION}
@@ -166,6 +163,8 @@ SHELL ["docker-shell"]
 ################################################################################
 FROM base-spack AS dev
 
+# dev images use the admin configuration of spack
+
 # For spack < 1.0
 ARG SPACK_CONFIG_DIR=/opt/spack-config/${SPACK_VERSION}/ci
 ENV SPACK_CONFIG_DIR=${SPACK_CONFIG_DIR}
@@ -173,6 +172,9 @@ ENV SPACK_CONFIG_DIR=${SPACK_CONFIG_DIR}
 # https://spack.readthedocs.io/en/latest/bootstrapping.html
 # Spack is configured to bootstrap its dependencies and repositories lazily by default;
 # i.e. the first time they are needed and can't be found.
+
+# We can't yet set the SPACK_USER_CACHE_PATH via spack config files, so we set it here.
+ENV SPACK_USER_CACHE_PATH=${SPACK_ROOT}/../spack-admin-cache
 
 # Bootstrap spack and clone relevant spack-packages repos
 RUN spack bootstrap now
@@ -228,12 +230,16 @@ RUN curl -L https://github.com/mikefarah/yq/releases/download/v4.45.1/yq_linux_a
 # Install compilers and other common packages for the upstream image
 FROM base-ci AS upstream
 
+ARG SOURCE_COMPILERS_SPACK_MANIFEST=upstream/compilers.spack.yaml
+ARG SOURCE_PACKAGES_SPACK_MANIFEST=upstream/packages.spack.yaml
+
+ENV ENV_COMPILERS_SPACK_MANIFEST=/opt/compilers.spack.yaml
+ENV ENV_PACKAGES_SPACK_MANIFEST=/opt/packages.spack.yaml
+
 LABEL org.opencontainers.image.source=https://github.com/ACCESS-NRI/build-ci
 
-# This environment variable is used by our spack-config to delineate between a normal user
-# and an admin or service user that has custom config.install_trees (among other things).
-# See https://github.com/ACCESS-NRI/spack-config/blob/main/v1.1/include/defaults.yaml
-ENV ACCESS_SPACK_ADMIN=1
+# We can't yet set the SPACK_USER_CACHE_PATH via spack config files, so we set it here.
+ENV SPACK_USER_CACHE_PATH=${SPACK_ROOT}/../spack-admin-cache
 
 # https://spack.readthedocs.io/en/latest/bootstrapping.html
 # Spack is configured to bootstrap its dependencies and repositories lazily by default;
@@ -251,7 +257,7 @@ RUN --mount=type=secret,id=oci-username,env=OCI_USERNAME \
 if [ -n "$OCI_USERNAME" ] || [ -n "$OCI_PASSWORD" ] || [ -n "$OCI_URL" ]; then
   REQUESTS_OCI_MIRROR=1
   spack mirror add \
-    --scope=user \
+    --scope=access.nri.admin \
     --autopush \
     --unsigned \
     --oci-username-variable OCI_USERNAME \
@@ -268,7 +274,7 @@ spack env deactivate
 spack clean --downloads --stage
 
 if [ -n "$REQUESTS_OCI_MIRROR" ]; then
-  spack mirror remove --scope=user docker_build_buildcache
+  spack mirror remove --scope=access.nri.admin docker_build_buildcache
 fi
 EOF
 
@@ -282,7 +288,7 @@ RUN --mount=type=secret,id=oci-username,env=OCI_USERNAME \
 if [ -n "$OCI_USERNAME" ] || [ -n "$OCI_PASSWORD" ] || [ -n "$OCI_URL" ]; then
   REQUESTS_OCI_MIRROR=1
   spack mirror add \
-    --scope=user \
+    --scope=access.nri.admin \
     --autopush \
     --unsigned \
     --oci-username-variable OCI_USERNAME \
@@ -299,7 +305,7 @@ spack env deactivate
 spack clean --downloads --stage
 
 if [ -n "$REQUESTS_OCI_MIRROR" ]; then
-  spack mirror remove --scope=user docker_build_buildcache
+  spack mirror remove --scope=access.nri.admin docker_build_buildcache
 fi
 EOF
 
@@ -312,6 +318,9 @@ CMD ["interactive-shell"]
 FROM base-ci AS runner
 
 LABEL org.opencontainers.image.source=https://github.com/ACCESS-NRI/build-ci
+
+# We can't yet set the SPACK_USER_CACHE_PATH via spack config files, so we set it here.
+ENV SPACK_USER_CACHE_PATH=${SPACK_ROOT}/../runner/spack-user-cache
 
 # https://spack.readthedocs.io/en/latest/bootstrapping.html
 # Spack is configured to bootstrap its dependencies and repositories lazily by default;
