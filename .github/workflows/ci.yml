@@ -337,15 +337,6 @@ jobs:
           echo "builtin=$(spack location --repo builtin)" >> $GITHUB_OUTPUT
           echo "access-spack-packages=$(spack location --repo access.nri)" >> $GITHUB_OUTPUT
 
-      - name: Update - builtin spack-package version
-        id: builtin-spack-packages-update
-        uses: access-nri/build-ci/.github/actions/spack-checkout-updated-ref@v3
-        with:
-          spack-packages-repository-name: builtin
-          spack-packages-repository-path: ${{ steps.spack-packages-locations.outputs.builtin }}
-          ref: ${{ inputs.builtin-spack-packages-ref || steps.get-default-builtin.outputs.ref }}
-          spack-instance-root-path: ${{ steps.env.outputs.SPACK_ROOT }}
-
       - name: Update - access-spack-package version
         id: access-spack-packages-update
         uses: access-nri/build-ci/.github/actions/spack-checkout-updated-ref@v3
@@ -353,6 +344,15 @@ jobs:
           spack-packages-repository-name: access_spack_packages
           spack-packages-repository-path: ${{ steps.spack-packages-locations.outputs.access-spack-packages }}
           ref: ${{ inputs.access-spack-packages-ref }}
+          spack-instance-root-path: ${{ steps.env.outputs.SPACK_ROOT }}
+
+      - name: Update - builtin spack-package version
+        id: builtin-spack-packages-update
+        uses: access-nri/build-ci/.github/actions/spack-checkout-updated-ref@v3
+        with:
+          spack-packages-repository-name: builtin
+          spack-packages-repository-path: ${{ steps.spack-packages-locations.outputs.builtin }}
+          ref: ${{ inputs.builtin-spack-packages-ref || steps.get-default-builtin.outputs.ref }}
           spack-instance-root-path: ${{ steps.env.outputs.SPACK_ROOT }}
 
       - name: Spack - OCI Buildcache Init
