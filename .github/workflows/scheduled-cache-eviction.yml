@@ -12,4 +12,4 @@ jobs:
       buildcache-package-name: build-ci-buildcache
       eviction-threshold-days: 90
     secrets:
-      token: ${{ github.token }}
+      token: ${{ secrets.SPACK_CACHE_PACKAGE_EVICTION_PAT }}
