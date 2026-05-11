@@ -52,7 +52,7 @@ on:
       spack-packages-ref:
         required: false
         type: string
-        default: main
+        default: api-v1
         description: |
           The branch, tag, or commit SHA of the access-nri/spack-packages repository to use.
           For example: main, 2025.03.0, 7ey2uy2.
