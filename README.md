@@ -10,7 +10,7 @@ These are repositories that use the `build-ci-enabled` tag, which can be given b
 
 This repository contains reusable workflows used as common entrypoints into a model component build and test pipeline. See the [Entrypoint Workflows section](#using-the-entrypoint-workflows) for more information.
 
-This repository also contains the resources required to build images that are used by the CI infrastructure in `ACCESS-NRI/build-ci-k8s-infra` (which is private), as well as local builds via `docker compose`. It also contains a pipeline for automatic builds of said images on push to `v*`. More information on this section can be found in it's own [dedicated README.md](./containers/README.md).
+This repository also contains the resources required to build images that are used by the CI infrastructure in `ACCESS-NRI/build-ci-k8s-infra` (which is private), as well as local builds via `docker compose`. It also contains a pipeline for automatic builds of said images on push to `v*`, which publishes them to the [GitHub Container Registry (GHCR)](https://github.com/orgs/ACCESS-NRI/packages?tab=packages&q=build-ci-). More information on this section — including how to pull and use the published images — can be found in the [dedicated README.md](./containers/README.md).
 
 ## Usage
 

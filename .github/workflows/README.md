@@ -283,7 +283,7 @@ It stands up and tears down an ephemeral, powerful Nectar VM that builds the ima
 
 #### Outputs
 
-None in GitHub Actions, but the image created by `containers/compose.yaml` is pushed to `ghcr.io`.
+None in GitHub Actions, but the images created by `containers/compose.yaml` are pushed to the [GitHub Container Registry (GHCR)](https://github.com/orgs/ACCESS-NRI/packages?tab=packages&q=build-ci-).
 
 ## `github-cache-eviction.yml` - Evict Entries From A GitHub Spack Buildcache Based On Date Modified
 
