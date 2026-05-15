@@ -56,7 +56,7 @@ on:
         # doesn't exist in the caller model component repository), we will instead use the PR HEAD SHA.
         default: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
         description: |
-          The branch, tag, or commit SHA of the caller model component repository.
+          The branch, tag, or commit SHA of the package under test.
           This value is filled in to the inputs.spack-manifest-path template as {{ ref }}.
           For example: main, 2025.03.0, 7ey2uy2.
       spack-config-ref:
@@ -162,8 +162,8 @@ on:
         value: ${{ jobs.spack-install-and-test.outputs.access-spack-packages-sha }}
         description: |
           The SHA of the access-spack-packages repository checked out.
-      sha:
-        value: ${{ jobs.spack-install-and-test.outputs.sha }}
+      caller-sha:
+        value: ${{ jobs.spack-install-and-test.outputs.caller-sha }}
         description: |
           The SHA of the caller model component repository checked out.
       container-id:
@@ -206,7 +206,7 @@ jobs:
       spack-config-sha: ${{ steps.spack-config-update.outputs.sha }}
       builtin-spack-packages-sha: ${{ steps.builtin-spack-packages-update.outputs.sha }}
       access-spack-packages-sha: ${{ steps.access-spack-packages-update.outputs.sha }}
-      sha: ${{ steps.checkout-caller.outputs.commit }}
+      caller-sha: ${{ steps.checkout-caller.outputs.commit }}
       artifact-pattern: ${{ steps.init.outputs.artifact-pattern }}
       artifact-url: ${{ steps.upload.outputs.artifact-url }}
       container-id: ${{ steps.init.outputs.container-id }}
@@ -370,7 +370,9 @@ jobs:
         id: checkout-caller
         uses: actions/checkout@v6
         with:
-          ref: ${{ inputs.ref }}
+          # The default ref is the merge commit for pull requests, which isn't able to be checked out locally
+          # (and is therefore useless outside of the workflow run), so we get the PR head instead. See https://github.com/orgs/community/discussions/26325
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
           submodules: recursive
           path: caller
 
@@ -565,7 +567,7 @@ jobs:
             "spack_config_sha": "${{ steps.spack-config-update.outputs.sha }}",
             "builtin_spack_packages_sha": "${{ steps.builtin-spack-packages-update.outputs.sha }}",
             "access_spack_packages_sha": "${{ steps.access-spack-packages-update.outputs.sha }}",
-            "sha": "${{ steps.checkout-caller.outputs.commit }}",
+            "caller_sha": "${{ steps.checkout-caller.outputs.commit }}",
             "container_id": "${{ steps.init.outputs.container-id }}",
             "short_container_id": "${{ steps.init.outputs.short-container-id }}",
             "artifact_pattern": "${{ steps.init.outputs.artifact-pattern }}"
