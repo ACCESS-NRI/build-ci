@@ -179,7 +179,7 @@ on:
       caller-sha:
         value: ${{ jobs.spack-install.outputs.caller-sha }}
         description: |
-          The SHA of the caller model component repository checked out.
+          The SHA of the package under test.
       container-id:
         value: ${{ jobs.spack-install.outputs.container-id }}
         description: |
@@ -553,7 +553,9 @@ jobs:
         id: checkout-caller
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.ref }}
+          # The default ref is the merge commit for pull requests, which isn't able to be checked out locally
+          # (and is therefore useless outside of the workflow run), so we get the PR head instead. See https://github.com/orgs/community/discussions/26325
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
           submodules: recursive
           path: caller
 
@@ -592,10 +594,7 @@ jobs:
           spack env activate local_compilers --create --prompt --envfile ${{ env.artifact-content-dir }}/local_compilers/spack.lock
           spack --debug install --fail-fast --deprecated --use-cache
           spack env deactivate
-          yq '.spack.specs[]' ${{ env.artifact-content-dir }}/local_compilers/spack.lock | while read compiler; do
-            spack load $compiler
-            spack compiler find --scope=user
-          done
+
           spack compiler list
 
       - name: Manifest - Install
