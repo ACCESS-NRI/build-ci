@@ -46,9 +46,9 @@ RUN dnf update -y \
     pkgconf \
     pkgconf-m4 \
     pkgconf-pkg-config \
-    python3 \
-    python3-pip \
-    python3-setuptools \
+    python3.12 \
+    python3.12-pip \
+    python3.12-setuptools \
     svn \
     unzip \
     vim \
@@ -94,9 +94,9 @@ RUN zypper ref \
     patchutils \
     perl \
     pkgconf \
-    python3 \
-    python3-pip \
-    python3-setuptools \
+    python312 \
+    python312-pip \
+    python312-setuptools \
     unzip \
     xz \
     zstd \
@@ -105,6 +105,7 @@ RUN zypper ref \
     subversion \
     tcsh \
     vim \
+    which \
  # Install gh
  && zypper addrepo https://cli.github.com/packages/rpm/gh-cli.repo \
  && zypper --gpg-auto-import-keys refresh \
@@ -123,6 +124,21 @@ ARG SPACK_REPO_VERSION=access/releases/${SPACK_VERSION}-admin
 ARG SPACK_CONFIG_REPO_VERSION=main
 ARG SPACK_TARGET=x86_64
 
+# Unlike Rocky Linux, openSUSE ends up with two versions of Python 3,
+# hence we need to define $SPACK_PYTHON.
+#
+# Rocky Linux 8.10 (Green Obsidian):
+# $ python3 --version
+# Python 3.12.13
+#
+# openSUSE Leap 15.6:
+# $ python3 --version
+# Python 3.6.15
+#
+# $ rpm -qa python*base
+# python312-base-3.12.13-150600.3.53.1.x86_64
+# python3-base-3.6.15-150300.10.118.1.x86_64
+ENV SPACK_PYTHON=/usr/bin/python3.12
 ENV SPACK_VERSION=${SPACK_VERSION}
 ENV SPACK_ROOT=/opt/spack
 ENV GNUPGHOME=${SPACK_ROOT}/opt/spack/gpg
