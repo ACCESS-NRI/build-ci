@@ -177,9 +177,8 @@ RUN ln -s ${SPACK_ROOT}/share/spack/docker/entrypoint.bash \
 SHELL ["docker-shell"]
 
 ################################################################################
-FROM base-spack AS dev
-
 # dev images use the admin configuration of spack
+FROM base-spack AS base-dev
 
 # For spack < 1.0
 ARG SPACK_CONFIG_DIR=/opt/spack-config/${SPACK_VERSION}/ci
@@ -194,6 +193,13 @@ ENV SPACK_USER_CACHE_PATH=${SPACK_ROOT}/../spack-admin-cache
 
 # Bootstrap spack and clone relevant spack-packages repos
 RUN spack bootstrap now
+
+# https://www.docker.com/blog/docker-best-practices-choosing-between-run-cmd-and-entrypoint/
+ENTRYPOINT ["/bin/bash", "/opt/spack/share/spack/docker/entrypoint.bash"]
+CMD ["interactive-shell"]
+
+################################################################################
+FROM base-dev AS dev
 
 RUN <<EOF
 spack install gcc@13.2.0 ~binutils target=x86_64
