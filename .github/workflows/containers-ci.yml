@@ -140,7 +140,7 @@ jobs:
             /bin/bash << EOT
               # Secrets ingested by docker compose while building to make use of an OCI buildcache
               export BUILD_CI_BUILDCACHE_OCI_USERNAME=${{ github.actor }}
-              export BUILD_CI_BUILDCACHE_OCI_PASSWORD=${{ github.token }}
+              export BUILD_CI_BUILDCACHE_OCI_PASSWORD=${{ secrets.GHCR_IMAGE_PUSH_TOKEN }}
               export BUILD_CI_BUILDCACHE_OCI_URL=${{ secrets.BUILDCACHE_OCI_URL }}
 
               git clone ${{ github.server_url }}/${{ github.repository }}
