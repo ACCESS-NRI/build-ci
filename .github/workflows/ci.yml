@@ -383,8 +383,18 @@ jobs:
           repository: ${{ inputs.spack-manifest-repository }}
           ref: ${{ steps.init.outputs.spack-manifest-repository-ref }}
           submodules: recursive
+          # Only checkout the manifests, rather than the entire repository
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |-
+            ${{ inputs.spack-manifest-path }}
+            ${{ inputs.spack-compiler-manifest-path}}
           # Similarly to the spack install command below, we need to be able to checkout the spack-manifest-repository (which may be private)
           token: ${{ secrets.spack-install-command-pat || github.token }}
+
+      - name: Manifest - Delete History From ${{ inputs.spack-manifest-repository }}
+        # Specifically, this is to avoid exposing a private spack manifest repository's history to the actor if they SSH in
+        if: always() && steps.checkout.conclusion == 'success'
+        run: rm -rf ./.git
 
       - name: Manifest - Install Compilers Locally
         # Some compilers may not be available upstream, so we install them locally in a separate spack.yaml
