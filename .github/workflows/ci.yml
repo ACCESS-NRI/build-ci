@@ -296,7 +296,7 @@ jobs:
         uses: actions/checkout@v6
         with:
           repository: ${{ inputs.spack-manifest-repository }}
-          ref: ${{ steps.setup.outputs.spack-manifest-repository-ref }}
+          ref: ${{ steps.init.outputs.spack-manifest-repository-ref }}
           # Only checkout the manifests, rather than the entire repository
           path: manifest
           sparse-checkout-cone-mode: false
@@ -474,7 +474,7 @@ jobs:
           '{
             "spack_manifest_path": "${{ inputs.spack-manifest-path }}",
             "spack_manifest_repository": "${{ inputs.spack-manifest-repository }}",
-            "spack_manifest_repository_ref": "${{ steps.setup.outputs.spack-manifest-repository-ref }}",
+            "spack_manifest_repository_ref": "${{ steps.init.outputs.spack-manifest-repository-ref }}",
             "spack_manifest_data_path": "${{ inputs.spack-manifest-data-path }}",
             "spack_manifest_data_pairs": $pairs,
             "spack_compiler_manifest_path": "${{ inputs.spack-compiler-manifest-path }}",
