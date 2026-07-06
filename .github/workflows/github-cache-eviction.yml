@@ -39,16 +39,16 @@ jobs:
 
           # See https://docs.github.com/en/rest/packages/packages?apiVersion=2026-03-10#list-package-versions-for-a-package-owned-by-an-organization
           gh api --paginate --slurp \
-            /orgs/${{ inputs.buildcache-package-org }}/packages/container/${{ inputs.buildcache-package-name }}/versions
+            /orgs/${{ inputs.buildcache-package-org }}/packages/container/${{ inputs.buildcache-package-name }}/versions \
             > versions.json
 
           jq --compact-output --raw-output --arg e "$eviction_time" \
             '[.[][] | select(.updated_at < $e)]' \
-            versions.json
+            versions.json \
             > evictions.json
 
           eviction_ids=$(jq --compact-output --raw-output \
-            '[.[] | .id] | join(" ")'
+            '[.[] | .id] | join(" ")' \
             evictions.json
           )
 
