@@ -382,7 +382,6 @@ jobs:
         with:
           repository: ${{ inputs.spack-manifest-repository }}
           ref: ${{ steps.init.outputs.spack-manifest-repository-ref }}
-          submodules: recursive
           # Only checkout the manifests, rather than the entire repository
           sparse-checkout-cone-mode: false
           sparse-checkout: |-
