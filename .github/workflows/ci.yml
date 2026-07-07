@@ -387,7 +387,8 @@ jobs:
           sparse-checkout-cone-mode: false
           sparse-checkout: |-
             ${{ inputs.spack-manifest-path }}
-            ${{ inputs.spack-compiler-manifest-path}}
+            ${{ inputs.spack-manifest-data-path }}
+            ${{ inputs.spack-compiler-manifest-path }}
           # Similarly to the spack install command below, we need to be able to checkout the spack-manifest-repository (which may be private)
           token: ${{ secrets.spack-install-command-pat || github.token }}
 
