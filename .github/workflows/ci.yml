@@ -390,6 +390,7 @@ jobs:
           repository: ${{ inputs.spack-manifest-repository }}
           ref: ${{ steps.init.outputs.spack-manifest-repository-ref }}
           # Only checkout the manifests, rather than the entire repository
+          path: manifest
           sparse-checkout-cone-mode: false
           sparse-checkout: |-
             ${{ inputs.spack-manifest-path }}
@@ -400,6 +401,7 @@ jobs:
 
       - name: Manifest - Delete History From ${{ inputs.spack-manifest-repository }}
         # Specifically, this is to avoid exposing a private spack manifest repository's history to the actor if they SSH in
+        working-directory: manifest
         if: always() && steps.checkout.conclusion == 'success'
         run: rm -rf ./.git
 
@@ -407,6 +409,7 @@ jobs:
         # Some compilers may not be available upstream, so we install them locally in a separate spack.yaml
         if: inputs.spack-compiler-manifest-path != ''
         id: compilers
+        working-directory: manifest
         env:
           # For pulling OCI buildcache
           OCI_USERNAME: ${{ secrets.spack-oci-buildcache-username || github.actor }}
@@ -438,6 +441,7 @@ jobs:
         # This means that the caller manifest files can remain unchanged, but still vary based on the {{ pr }}
         # Additional data can be provided to fill in the jinja template through the `spack-manifest-data-path` input
         id: jinja-templated
+        working-directory: manifest
         run: |
           templated_manifest_path=$(dirname ${{ inputs.spack-manifest-path }})/templated/$(basename ${{ inputs.spack-manifest-path }} .j2)
           mkdir -p $(dirname $templated_manifest_path)
@@ -456,6 +460,7 @@ jobs:
 
       - name: Manifest - Install
         id: install
+        working-directory: manifest
         env:
           # For pulling OCI buildcache
           OCI_USERNAME: ${{ secrets.spack-oci-buildcache-username || github.actor }}
