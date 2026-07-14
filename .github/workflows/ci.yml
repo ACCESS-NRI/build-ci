@@ -216,6 +216,13 @@ jobs:
       # Common directory for outputs to be added to artifact
       artifact-content-dir: /tmp/artifact-output
     steps:
+      - name: Init - Clone build-ci for custom actions
+        uses: actions/checkout@v6
+        with:
+          repository: access-nri/build-ci
+          ref: ${{ job.workflow_sha }}
+          path: build-ci
+
       - name: Init - Initalize dynamic vars
         id: init
         # GitHub Actions doesn't allow expressions in the on.workflow_call.inputs.*.default section, so we need to define them here
@@ -281,14 +288,14 @@ jobs:
 
       - name: Update - spack-config version
         id: spack-config-update
-        uses: access-nri/build-ci/.github/actions/git-checkout-updated-ref@v3
+        uses: ./build-ci/.github/actions/git-checkout-updated-ref
         with:
           repository-path: ${{ steps.env.outputs.SPACK_ROOT }}/../spack-config
           ref: ${{ inputs.spack-config-ref }}
 
       - name: Update - spack version
         id: spack-update
-        uses: access-nri/build-ci/.github/actions/git-checkout-updated-ref@v3
+        uses: ./build-ci/.github/actions/git-checkout-updated-ref
         with:
           repository-path: ${{ steps.env.outputs.SPACK_ROOT }}
           ref: ${{ inputs.spack-ref }}
@@ -339,7 +346,7 @@ jobs:
 
       - name: Update - access-spack-package version
         id: access-spack-packages-update
-        uses: access-nri/build-ci/.github/actions/spack-checkout-updated-ref@v3
+        uses: ./build-ci/.github/actions/spack-checkout-updated-ref
         with:
           spack-packages-repository-name: access_spack_packages
           spack-packages-repository-path: ${{ steps.spack-packages-locations.outputs.access-spack-packages }}
@@ -348,7 +355,7 @@ jobs:
 
       - name: Update - builtin spack-package version
         id: builtin-spack-packages-update
-        uses: access-nri/build-ci/.github/actions/spack-checkout-updated-ref@v3
+        uses: ./build-ci/.github/actions/spack-checkout-updated-ref
         with:
           spack-packages-repository-name: builtin
           spack-packages-repository-path: ${{ steps.spack-packages-locations.outputs.builtin }}
@@ -383,6 +390,7 @@ jobs:
           repository: ${{ inputs.spack-manifest-repository }}
           ref: ${{ steps.init.outputs.spack-manifest-repository-ref }}
           # Only checkout the manifests, rather than the entire repository
+          path: manifest
           sparse-checkout-cone-mode: false
           sparse-checkout: |-
             ${{ inputs.spack-manifest-path }}
@@ -393,6 +401,7 @@ jobs:
 
       - name: Manifest - Delete History From ${{ inputs.spack-manifest-repository }}
         # Specifically, this is to avoid exposing a private spack manifest repository's history to the actor if they SSH in
+        working-directory: manifest
         if: always() && steps.checkout.conclusion == 'success'
         run: rm -rf ./.git
 
@@ -400,6 +409,7 @@ jobs:
         # Some compilers may not be available upstream, so we install them locally in a separate spack.yaml
         if: inputs.spack-compiler-manifest-path != ''
         id: compilers
+        working-directory: manifest
         env:
           # For pulling OCI buildcache
           OCI_USERNAME: ${{ secrets.spack-oci-buildcache-username || github.actor }}
@@ -431,6 +441,7 @@ jobs:
         # This means that the caller manifest files can remain unchanged, but still vary based on the {{ pr }}
         # Additional data can be provided to fill in the jinja template through the `spack-manifest-data-path` input
         id: jinja-templated
+        working-directory: manifest
         run: |
           templated_manifest_path=$(dirname ${{ inputs.spack-manifest-path }})/templated/$(basename ${{ inputs.spack-manifest-path }} .j2)
           mkdir -p $(dirname $templated_manifest_path)
@@ -449,6 +460,7 @@ jobs:
 
       - name: Manifest - Install
         id: install
+        working-directory: manifest
         env:
           # For pulling OCI buildcache
           OCI_USERNAME: ${{ secrets.spack-oci-buildcache-username || github.actor }}
