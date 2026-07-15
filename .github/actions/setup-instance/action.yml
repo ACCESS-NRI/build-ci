@@ -88,14 +88,14 @@ runs:
 
   - name: Update - spack-config version
     id: spack-config-update
-    uses: access-nri/build-ci/.github/actions/git-checkout-updated-ref@v3
+    uses: ./build-ci/.github/actions/git-checkout-updated-ref
     with:
       repository-path: ${{ steps.env.outputs.SPACK_ROOT }}/../spack-config
       ref: ${{ inputs.spack-config-ref }}
 
   - name: Update - spack version
     id: spack-update
-    uses: access-nri/build-ci/.github/actions/git-checkout-updated-ref@v3
+    uses: ./build-ci/.github/actions/git-checkout-updated-ref
     with:
       repository-path: ${{ steps.env.outputs.SPACK_ROOT }}
       ref: ${{ inputs.spack-ref }}
@@ -143,7 +143,7 @@ runs:
 
   - name: Update - access-spack-package version
     id: access-spack-packages-update
-    uses: access-nri/build-ci/.github/actions/spack-checkout-updated-ref@v3
+    uses: ./build-ci/.github/actions/spack-checkout-updated-ref
     with:
       spack-packages-repository-name: access_spack_packages
       spack-packages-repository-path: ${{ steps.spack-packages-locations.outputs.access-spack-packages }}
@@ -152,7 +152,7 @@ runs:
 
   - name: Update - builtin spack-package version
     id: builtin-spack-packages-update
-    uses: access-nri/build-ci/.github/actions/spack-checkout-updated-ref@v3
+    uses: ./build-ci/.github/actions/spack-checkout-updated-ref
     with:
       spack-packages-repository-name: builtin
       spack-packages-repository-path: ${{ steps.spack-packages-locations.outputs.builtin }}
