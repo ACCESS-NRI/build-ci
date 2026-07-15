@@ -272,7 +272,7 @@ jobs:
 
       - name: Setup - Setup and Update Instance
         id: setup
-        uses: build-ci/.github/actions/setup-instance
+        uses: ./build-ci/.github/actions/setup-instance
         with:
           spack-ref: ${{ inputs.spack-ref }}
           spack-config-ref: ${{ inputs.spack-config-ref }}
@@ -299,7 +299,6 @@ jobs:
           ref: ${{ steps.init.outputs.spack-manifest-repository-ref }}
           # Only checkout the manifests, rather than the entire repository
           path: manifest
-          sparse-checkout-cone-mode: false
           sparse-checkout: |-
             ${{ inputs.spack-manifest-path }}
             ${{ inputs.spack-manifest-data-path }}
@@ -540,7 +539,7 @@ jobs:
 
       - name: Setup - Setup and Update Instance
         id: setup
-        uses: build-ci/.github/actions/setup-instance
+        uses: ./build-ci/.github/actions/setup-instance
         with:
           spack-ref: ${{ inputs.spack-ref }}
           spack-config-ref: ${{ inputs.spack-config-ref }}
@@ -551,7 +550,7 @@ jobs:
 
       - name: Manifest - Checkout Caller ${{ github.repository }}
         id: checkout-caller
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           # The default ref is the merge commit for pull requests, which isn't able to be checked out locally
           # (and is therefore useless outside of the workflow run), so we get the PR head instead. See https://github.com/orgs/community/discussions/26325
@@ -561,7 +560,7 @@ jobs:
 
       - name: Manifest - Checkout Manifest From ${{ inputs.spack-manifest-repository }}
         id: checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: ${{ inputs.spack-manifest-repository }}
           ref: ${{ needs.spack-install.outputs.spack-manifest-repository-sha }}
@@ -569,9 +568,7 @@ jobs:
           path: manifest
           sparse-checkout-cone-mode: false
           sparse-checkout: |-
-            ${{ inputs.spack-manifest-path }}
-            ${{ inputs.spack-manifest-data-path }}
-            ${{ inputs.spack-compiler-manifest-path }}
+            ${{ inputs.pytest-search-path }}
           # Similarly to the spack install command below, we need to be able to checkout the spack-manifest-repository (which may be private)
           token: ${{ secrets.spack-install-command-pat || github.token }}
 
