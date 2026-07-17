@@ -610,6 +610,7 @@ jobs:
           spack --debug install --fail-fast --deprecated --use-cache
 
       - name: Test - Install pytest
+        working-directory: manifest
         run: |
           python3 -m venv .ci-venv
           . .ci-venv/bin/activate
@@ -625,6 +626,7 @@ jobs:
 
       - name: Test - Pytest
         id: test
+        working-directory: manifest
         run: |
           json_report_path=${{ env.artifact-content-dir }}/pytest_report.json
           xml_report_path=${{ env.artifact-content-dir }}/pytest_report.xml
