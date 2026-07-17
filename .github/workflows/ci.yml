@@ -611,7 +611,7 @@ jobs:
 
       - name: Test - Install pytest
         run: |
-          /usr/bin/python3.9 -m venv .ci-venv
+          python3 -m venv .ci-venv
           . .ci-venv/bin/activate
           pip install pytest pytest-json-report
 
