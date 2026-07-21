@@ -615,22 +615,21 @@ jobs:
           spack env activate default --create --prompt --envfile ${{ env.artifact-content-dir }}/spack.lock
           spack --debug install --fail-fast --deprecated --use-cache
 
-      - name: Test - Install pytest
+      - name: Test - Install pytest requirements
         working-directory: manifest
         env:
           PYTEST_VERSION: 9.1.1
           PYTEST_JSON_REPORT_VERSION: 1.5.0
         run: |
-          python3 -m venv .ci-venv
-          . .ci-venv/bin/activate
-          pip install pytest==${{ env.PYTEST_VERSION }} pytest-json-report==${{ env.PYTEST_JSON_REPORT_VERSION }}
+          . ${{ steps.setup.outputs.SPACK_ROOT }}/share/spack/setup-env.sh
+          spack env activate default
 
-      - name: Test - Install Optional Requirements
-        if: inputs.pytest-requirements-path != ''
-        working-directory: manifest
-        run: |
+          python3 -m venv --system-site-packages .ci-venv
           . .ci-venv/bin/activate
-          pip install -r ${{ inputs.pytest-requirements-path }}
+
+          pip install \
+            pytest==${{ env.PYTEST_VERSION }} pytest-json-report==${{ env.PYTEST_JSON_REPORT_VERSION }} \
+            ${{ inputs.pytest-requirements-path && format('-r {0}', inputs.pytest-requirements-path) }}
 
       - name: Test - Read Potential Pytest Args From Reserved Definitions
         id: reserved-defs
