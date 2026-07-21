@@ -137,7 +137,13 @@ on:
         description: |
           The path to search for pytest tests, relative to the caller repository root.
           Note that hidden directories are not searched in this default.
-          For example: .github/build/tests.
+          For example: .github/build-ci/tests.
+      pytest-requirements-path:
+        type: string
+        required: false
+        description: |
+          The path to an optional requirements.txt to install pre-pytest, relative to the caller repository root.
+          For example: .github/build-ci/tests/requirements.txt
     secrets:
       spack-install-command-pat:
         required: false
@@ -611,10 +617,20 @@ jobs:
 
       - name: Test - Install pytest
         working-directory: manifest
+        env:
+          PYTEST_VERSION: 9.1.1
+          PYTEST_JSON_REPORT_VERSION: 1.5.0
         run: |
           python3 -m venv .ci-venv
           . .ci-venv/bin/activate
-          pip install pytest pytest-json-report
+          pip install pytest==${{ env.PYTEST_VERSION }} pytest-json-report==${{ env.PYTEST_JSON_REPORT_VERSION }}
+
+      - name: Test - Install Optional Requirements
+        if: inputs.pytest-requirements-path != ''
+        working-directory: manifest
+        run: |
+          . .ci-venv/bin/activate
+          pip install -r ${{ inputs.pytest-requirements-path }}
 
       - name: Test - Read Potential Pytest Args From Reserved Definitions
         id: reserved-defs
