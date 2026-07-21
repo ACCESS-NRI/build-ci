@@ -504,7 +504,7 @@ jobs:
       - name: Outputs - Upload
         if: always() && (steps.install.conclusion == 'failure' || steps.install.conclusion == 'success')
         id: upload
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ steps.init.outputs.artifact-name }}
           path: ${{ env.artifact-content-dir }}
@@ -574,7 +574,7 @@ jobs:
 
       - name: Download Install Artifact
         id: download-install-artifact
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: ${{ needs.spack-install.outputs.artifact-name }}
           path: ${{ env.artifact-content-dir }}
@@ -681,7 +681,7 @@ jobs:
       - name: Outputs - Upload
         if: always()
         id: upload
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ needs.spack-install.outputs.artifact-name }}
           path: ${{ env.artifact-content-dir }}
