@@ -28,13 +28,8 @@ This workflow handles building and running short CI tests on a given spack manif
 | `container-image-version` | `string` (Docker version ref) | The version of the container image to use for the runner. Can be either a `:TAG` or a `@sha256:SHA`. | `false` | `":rocky"` | `':8.9'` (tag), `'@sha256:1234...'` (SHA) |
 | `spack-oci-buildcache-url` | `string` (OCI URL) | The URL to an oci-backed buildcache, available in spack >= v1.0. OCI-backed buildcaches are the only option for GitHub-hosted CI, and can be used as a backup for self-hosted CI's runner buildcache | `false` | N/A | `"oci://ghcr.io/ACCESS-NRI/build-ci-buildcache"`, `"oci://ghcr.io/ORG/IMAGE"` |
 | `run-self-hosted` | `boolean` | Whether to run the job on a self-hosted runner. For security, workflow runs will hang if this is `true` but it is not using a valid `v*` branch or tag for the workflow ref | `false` | `true` | `true`, `false` |
-
-##### Future Inputs
-
-| Name | Type | Description | Required | Default | Example |
-| ---- | ---- | ----------- | -------- | ------- | ------- |
-| `pytest-test-directory-path` | `string` (Directory path relative to component repository root) | Directory path in the caller model component repository that contains pytests to run against the built manifests | `false` | N/A | `".github/build/tests/"` |
-| `pytest-test-markers` | `string` (Pytest-style markers) | A string of pytest markers to use to filter tests in the caller model component repository | `false` | `""` (runs all tests) | `"not slow and not mpi"` |
+| `enable-pytest` | `boolean` | Whether to enable post-build testing of the manifest | `false` | `false` | `true`, `false` |
+| `pytest-search-path` | `string` | The path to search for pytest tests, relative to the caller repository root. Note that hidden directories are not searched in this default. | `false` | `.` | `.github/build/tests`, `tests/` |
 
 #### Secrets
 
@@ -59,12 +54,6 @@ This workflow handles building and running short CI tests on a given spack manif
 | `container-id` | `string` | The ID of the container where the spack packages have been installed | `"ohfn2ofy2h2uyfg2uyg3uyg3uh"` |
 | `artifact-pattern` | `string` (glob) | Wildcard pattern to match all artifacts across a matrix job | `'output-*'` |
 | `artifact-url` | `string` (URL) | The URL of the artifact | `"https://github.com/ACCESS-NRI/MOM5/actions/runs/15890554355/artifacts/3406449135"` |
-
-##### Future Outputs
-
-| Name | Type | Description | Example |
-| ---- | ---- | ----------- | ------- |
-| `test-artifact-url` | `string` (URL) | The URL of the pytest result artifact | `"https://github.com/ACCESS-NRI/MOM5/actions/runs/15890554355/artifacts/3406449136"` |
 
 #### Examples
 
@@ -261,6 +250,19 @@ jobs:
           echo "For job with container id: $(jq '.container_id' $f)"
           jq '.spec_concretization_graph' $f
         done
+```
+
+##### Post-Build Testing via Pytest
+
+Using `inputs.enable-pytest` and having tests discoverable by `pytest` under `inputs.pytest-search-path` in the MCR, one can run post-build testing of the given manifest. We use `pytest` as a sort of testing meta-framework - so we have a central interface for testing many different model components with many different testing frameworks.
+
+In order to add args to the `pytest` invocation, one can add a Reserved Definition (a section used by spack for reusable package definitions, etc, but prepended with a `_` to note that it is unused in the manifest), like so:
+
+```yaml
+spack:
+  definitions:
+  - _pytest-args: ['-m marker1 and not marker2', '--verbosity=1']
+  # ...
 ```
 
 ## Other Workflows
