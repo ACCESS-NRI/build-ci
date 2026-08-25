@@ -26,13 +26,6 @@ on:
         description: |
           A file path in the inputs.spack-manifest-repository that contains the spack manifest template to install.
           For example: .github/build/manifests/template/access-om2.spack.yaml.j2.
-      spack-manifest-data-path:
-        required: false
-        type: string
-        description: |
-          An optional file path in the inputs.spack-manifest-repository that contains data to fill in the spack manifest jinja template.
-          This doesn't include {{ ref }}, which is filled in automatically.
-          For example: .github/build/manifests/data/access-om2.spack.yaml.j2.json.
       spack-manifest-data-pairs:
         required: false
         type: string
@@ -342,7 +335,6 @@ jobs:
           sparse-checkout-cone-mode: false
           sparse-checkout: |-
             ${{ inputs.spack-manifest-path }}
-            ${{ inputs.spack-manifest-data-path }}
             ${{ inputs.spack-compiler-manifest-path }}
           # Similarly to the spack install command below, we need to be able to checkout the spack-manifest-repository (which may be private)
           token: ${{ secrets.spack-install-command-pat || github.token }}
@@ -397,7 +389,6 @@ jobs:
           jinja \
             --define ref ${{ inputs.ref }} \
             $( [ -n "${{ inputs.spack-manifest-data-pairs }}" ] && while read -r d; do echo "--define $d"; done <<< "${{ inputs.spack-manifest-data-pairs }}") \
-            ${{ inputs.spack-manifest-data-path != '' && format('--data {0}', inputs.spack-manifest-data-path) || '' }} \
             ${{ inputs.spack-manifest-path}} \
             > $templated_manifest_path
 
@@ -522,7 +513,6 @@ jobs:
             "spack_manifest_path": "${{ inputs.spack-manifest-path }}",
             "spack_manifest_repository": "${{ inputs.spack-manifest-repository }}",
             "spack_manifest_repository_ref": "${{ steps.init.outputs.spack-manifest-repository-ref }}",
-            "spack_manifest_data_path": "${{ inputs.spack-manifest-data-path }}",
             "spack_manifest_data_pairs": $pairs,
             "spack_compiler_manifest_path": "${{ inputs.spack-compiler-manifest-path }}",
             "ref": "${{ inputs.ref }}",
