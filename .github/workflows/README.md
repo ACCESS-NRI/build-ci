@@ -17,7 +17,6 @@ This workflow handles building and running short CI tests on a given spack manif
 | `spack-manifest-repository` | `string` (`OWNER/REPO` format) | The repository containing the spack manifest to install | `false` | `github.repository` (AKA, the caller repository) | For example: ACCESS-NRI/access-test-component |
 | `spack-manifest-repository-ref` | `string` (Git ref) | The branch, tag, or commit SHA of the `inputs.spack-manifest-repository` to use | `false` | For a `inputs.spack-manifest-repository` the same as the caller repository, it will attempt to use the callers SHA, otherwise it will default to the default branch of the `inputs.spack-manifest-repository` | `main`, `2025.03.0`, `r23ij2o3` |
 | `spack-manifest-path` | `string` (Path relative to component repository root) | File path in the caller model component repository that contains the spack manifest jinja template to install | `true` | N/A | `".github/build/manifests/template/access-om2.spack.yaml.j2"`, `".github/some.spack.yaml"` |
-| `spack-manifest-data-path` | `string` (Path relative to component repository root) | File path in the caller model component repository that contains jinja data to fill in to the spack manifest jinja template given by `inputs.spack-manifest-path`. This doesn't include the pull request ref (`{{ ref }}`), which is filled in automatically | `false` | N/A | `".github/build/data/template-data.json"` |
 | `spack-compiler-manifest-path` | `string` (Path relative to component repository root) | A file path in the caller model component repository that contains the spack manifest to install local compilers not in the upstream | `false` | N/A | `".github/build/compilers/intel-2021.11.0.spack.yml"` |
 | `spack-manifest-data-pairs` | `string` | An optional, multi-line string of space-separated key-value pairs to fill in `inputs.spack-manifest-path`. This is useful for filling in template values created dynamically by earlier jobs needed by this workflow. This doesn't include `{{ ref }}`, which is filled in automatically. | `false` | N/A | `"package mom5`(newline)`compiler intel"` |
 | `ref` | `string` (Git ref) | The branch, tag, or commit SHA of the caller model component repository | `false` | `github.event.pull_request.head.sha` for PRs, `github.sha` otherwise | `"c0fef23fc1e69d3a31ec18fd8b7102acdf95f651"`, `"main"`, `"2025.01.000"` |
@@ -86,7 +85,6 @@ jobs:
       spack-manifest-repository: some-org/build-ci-manifests
       spack-manifest-repository-ref: main
       spack-manifest-path: .github/build/spack.yaml.j2
-      spack-manifest-data-path: .github/build/data/data.json
       spack-compiler-manifest-path: .github/build/compiler/intel.spack.yaml
       spack-ref: releases/v0.22
       spack-config-ref: 2025.10.001
@@ -164,20 +162,7 @@ The `inputs.spack-manifest-path` is a path to a jinja-templatable spack manifest
 
 It is jinja-templatable as we need a way to inject the `inputs.ref` (and see below, `inputs.spack-manifest-data-pairs`) into the caller model components `@git.VERSION` at build-time, as it is unknown at commit-time. This is why we use `{{ ref }}` in the spack manifest.
 
-Since it is jinja-templatable, we also allow users to specify their own jinja template variables outside of `{{ ref }}` through the `inputs.spack-manifest-data-path`. This file can be quite simple:
-
-```json
-{
-    "adjective": "cool",
-    "compiler_version": "2025.10.0"
-}
-```
-
-and you can reference the above in the manifest via `{{ adjective }}` and `{{ compiler_version }}` respectively, where they will be filled in at build-time. This can be used to define certain fields across spack manifests that are being built, in one place - for example, compiler flags.
-
-The jinja data file (and the jinja-templatable spack manifest) can be much more complicated, but you will be responsible for making sure that it is templated into a valid spack manifest - see the [docs on jinja templates](https://jinja.palletsprojects.com/en/stable/templates/).
-
-Alternatively, you can supply a newline-separated list of space-separated template-value pairs through `inputs.spack-manifest-data-pairs`, which are more useful if you are supplying data to this workflow through `need`ed job outputs. For example:
+Since it is jinja-templatable, we also allow users to specify their own jinja template variables outside of `{{ ref }}` through a newline-separated list of space-separated template-value pairs through `inputs.spack-manifest-data-pairs`, which are useful if you are supplying data to this workflow through `need`ed job outputs. For example:
 
 ```yaml
     uses: access-nri/build-ci/.github/workflows/ci.yml@v3
