@@ -6,7 +6,7 @@ spack:
 
   - deps:
     - openmpi@4.1.5
-    - openmpi@5.0.3
+    - openmpi@5.0.8
 
     # Compilers to install the packages
   - compilers:
@@ -16,7 +16,7 @@ spack:
 
     # Targets for the packages
   - targets:
-    - target=x86_64
+    - target=x86_64_v3
 
   specs:
   # Combination of packages, compilers and targets for the final list of specs
@@ -28,7 +28,7 @@ spack:
 
 
   # Only major.minor version specified. Patch version selected by Spack.
-  - python@3.11 target=x86_64 %gcc@13.2.0
+  - python@3.12.13 target=x86_64_v3 %gcc@13.2.0
 
   packages:
     netcdf-c:
