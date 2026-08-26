@@ -406,33 +406,6 @@ jobs:
 
           echo "spack-manifest-path=$templated_manifest_path" >> $GITHUB_OUTPUT
 
-      - name: Update - Determine spack.repos explicitly specified
-        id: repos-specified
-        working-directory: manifest
-        # We will only sync the on-image repos if they aren't already specified in the manifest
-        run: |
-          access_spack_packages_exists=$(yq '[.spack.repos[] | select(.git == "https://github.com/ACCESS-NRI/access-spack-packages.git")] | length > 0' ${{ steps.jinja-templated.outputs.spack-manifest-path }})
-          builtin_spack_packages_exists=$(yq '[.spack.repos[] | select(.git == "https://github.com/ACCESS-NRI/upstream-spack-packages.git")] | length > 0' ${{ steps.jinja-templated.outputs.spack-manifest-path }})
-
-          echo "access-spack-packages spack.repos section: $access_spack_packages_exists"
-          echo "builtin spack.repos section: $builtin_spack_packages_exists"
-
-          echo "access-spack-packages=$access_spack_packages_exists" >> $GITHUB_OUTPUT
-          echo "builtin-spack-packages=$builtin_spack_packages_exists" >> $GITHUB_OUTPUT
-
-      # TODO: Remove these manual pulls once we have spack repo update --force - see https://github.com/ACCESS-NRI/spack/issues/22
-      - name: Update - Sync existing access-spack-packages repo
-        if: steps.repos-specified.outputs.access-spack-packages != 'true'
-        run: |
-          . ${{ steps.env.outputs.SPACK_ROOT }}/share/spack/setup-env.sh
-          spack repo update access_spack_packages || git -C $(spack location --repo access.nri) pull --rebase --force
-
-      - name: Update - Sync existing builtin repo
-        if: steps.repos-specified.outputs.builtin-spack-packages != 'true'
-        run: |
-          . ${{ steps.env.outputs.SPACK_ROOT }}/share/spack/setup-env.sh
-          spack repo update builtin || git -C $(spack location --repo builtin) pull --rebase --force
-
       - name: Manifest - Install
         id: install
         working-directory: manifest
