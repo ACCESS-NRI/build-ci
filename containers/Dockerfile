@@ -1,12 +1,12 @@
 # Copyright 2023-2026 ACCESS-NRI and contributors. See the top-level COPYRIGHT file for details.
 # SPDX-License-Identifier: Apache-2.0
 #
-# Contains build targets: base-os-rocky, base-os-suse, base-spack, base-ci, upstream, runner
+# Contains build targets: base-os-rocky, base-os-suse, base-spack, base-ci, base-dev, dev, upstream, runner
 
 ################################################################################
 # OS = {rocky,suse}
 ARG OS=rocky
-# e.g. docker build -f Dockerfile.base-spack --build-arg OS=suse -t spack-dev-suse:1 --target dev --no-cache --progress=plain .
+# e.g. docker build -f Dockerfile --build-arg OS=suse -t spack-dev-suse:1 --target dev --no-cache --progress=plain .
 
 
 ################################################################################
@@ -15,7 +15,6 @@ ARG OS=rocky
 FROM rockylinux/rockylinux:8.10 AS base-os-rocky
 
 # csh currently required for some build scripts e.g. MOM5
-# yq required for spack manifest modification
 RUN dnf update -y \
  && dnf -y install \
     autoconf \
@@ -60,7 +59,6 @@ RUN dnf update -y \
  && dnf config-manager --add-repo https://cli.github.com/packages/rpm/gh-cli.repo \
  && dnf -y install gh --repo gh-cli \
  # dnf cleanup
- && rm -rf /var/cache/dnf \
  && dnf clean all
 
 ################################################################################
@@ -122,7 +120,7 @@ ARG SPACK_VERSION=v1.1
 # Remember to override this in the case one is building non-compose runner images
 ARG SPACK_REPO_VERSION=access/releases/${SPACK_VERSION}-admin
 ARG SPACK_CONFIG_REPO_VERSION=main
-ARG SPACK_TARGET=x86_64
+ARG SPACK_TARGET=x86_64_v3
 
 # Unlike Rocky Linux, openSUSE ends up with two versions of Python 3,
 # hence we need to define $SPACK_PYTHON.
@@ -184,15 +182,37 @@ FROM base-spack AS base-dev
 ARG SPACK_CONFIG_DIR=/opt/spack-config/${SPACK_VERSION}/ci
 ENV SPACK_CONFIG_DIR=${SPACK_CONFIG_DIR}
 
+# We can't yet set the SPACK_USER_CACHE_PATH via spack config files, so we set it here.
+ENV SPACK_USER_CACHE_PATH=${SPACK_ROOT}/../spack-admin-cache
+
+RUN <<EOF
+case "$SPACK_VERSION" in
+  v0.*)
+    # Exit with ENOENT 2 "No such file or directory", if the directory does not exist
+    if ! [ -d "${SPACK_CONFIG_DIR}" ]; then
+      echo "${SPACK_CONFIG_DIR} does not exist!" >&2
+      exit 2
+    fi
+    ln -s -r -v ${SPACK_CONFIG_DIR}/* ${SPACK_ROOT}/etc/spack/
+    ;;
+
+  v1.*)
+    echo "Spack v1.x reads include.yaml to access config files"
+    ;;
+
+  *)
+    echo "Unknown Spack version: $SPACK_VERSION" >&2
+    exit 1
+    ;;
+esac
+
 # https://spack.readthedocs.io/en/latest/bootstrapping.html
 # Spack is configured to bootstrap its dependencies and repositories lazily by default;
 # i.e. the first time they are needed and can't be found.
 
-# We can't yet set the SPACK_USER_CACHE_PATH via spack config files, so we set it here.
-ENV SPACK_USER_CACHE_PATH=${SPACK_ROOT}/../spack-admin-cache
-
 # Bootstrap spack and clone relevant spack-packages repos
-RUN spack bootstrap now
+spack bootstrap now
+EOF
 
 # https://www.docker.com/blog/docker-best-practices-choosing-between-run-cmd-and-entrypoint/
 ENTRYPOINT ["/bin/bash", "/opt/spack/share/spack/docker/entrypoint.bash"]
@@ -202,24 +222,28 @@ CMD ["interactive-shell"]
 FROM base-dev AS dev
 
 RUN <<EOF
-spack install gcc@13.2.0 ~binutils target=x86_64
-spack install intel-oneapi-compilers-classic@2021.10.0 target=x86_64
-spack install intel-oneapi-compilers@2025.2.0 target=x86_64
+spack install gcc@13.2.0 ~binutils target=x86_64_v3
+spack install intel-oneapi-compilers-classic@2021.10.0 target=x86_64_v3
+spack install intel-oneapi-compilers@2025.2.0 target=x86_64_v3
 
 case "$SPACK_VERSION" in
-  v0*) spack load $(spack find --no-groups gcc intel-oneapi-compilers intel-oneapi-compilers-classic)
-       spack compiler find
-       git clone https://github.com/ACCESS-NRI/access-spack-packages.git /opt/spack-packages --branch api-v1
-       git clone https://github.com/ACCESS-NRI/ACCESS-OM2 /opt/ACCESS-OM2 --branch api-v1
-       ;;
+  v0.*)
+    spack load $(spack find --no-groups gcc intel-oneapi-compilers intel-oneapi-compilers-classic)
+    spack compiler find
+    git clone https://github.com/ACCESS-NRI/access-spack-packages.git /opt/spack-packages --branch api-v1
+    git clone https://github.com/ACCESS-NRI/ACCESS-OM2 /opt/ACCESS-OM2 --branch api-v1
+    ;;
 
-  v1*) echo "Spack v1.x detects compilers directly"
-       echo "spack-config v1.x manages access-spack-packages directly"
-       git clone https://github.com/ACCESS-NRI/ACCESS-OM2 /opt/ACCESS-OM2
-       ;;
+  v1.*)
+    echo "Spack v1.x detects compilers directly"
+    echo "spack-config v1.x manages access-spack-packages directly"
+    git clone https://github.com/ACCESS-NRI/ACCESS-OM2 /opt/ACCESS-OM2
+    ;;
 
-  *) echo "Unknown Spack version"
-     ;;
+  *)
+    echo "Unknown Spack version: $SPACK_VERSION" >&2
+    exit 1
+    ;;
 esac
 
 spack env activate -p /opt/ACCESS-OM2
@@ -245,8 +269,8 @@ mv tmate /usr/local/bin/tmate
 rm -rf static-tmate.tar.xz
 EOF
 
- # Install yq for manifest interrogation
-RUN curl -L https://github.com/mikefarah/yq/releases/download/v4.45.1/yq_linux_amd64 -o /usr/bin/yq && chmod +x /usr/bin/yq
+# Install yq for manifest interrogation
+RUN curl -f -L https://github.com/mikefarah/yq/releases/download/v4.45.1/yq_linux_amd64 -o /usr/local/bin/yq && chmod +x /usr/local/bin/yq
 
 ################################################################################
 # Install compilers and other common packages for the upstream image
