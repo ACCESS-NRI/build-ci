@@ -341,6 +341,7 @@ jobs:
           path: manifest
           sparse-checkout-cone-mode: false
           sparse-checkout: |-
+            .github/build-ci
             ${{ inputs.spack-manifest-path }}
             ${{ inputs.spack-manifest-data-path }}
             ${{ inputs.spack-compiler-manifest-path }}
@@ -351,8 +352,7 @@ jobs:
         # Specifically, this is to avoid exposing a private spack manifest repository's history to the actor if they SSH in
         working-directory: manifest
         if: always() && steps.checkout.conclusion == 'success'
-        run: |
-          rm -rf ./.git
+        run: rm -rf ./.git
 
       - name: Manifest - Install Compilers Locally
         # Some compilers may not be available upstream, so we install them locally in a separate spack.yaml
