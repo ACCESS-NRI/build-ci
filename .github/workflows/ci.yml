@@ -351,7 +351,8 @@ jobs:
         # Specifically, this is to avoid exposing a private spack manifest repository's history to the actor if they SSH in
         working-directory: manifest
         if: always() && steps.checkout.conclusion == 'success'
-        run: rm -rf ./.git
+        run: |
+          rm -rf ./.git
 
       - name: Manifest - Install Compilers Locally
         # Some compilers may not be available upstream, so we install them locally in a separate spack.yaml
@@ -406,6 +407,10 @@ jobs:
 
           echo "spack-manifest-path=$templated_manifest_path" >> $GITHUB_OUTPUT
 
+          # We output the path to the inputs.spack-manifest-repository so manifests that use
+          # local includes don't need to know the structure outside the repository
+          echo "spack-manifest-repository-path=$(pwd)" >> $GITHUB_OUTPUT
+
       - name: Manifest - Install
         id: install
         working-directory: manifest
@@ -418,6 +423,8 @@ jobs:
           GIT_CONFIG_COUNT: 1
           GIT_CONFIG_KEY_0: url.https://oauth2:${{ secrets.spack-install-command-pat || secrets.GITHUB_TOKEN }}@github.com/.insteadOf
           GIT_CONFIG_VALUE_0: https://github.com/
+          # These environment variables are interpreted by spack manifests spack.include sections
+          SPACK_MANIFEST_REPOSITORY_PATH: ${{ steps.jinja-templated.outputs.spack-manifest-repository-path }}
         run: |
           . ${{ steps.env.outputs.SPACK_ROOT }}/share/spack/setup-env.sh
           spack env create default ${{ steps.jinja-templated.outputs.spack-manifest-path }}
