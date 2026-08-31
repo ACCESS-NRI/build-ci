@@ -245,6 +245,10 @@ jobs:
           # Initialize artifact content directory
           mkdir -p ${{ env.artifact-content-dir }}
 
+          # Output caller and manifest paths cloned in steps.checkout/checkout-caller for use in env-var-aware spack manifests spack.include sections
+          echo "caller-repository-path=$(pwd)/caller" >> $GITHUB_OUTPUT
+          echo "spack-manifest-repository-path=$(pwd)/manifest" >> $GITHUB_OUTPUT
+
       - name: Init - Export environment variables into GitHub Actions format
         # Environment variables inside containers are not accessible in the `env` context,
         # a context which would be used in future conditional steps.
@@ -407,10 +411,6 @@ jobs:
 
           echo "spack-manifest-path=$templated_manifest_path" >> $GITHUB_OUTPUT
 
-          # We output the path to the inputs.spack-manifest-repository so manifests that use
-          # local includes don't need to know the structure outside the repository
-          echo "spack-manifest-repository-path=$(pwd)" >> $GITHUB_OUTPUT
-
       - name: Manifest - Install
         id: install
         working-directory: manifest
@@ -424,7 +424,8 @@ jobs:
           GIT_CONFIG_KEY_0: url.https://oauth2:${{ secrets.spack-install-command-pat || secrets.GITHUB_TOKEN }}@github.com/.insteadOf
           GIT_CONFIG_VALUE_0: https://github.com/
           # These environment variables are interpreted by spack manifests spack.include sections
-          SPACK_MANIFEST_REPOSITORY_PATH: ${{ steps.jinja-templated.outputs.spack-manifest-repository-path }}
+          SPACK_MANIFEST_REPOSITORY_PATH: ${{ steps.init.outputs.spack-manifest-repository-path }}
+          CALLER_REPOSITORY_PATH: ${{ steps.init.outputs.caller-repository-path }}
         run: |
           . ${{ steps.env.outputs.SPACK_ROOT }}/share/spack/setup-env.sh
           spack env create default ${{ steps.jinja-templated.outputs.spack-manifest-path }}
