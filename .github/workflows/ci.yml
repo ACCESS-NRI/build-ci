@@ -426,7 +426,10 @@ jobs:
           # These environment variables are interpreted by spack manifests spack.include sections
           SPACK_MANIFEST_REPOSITORY_PATH: ${{ steps.init.outputs.spack-manifest-repository-path }}
           CALLER_REPOSITORY_PATH: ${{ steps.init.outputs.caller-repository-path }}
-          CALLER_REPOSITORY_PATH_CONFIG: ${{ steps.init.outputs.caller-repository-path }}/.github/include/ASP-ci
+          # This one is specifically for when the caller contains special include config that overrides the base ASP config
+          # In CRs, if the below vars are set, it gets config from the caller, at vars.USE_CALLER_REPOSITORY_CONFIG_PATH
+          USE_CALLER_REPOSITORY_CONFIG_PATH: ${{ vars.USE_CALLER_REPOSITORY_CONFIG_PATH }}
+          CALLER_REPOSITORY_CONFIG_PATH: ${{ steps.init.outputs.caller-repository-path }}/${{ vars.USE_CALLER_REPOSITORY_CONFIG_PATH }}
         run: |
           . ${{ steps.env.outputs.SPACK_ROOT }}/share/spack/setup-env.sh
           spack env create default ${{ steps.jinja-templated.outputs.spack-manifest-path }}
