@@ -426,11 +426,8 @@ jobs:
           # These environment variables are interpreted by spack manifests spack.include sections
           SPACK_MANIFEST_REPOSITORY_PATH: ${{ steps.init.outputs.spack-manifest-repository-path }}
           CALLER_REPOSITORY_PATH: ${{ steps.init.outputs.caller-repository-path }}
+          CALLER_REPOSITORY_PATH_CONFIG: ${{ steps.init.outputs.caller-repository-path }}/.github/include/ASP-ci
         run: |
-          if [ -n "${{ vars.USE_CALLER_REPOSITORY_PATH }}" ]; then
-            echo "CALLER_REPOSITORY_PATH_CONFIG=${{ env.CALLER_REPOSITORY_PATH }}/.github/include/ASP-ci" >> $GITHUB_ENV
-          fi
-
           . ${{ steps.env.outputs.SPACK_ROOT }}/share/spack/setup-env.sh
           spack env create default ${{ steps.jinja-templated.outputs.spack-manifest-path }}
           spack env activate
