@@ -418,7 +418,7 @@ jobs:
           SPACK_MANIFEST_REPOSITORY_PATH: ${{ steps.init.outputs.spack-manifest-repository-path }}
           CALLER_REPOSITORY_PATH: ${{ steps.init.outputs.caller-repository-path }}
           # This one is specifically for when the caller contains special include config that overrides the base ASP config
-          # In CRs, if the below vars are set, it gets config from the caller, at vars.USE_CALLER_REPOSITORY_CONFIG_PATH
+          # In component repos, if the below vars are set, it gets config from the caller, at vars.USE_CALLER_REPOSITORY_CONFIG_PATH
           USE_CALLER_REPOSITORY_CONFIG_PATH: ${{ vars.USE_CALLER_REPOSITORY_CONFIG_PATH }}
           CALLER_REPOSITORY_CONFIG_PATH: ${{ steps.init.outputs.caller-repository-path }}/${{ vars.USE_CALLER_REPOSITORY_CONFIG_PATH }}
         run: |
