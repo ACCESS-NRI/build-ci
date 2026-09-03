@@ -417,25 +417,28 @@ jobs:
           # These environment variables are interpreted by spack manifests spack.include sections
           SPACK_MANIFEST_REPOSITORY_PATH: ${{ steps.init.outputs.spack-manifest-repository-path }}
           CALLER_REPOSITORY_PATH: ${{ steps.init.outputs.caller-repository-path }}
-          # This one is specifically for when the caller contains special include config that overrides the base ASP config
-          # In component repos, if the below vars are set, it gets config from the caller, at vars.USE_CALLER_REPOSITORY_CONFIG_PATH
-          USE_CALLER_REPOSITORY_CONFIG_PATH: ${{ vars.USE_CALLER_REPOSITORY_CONFIG_PATH }}
-          CALLER_REPOSITORY_CONFIG_PATH: ${{ steps.init.outputs.caller-repository-path }}/${{ vars.USE_CALLER_REPOSITORY_CONFIG_PATH }}
+          # If vars.CALLER_REPOSITORY_CONFIG_PATH is set by special caller repositories (like access-spack-packages or spack-config),
+          # we set env.CALLER_REPOSITORY_CONFIG_PATH to the absolute path to the callers spack config on the runner.
         run: |
           . ${{ steps.env.outputs.SPACK_ROOT }}/share/spack/setup-env.sh
+
+          if [ -n "${{ vars.CALLER_REPOSITORY_CONFIG_PATH }}" ]; then
+            echo "CALLER_REPOSITORY_CONFIG_PATH=${{ env.CALLER_REPOSITORY_PATH }}/${{ vars.CALLER_REPOSITORY_CONFIG_PATH }}" >> $GITHUB_ENV
+          fi
+
           spack env create default ${{ steps.jinja-templated.outputs.spack-manifest-path }}
           spack env activate
+
+          # Output config before concretization for debugging
+          echo "::group::Spack Config Blame Output"
+          spack config blame
+          echo "::endgroup::"
 
           spack concretize --force
 
           echo "spec<<EOF" >> $GITHUB_OUTPUT
           echo "$(spack spec)" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
-
-          # Output config before install for debugging
-          echo "::group::Spack Config Blame Output"
-          spack config blame
-          echo "::endgroup::"
 
           spack --debug install --fail-fast --deprecated
 
