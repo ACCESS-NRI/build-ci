@@ -443,8 +443,8 @@ jobs:
           spack --debug install --fail-fast --deprecated
 
           # Output builtin and access-spack-packages-shas
-          echo "access-spack-packages-sha=$(git -C $(spack location --repo access.nri) HEAD)" >> $GITHUB_OUTPUT
-          echo "builtin-spack-packages-sha=$(git -C $(spack location --repo builtin) HEAD)"  >> $GITHUB_OUTPUT
+          echo "access-spack-packages-sha=$(git -C $(spack location --repo access.nri) rev-parse HEAD)" >> $GITHUB_OUTPUT
+          echo "builtin-spack-packages-sha=$(git -C $(spack location --repo builtin) rev-parse HEAD)"  >> $GITHUB_OUTPUT
 
       - name: Manifest - Push to Buildcache
         env:
