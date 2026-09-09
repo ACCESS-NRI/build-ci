@@ -7,7 +7,9 @@ spack:
   # Workaround: https://github.com/spack/spack-packages/issues/3505
   - gcc@13.2.0 ~binutils %gcc@8.5.0
   - intel-oneapi-compilers-classic@2021.10.0
-  - intel-oneapi-compilers@2025.2.0
+  # The above intel-oneapi-compilers-classic doesn't use any compiler, but the newer one below does
+  # Without this constraint, it uses external gcc@8.5.0 which conflicts with a hard gcc version requirement in ASP
+  - intel-oneapi-compilers@2025.2.0 %gcc@13.2.0
   view: false
   concretizer:
     unify: false
