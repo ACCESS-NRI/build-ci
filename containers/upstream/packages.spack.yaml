@@ -34,6 +34,9 @@ spack:
     netcdf-c:
       require:
         - '@4.9.2'
+    zlib-ng:
+      require:
+        - '%gcc@8.5.0'
 
   view: false  # No view required as these upstream packages are not loaded by users
   concretizer:
