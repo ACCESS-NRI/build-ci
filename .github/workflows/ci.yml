@@ -26,13 +26,6 @@ on:
         description: |
           A file path in the inputs.spack-manifest-repository that contains the spack manifest template to install.
           For example: .github/build/manifests/template/access-om2.spack.yaml.j2.
-      spack-manifest-data-path:
-        required: false
-        type: string
-        description: |
-          An optional file path in the inputs.spack-manifest-repository that contains data to fill in the spack manifest jinja template.
-          This doesn't include {{ ref }}, which is filled in automatically.
-          For example: .github/build/manifests/data/access-om2.spack.yaml.j2.json.
       spack-manifest-data-pairs:
         required: false
         type: string
@@ -65,20 +58,6 @@ on:
         default: main
         description: |
           The branch, tag, or commit SHA of the access-nri/spack-config repository to use.
-          For example: main, 2025.03.0, 7ey2uy2.
-      builtin-spack-packages-ref:
-        required: false
-        type: string
-        # default: ref from spack-config's repos.yaml, or 'develop' otherwise
-        description: |
-          The branch, tag, or commit SHA of the spack/spack-packages repository to use.
-          For example: main, 2025.03.0, 7ey2uy2.
-      access-spack-packages-ref:
-        required: false
-        type: string
-        default: api-v2
-        description: |
-          The branch, tag, or commit SHA of the access-nri/spack-packages repository to use.
           For example: main, 2025.03.0, 7ey2uy2.
       spack-ref:
         required: false
@@ -204,8 +183,8 @@ jobs:
       spack-manifest-repository-sha: ${{ steps.checkout.outputs.commit }}
       spack-sha: ${{ steps.spack-update.outputs.sha }}
       spack-config-sha: ${{ steps.spack-config-update.outputs.sha }}
-      builtin-spack-packages-sha: ${{ steps.builtin-spack-packages-update.outputs.sha }}
-      access-spack-packages-sha: ${{ steps.access-spack-packages-update.outputs.sha }}
+      builtin-spack-packages-sha: ${{ steps.install.outputs.builtin-spack-packages-sha }}
+      access-spack-packages-sha: ${{ steps.install.outputs.access-spack-packages-sha }}
       caller-sha: ${{ steps.checkout-caller.outputs.commit }}
       artifact-pattern: ${{ steps.init.outputs.artifact-pattern }}
       artifact-url: ${{ steps.upload.outputs.artifact-url }}
@@ -258,6 +237,10 @@ jobs:
 
           # Initialize artifact content directory
           mkdir -p ${{ env.artifact-content-dir }}
+
+          # Output caller and manifest paths cloned in steps.checkout/checkout-caller for use in env-var-aware spack manifests spack.include sections
+          echo "caller-repository-path=$(pwd)/caller" >> $GITHUB_OUTPUT
+          echo "spack-manifest-repository-path=$(pwd)/manifest" >> $GITHUB_OUTPUT
 
       - name: Init - Export environment variables into GitHub Actions format
         # Environment variables inside containers are not accessible in the `env` context,
@@ -324,44 +307,6 @@ jobs:
           spack mirror add --scope=access.nri.ci.user --autopush --unsigned runner_set_buildcache /opt/runner_set_buildcache
           spack mirror list
 
-      - name: Spack - Get builtin ref from spack-config
-        if: inputs.builtin-spack-packages-ref == ''
-        id: get-default-builtin
-        # If inputs.builtin-spack-packages-ref is not provided, get the builtin-spack-packages-ref
-        # from spack-config's repos.yaml or use "develop" (the default branch) if not specified there either.
-        run: |
-          . ${{ steps.env.outputs.SPACK_ROOT }}/share/spack/setup-env.sh
-          # Accept both the overridden .builtin: and regular .builtin key. See ACCESS-NRI/spack-config#105 for more info.
-          ref=$(spack config get repos | yq '.repos | .builtin // ."builtin:" | .branch // .tag // .commit // "develop"')
-          echo "Default builtin-spack-packages-ref is $ref"
-          echo "ref=$ref" >> $GITHUB_OUTPUT
-
-      - name: Spack - Get spack-packages repo locations
-        id: spack-packages-locations
-        run: |
-          . ${{ steps.env.outputs.SPACK_ROOT }}/share/spack/setup-env.sh
-
-          echo "builtin=$(spack location --repo builtin)" >> $GITHUB_OUTPUT
-          echo "access-spack-packages=$(spack location --repo access.nri)" >> $GITHUB_OUTPUT
-
-      - name: Update - access-spack-package version
-        id: access-spack-packages-update
-        uses: ./build-ci/.github/actions/spack-checkout-updated-ref
-        with:
-          spack-packages-repository-name: access_spack_packages
-          spack-packages-repository-path: ${{ steps.spack-packages-locations.outputs.access-spack-packages }}
-          ref: ${{ inputs.access-spack-packages-ref }}
-          spack-instance-root-path: ${{ steps.env.outputs.SPACK_ROOT }}
-
-      - name: Update - builtin spack-package version
-        id: builtin-spack-packages-update
-        uses: ./build-ci/.github/actions/spack-checkout-updated-ref
-        with:
-          spack-packages-repository-name: builtin
-          spack-packages-repository-path: ${{ steps.spack-packages-locations.outputs.builtin }}
-          ref: ${{ inputs.builtin-spack-packages-ref || steps.get-default-builtin.outputs.ref }}
-          spack-instance-root-path: ${{ steps.env.outputs.SPACK_ROOT }}
-
       - name: Spack - OCI Buildcache Init
         if: inputs.spack-oci-buildcache-url != ''
         run: |
@@ -393,8 +338,8 @@ jobs:
           path: manifest
           sparse-checkout-cone-mode: false
           sparse-checkout: |-
+            .github/build-ci
             ${{ inputs.spack-manifest-path }}
-            ${{ inputs.spack-manifest-data-path }}
             ${{ inputs.spack-compiler-manifest-path }}
           # Similarly to the spack install command below, we need to be able to checkout the spack-manifest-repository (which may be private)
           token: ${{ secrets.spack-install-command-pat || github.token }}
@@ -449,7 +394,6 @@ jobs:
           jinja \
             --define ref ${{ inputs.ref }} \
             $( [ -n "${{ inputs.spack-manifest-data-pairs }}" ] && while read -r d; do echo "--define $d"; done <<< "${{ inputs.spack-manifest-data-pairs }}") \
-            ${{ inputs.spack-manifest-data-path != '' && format('--data {0}', inputs.spack-manifest-data-path) || '' }} \
             ${{ inputs.spack-manifest-path}} \
             > $templated_manifest_path
 
@@ -470,10 +414,25 @@ jobs:
           GIT_CONFIG_COUNT: 1
           GIT_CONFIG_KEY_0: url.https://oauth2:${{ secrets.spack-install-command-pat || secrets.GITHUB_TOKEN }}@github.com/.insteadOf
           GIT_CONFIG_VALUE_0: https://github.com/
+          # These environment variables are interpreted by spack manifests spack.include sections
+          SPACK_MANIFEST_REPOSITORY_PATH: ${{ steps.init.outputs.spack-manifest-repository-path }}
+          CALLER_REPOSITORY_PATH: ${{ steps.init.outputs.caller-repository-path }}
+          # If vars.CALLER_REPOSITORY_CONFIG_PATH is set by special caller repositories (like access-spack-packages or spack-config),
+          # we set env.CALLER_REPOSITORY_CONFIG_PATH to the absolute path to the callers spack config on the runner.
         run: |
           . ${{ steps.env.outputs.SPACK_ROOT }}/share/spack/setup-env.sh
+
+          if [ -n "${{ vars.CALLER_REPOSITORY_CONFIG_PATH }}" ]; then
+            echo "CALLER_REPOSITORY_CONFIG_PATH=${{ env.CALLER_REPOSITORY_PATH }}/${{ vars.CALLER_REPOSITORY_CONFIG_PATH }}" >> $GITHUB_ENV
+          fi
+
           spack env create default ${{ steps.jinja-templated.outputs.spack-manifest-path }}
           spack env activate
+
+          # Output config before concretization for debugging
+          echo "::group::Spack Config Blame Output"
+          spack config blame
+          echo "::endgroup::"
 
           spack concretize --force
 
@@ -481,12 +440,11 @@ jobs:
           echo "$(spack spec)" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
-          # Output config before install for debugging
-          echo "::group::Spack Config Blame Output"
-          spack config blame
-          echo "::endgroup::"
-
           spack --debug install --fail-fast --deprecated
+
+          # Output builtin and access-spack-packages-shas
+          echo "access-spack-packages-sha=$(git -C $(spack location --repo access.nri) rev-parse HEAD)" >> $GITHUB_OUTPUT
+          echo "builtin-spack-packages-sha=$(git -C $(spack location --repo builtin) rev-parse HEAD)"  >> $GITHUB_OUTPUT
 
       - name: Manifest - Push to Buildcache
         env:
@@ -506,7 +464,7 @@ jobs:
           (steps.install.conclusion == 'failure' || steps.install.conclusion == 'success') &&
           inputs.allow-ssh-into-spack-install
         id: tmate
-        uses: mxschmitt/action-tmate@e5c7151931ca95bad1c6f4190c730ecf8c7dde48  # v3.19
+        uses: mxschmitt/action-tmate@35b54afac29c97fb54faba5b513f8fbd1882f113  # v3.24
         with:
           # sudo is not accessible in this container
           sudo: false
@@ -570,13 +528,10 @@ jobs:
             "spack_manifest_path": "${{ inputs.spack-manifest-path }}",
             "spack_manifest_repository": "${{ inputs.spack-manifest-repository }}",
             "spack_manifest_repository_ref": "${{ steps.init.outputs.spack-manifest-repository-ref }}",
-            "spack_manifest_data_path": "${{ inputs.spack-manifest-data-path }}",
             "spack_manifest_data_pairs": $pairs,
             "spack_compiler_manifest_path": "${{ inputs.spack-compiler-manifest-path }}",
             "ref": "${{ inputs.ref }}",
             "spack_config_ref": "${{ inputs.spack-config-ref }}",
-            "builtin_spack_packages_ref": "${{ inputs.builtin-spack-packages-ref }}",
-            "access_spack_packages_ref": "${{ inputs.access-spack-packages-ref }}",
             "spack_ref": "${{ inputs.spack-ref }}",
             "pytest_test_markers": "${{ inputs.pytest-test-markers }}",
             "allow_ssh_into_spack_install": "${{ inputs.allow-ssh-into-spack-install }}",
@@ -589,8 +544,8 @@ jobs:
             "spack_manifest_repository_sha": "${{ steps.checkout.outputs.commit }}",
             "spack_sha": "${{ steps.spack-update.outputs.sha }}",
             "spack_config_sha": "${{ steps.spack-config-update.outputs.sha }}",
-            "builtin_spack_packages_sha": "${{ steps.builtin-spack-packages-update.outputs.sha }}",
-            "access_spack_packages_sha": "${{ steps.access-spack-packages-update.outputs.sha }}",
+            "builtin_spack_packages_sha": "${{ steps.install.outputs.builtin-spack-packages-sha }}",
+            "access_spack_packages_sha": "${{ steps.install.outputs.access-spack-packages-sha }}",
             "caller_sha": "${{ steps.checkout-caller.outputs.commit }}",
             "container_id": "${{ steps.init.outputs.container-id }}",
             "short_container_id": "${{ steps.init.outputs.short-container-id }}",

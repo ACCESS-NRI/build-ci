@@ -69,7 +69,7 @@ A minimal example of a spack manifest file that builds a full model ([`access-om
 ```yaml
 spack:
   specs:
-    - access-om2 ^mom5@git.{{ ref }}=access-om2 %intel@2021.10.0 target=x86_64
+    - access-om2 ^mom5@git.{{ ref }}=access-om2 %intel@2021.10.0 target=x86_64_v3
   view: true
   concretizer:
     unify: false
