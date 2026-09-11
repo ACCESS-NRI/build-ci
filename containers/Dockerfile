@@ -202,7 +202,7 @@ CMD ["interactive-shell"]
 FROM base-dev AS dev
 
 RUN <<EOF
-spack install gcc@13.2.0 ~binutils target=x86_64
+spack install gcc@13.2.0 target=x86_64
 spack install intel-oneapi-compilers-classic@2021.10.0 target=x86_64
 spack install intel-oneapi-compilers@2025.2.0 target=x86_64
 
