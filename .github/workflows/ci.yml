@@ -350,6 +350,12 @@ jobs:
         if: always() && steps.checkout.conclusion == 'success'
         run: rm -rf ./.git
 
+      - name: Export CALLER_REPOSITORY_CONFIG_PATH for special callers
+        if: vars.CALLER_REPOSITORY_CONFIG_PATH != ''
+        # If vars.CALLER_REPOSITORY_CONFIG_PATH is set by special caller repositories (like access-spack-packages or spack-config),
+        # we set env.CALLER_REPOSITORY_CONFIG_PATH to the absolute path to the callers spack config on the runner.
+        run: echo "CALLER_REPOSITORY_CONFIG_PATH=${{ steps.init.outputs.caller-repository-path }}/${{ vars.CALLER_REPOSITORY_CONFIG_PATH }}" >> $GITHUB_ENV
+
       - name: Manifest - Install Compilers Locally
         # Some compilers may not be available upstream, so we install them locally in a separate spack.yaml
         if: inputs.spack-compiler-manifest-path != ''
@@ -417,14 +423,8 @@ jobs:
           # These environment variables are interpreted by spack manifests spack.include sections
           SPACK_MANIFEST_REPOSITORY_PATH: ${{ steps.init.outputs.spack-manifest-repository-path }}
           CALLER_REPOSITORY_PATH: ${{ steps.init.outputs.caller-repository-path }}
-          # If vars.CALLER_REPOSITORY_CONFIG_PATH is set by special caller repositories (like access-spack-packages or spack-config),
-          # we set env.CALLER_REPOSITORY_CONFIG_PATH to the absolute path to the callers spack config on the runner.
         run: |
           . ${{ steps.env.outputs.SPACK_ROOT }}/share/spack/setup-env.sh
-
-          if [ -n "${{ vars.CALLER_REPOSITORY_CONFIG_PATH }}" ]; then
-            echo "CALLER_REPOSITORY_CONFIG_PATH=${{ env.CALLER_REPOSITORY_PATH }}/${{ vars.CALLER_REPOSITORY_CONFIG_PATH }}" >> $GITHUB_ENV
-          fi
 
           spack env create default ${{ steps.jinja-templated.outputs.spack-manifest-path }}
           spack env activate
