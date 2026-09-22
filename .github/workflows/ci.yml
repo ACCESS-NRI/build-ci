@@ -239,8 +239,8 @@ jobs:
           mkdir -p ${{ env.artifact-content-dir }}
 
           # Output caller and manifest paths cloned in steps.checkout/checkout-caller for use in env-var-aware spack manifests spack.include sections
-          echo "caller-repository-path=$(pwd)/caller" >> $GITHUB_OUTPUT
-          echo "spack-manifest-repository-path=$(pwd)/manifest" >> $GITHUB_OUTPUT
+          echo "SPACK_MANIFEST_REPOSITORY_PATH=$(pwd)/manifest" >> $GITHUB_ENV
+          echo "CALLER_REPOSITORY_PATH=$(pwd)/caller" >> $GITHUB_ENV
 
       - name: Init - Export environment variables into GitHub Actions format
         # Environment variables inside containers are not accessible in the `env` context,
@@ -354,7 +354,7 @@ jobs:
         if: vars.CALLER_REPOSITORY_CONFIG_PATH != ''
         # If vars.CALLER_REPOSITORY_CONFIG_PATH is set by special caller repositories (like access-spack-packages or spack-config),
         # we set env.CALLER_REPOSITORY_CONFIG_PATH to the absolute path to the callers spack config on the runner.
-        run: echo "CALLER_REPOSITORY_CONFIG_PATH=${{ steps.init.outputs.caller-repository-path }}/${{ vars.CALLER_REPOSITORY_CONFIG_PATH }}" >> $GITHUB_ENV
+        run: echo "CALLER_REPOSITORY_CONFIG_PATH=${{ env.CALLER_REPOSITORY_PATH }}/${{ vars.CALLER_REPOSITORY_CONFIG_PATH }}" >> $GITHUB_ENV
 
       - name: Manifest - Install Compilers Locally
         # Some compilers may not be available upstream, so we install them locally in a separate spack.yaml
@@ -420,9 +420,6 @@ jobs:
           GIT_CONFIG_COUNT: 1
           GIT_CONFIG_KEY_0: url.https://oauth2:${{ secrets.spack-install-command-pat || secrets.GITHUB_TOKEN }}@github.com/.insteadOf
           GIT_CONFIG_VALUE_0: https://github.com/
-          # These environment variables are interpreted by spack manifests spack.include sections
-          SPACK_MANIFEST_REPOSITORY_PATH: ${{ steps.init.outputs.spack-manifest-repository-path }}
-          CALLER_REPOSITORY_PATH: ${{ steps.init.outputs.caller-repository-path }}
         run: |
           . ${{ steps.env.outputs.SPACK_ROOT }}/share/spack/setup-env.sh
 
