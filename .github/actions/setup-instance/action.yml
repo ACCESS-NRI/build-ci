@@ -1,0 +1,172 @@
+name: Setup Container Instance
+description: Common action for getting a build-ci-runner containers repositories up to date and ready to run
+inputs:
+  spack-ref:
+    description: The git ref to checkout for the spack repository. Can be a branch, tag, or commit. If not provided, spack will not be updated and the version in the image will be used.
+    required: true
+  spack-config-ref:
+    description: The git ref to checkout for the spack-config repository. Can be a branch, tag, or commit. If not provided, spack-config will not be updated and the version in the image will be used.
+    required: true
+  builtin-spack-packages-ref:
+    description: The git ref to checkout for the builtin spack packages repository. Can be a branch, tag, or commit. If not provided, the ref specified in spack-config's repos.yaml will be used, or "develop" if not specified there either.
+    required: true
+  access-spack-packages-ref:
+    description: The git ref to checkout for the access spack packages repository. Can be a branch, tag, or commit. If not provided, access-spack-packages will not be updated and the version in the image will be used.
+    required: true
+  spack-oci-buildcache-url:
+    description: The URL of an OCI registry to use as a Spack buildcache. If not provided, no OCI registry will be added as a Spack mirror.
+    required: true
+  run-self-hosted:
+    description: Whether this instance is running on a self-hosted runner. Used to determine whether to disable upstreams and whether to enable the runner set buildcache.
+    required: true
+outputs:
+  # From env step
+  SPACK_ROOT:
+    value: ${{ steps.env.outputs.SPACK_ROOT }}
+    description: The SPACK_ROOT of the spack instance. This is used by future steps to source the spack environment and for path construction purposes.
+  INITIAL_SPACK_REPO_VERSION:
+    value: ${{ steps.env.outputs.INITIAL_SPACK_REPO_VERSION }}
+    description: The initial spack repository version before any updates. This is used to determine if the spack version in the image is compatible with build-ci.
+  spack-env-dir:
+    value: ${{ steps.env.outputs.spack-env-dir }}
+    description: The directory where spack environments are stored. This is used for artifact collection purposes in future steps.
+  # From *-update steps
+  spack-config-sha:
+    value: ${{ steps.spack-config-update.outputs.sha }}
+    description: The git sha that was checked out for the spack-config repository.
+  spack-sha:
+    value: ${{ steps.spack-update.outputs.sha }}
+    description: The git sha that was checked out for the spack repository.
+  builtin-spack-packages-sha:
+    value: ${{ steps.builtin-spack-packages-update.outputs.sha }}
+    description: The git sha that was checked out for the builtin spack packages repository.
+  access-spack-packages-sha:
+    value: ${{ steps.access-spack-packages-update.outputs.sha }}
+    description: The git sha that was checked out for the access spack packages repository.
+runs:
+  using: composite
+  steps:
+  - name: Init - Export environment variables into GitHub Actions format
+    shell: bash
+    # Environment variables inside containers are not accessible in the `env` context,
+    # a context which would be used in future conditional steps.
+    # This step exports important container environment variables as outputs.
+    # And yes, this loop echoes name-of-var=value-of-var!
+    id: env
+    run: |
+      for var in SPACK_ROOT INITIAL_SPACK_REPO_VERSION; do
+        echo "$var=${!var}" >> $GITHUB_OUTPUT
+      done
+
+      # The upload step later requires a non-relative path, hence the realpath
+      echo "spack-env-dir=$(realpath $SPACK_ROOT/../runner/environments)" >> $GITHUB_OUTPUT
+
+      # Initialize artifact content directory
+      mkdir -p ${{ env.artifact-content-dir }}
+
+  - name: Init - Disable Self-Hosted Upstreams
+    shell: bash
+    if: ${{ ! inputs.run-self-hosted }}
+    # For GitHub-hosted versions of build-ci, we don't have an upstream, so we disable in our user scope
+    # NOTE: In future may be able to be replaced by spack config --scope=access.nri.ci.user add upstreams::{}
+    run: |
+      . ${{ steps.env.outputs.SPACK_ROOT }}/share/spack/setup-env.sh
+
+      upstream_location=$(spack config --scope=access.nri.ci.user edit upstreams --print-file)
+      mkdir -p $(dirname $upstream_location)
+      echo "upstreams:: {}" > $upstream_location
+      spack config blame upstreams
+
+  - name: Init - Enable Runner Set Buildcache
+    if: inputs.run-self-hosted
+    shell: bash
+    run: |
+      . ${{ steps.env.outputs.SPACK_ROOT }}/share/spack/setup-env.sh
+
+      spack mirror add --scope=access.nri.ci.user --autopush --unsigned runner_set_buildcache /opt/runner_set_buildcache
+      spack mirror list
+
+  - name: Update - spack-config version
+    id: spack-config-update
+    uses: ./build-ci/.github/actions/git-checkout-updated-ref
+    with:
+      repository-path: ${{ steps.env.outputs.SPACK_ROOT }}/../spack-config
+      ref: ${{ inputs.spack-config-ref }}
+
+  - name: Update - spack version
+    id: spack-update
+    uses: ./build-ci/.github/actions/git-checkout-updated-ref
+    with:
+      repository-path: ${{ steps.env.outputs.SPACK_ROOT }}
+      ref: ${{ inputs.spack-ref }}
+
+  - name: Update - Validate non-updated spack
+    if: steps.spack-update.outputs.updated == 'false' && steps.spack-config-update.outputs.updated == 'false'
+    # We don't support spack < v1.0 in build-ci@v3, so we error out if the spack version is not updated and the version in the image is < v1.0
+    shell: bash
+    run: |
+      if [[ "${{ steps.env.outputs.INITIAL_SPACK_REPO_VERSION }}" == "releases/v0"* ]]; then
+        echo "::error::spack branch ${{ steps.env.outputs.INITIAL_SPACK_REPO_VERSION }} is not a v1.x branch, and build-ci@v3 only supports spack >= v1.0. Use build-ci@v2 for spack < v1.0"
+        exit 2
+      fi
+
+  - name: Spack - Initial Enable
+    shell: bash
+    run: |
+      . ${{ steps.env.outputs.SPACK_ROOT }}/share/spack/setup-env.sh
+      echo "----- Compilers -----"
+      spack compiler list
+      echo "----- Packages -----"
+      spack find
+
+  - name: Spack - Get builtin ref from spack-config
+    if: inputs.builtin-spack-packages-ref == ''
+    id: get-default-builtin
+    shell: bash
+    # If inputs.builtin-spack-packages-ref is not provided, get the builtin-spack-packages-ref
+    # from spack-config's repos.yaml or use "develop" (the default branch) if not specified there either.
+    run: |
+      . ${{ steps.env.outputs.SPACK_ROOT }}/share/spack/setup-env.sh
+      # Accept both the overridden .builtin: and regular .builtin key. See ACCESS-NRI/spack-config#105 for more info.
+      ref=$(spack config get repos | yq '.repos | .builtin // ."builtin:" | .branch // .tag // .commit // "develop"')
+      echo "Default builtin-spack-packages-ref is $ref"
+      echo "ref=$ref" >> $GITHUB_OUTPUT
+
+  - name: Spack - Get spack-packages repo locations
+    id: spack-packages-locations
+    shell: bash
+    run: |
+      . ${{ steps.env.outputs.SPACK_ROOT }}/share/spack/setup-env.sh
+
+      echo "builtin=$(spack location --repo builtin)" >> $GITHUB_OUTPUT
+      echo "access-spack-packages=$(spack location --repo access.nri)" >> $GITHUB_OUTPUT
+
+  - name: Update - access-spack-package version
+    id: access-spack-packages-update
+    uses: ./build-ci/.github/actions/spack-checkout-updated-ref
+    with:
+      spack-packages-repository-name: access_spack_packages
+      spack-packages-repository-path: ${{ steps.spack-packages-locations.outputs.access-spack-packages }}
+      ref: ${{ inputs.access-spack-packages-ref }}
+      spack-instance-root-path: ${{ steps.env.outputs.SPACK_ROOT }}
+
+  - name: Update - builtin spack-package version
+    id: builtin-spack-packages-update
+    uses: ./build-ci/.github/actions/spack-checkout-updated-ref
+    with:
+      spack-packages-repository-name: builtin
+      spack-packages-repository-path: ${{ steps.spack-packages-locations.outputs.builtin }}
+      ref: ${{ inputs.builtin-spack-packages-ref || steps.get-default-builtin.outputs.ref }}
+      spack-instance-root-path: ${{ steps.env.outputs.SPACK_ROOT }}
+
+  - name: Spack - OCI Buildcache Init
+    if: inputs.spack-oci-buildcache-url != ''
+    shell: bash
+    run: |
+      . ${{ steps.env.outputs.SPACK_ROOT }}/share/spack/setup-env.sh
+      spack mirror add --scope=access.nri.ci.user \
+        --unsigned \
+        --oci-username-variable OCI_USERNAME \
+        --oci-password-variable OCI_PASSWORD \
+        oci_buildcache ${{ inputs.spack-oci-buildcache-url }}
+      spack mirror list
