@@ -237,6 +237,8 @@ case "$SPACK_VERSION" in
   v1.*)
     echo "Spack v1.x detects compilers directly"
     echo "spack-config v1.x manages access-spack-packages directly"
+    spack load $(spack find --no-groups gcc intel-oneapi-compilers intel-oneapi-compilers-classic)
+    spack compiler find
     git clone https://github.com/ACCESS-NRI/ACCESS-OM2 /opt/ACCESS-OM2
     ;;
 
