@@ -45,7 +45,8 @@ RUN dnf update -y \
     pkgconf \
     pkgconf-m4 \
     pkgconf-pkg-config \
-    python3.12 \
+    python3.12-3.12.13 \
+    python3.12-devel-3.12.13 \
     python3.12-pip \
     python3.12-setuptools \
     svn \
@@ -54,6 +55,7 @@ RUN dnf update -y \
     which \
     xz \
     zstd \
+ # NOTE: use only if needed: && alternatives --set python /usr/bin/python3.12
  # Install gh
  && dnf -y install 'dnf-command(config-manager)' \
  && dnf config-manager --add-repo https://cli.github.com/packages/rpm/gh-cli.repo \
@@ -92,7 +94,8 @@ RUN zypper ref \
     patchutils \
     perl \
     pkgconf \
-    python312 \
+    python312-3.12.13 \
+    python312-devel-3.12.13 \
     python312-pip \
     python312-setuptools \
     unzip \
@@ -104,6 +107,7 @@ RUN zypper ref \
     tcsh \
     vim \
     which \
+ # NOTE: use only if needed: && update-alternatives --install /usr/bin/python python /usr/bin/python3.12 1
  # Install gh
  && zypper addrepo https://cli.github.com/packages/rpm/gh-cli.repo \
  && zypper --gpg-auto-import-keys refresh \
