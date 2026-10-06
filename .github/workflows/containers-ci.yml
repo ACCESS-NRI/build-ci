@@ -85,7 +85,7 @@ jobs:
         run: |
           echo "Creating boot volume..."
           openstack volume create ${{ env.NECTAR_VOLUME_NAME }} \
-            --size 50 \
+            --size 60 \
             --image "NeCTAR Ubuntu 22.04 LTS (Jammy) amd64 (with Docker)" \
             --availability-zone ardc-syd-1 \
             --description "Ephemeral boot volume for build-ci image build ${{ github.run_id }}" \
