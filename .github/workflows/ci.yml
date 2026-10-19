@@ -650,6 +650,11 @@ jobs:
       - name: Test - Pytest
         id: test
         working-directory: manifest
+        env:
+          # The job container runs as root; allow Open MPI (prterun) to run
+          # MPI-based component tests without each repository opting in.
+          OMPI_ALLOW_RUN_AS_ROOT: 1
+          OMPI_ALLOW_RUN_AS_ROOT_CONFIRM: 1
         run: |
           json_report_path=${{ env.artifact-content-dir }}/pytest_report.json
           xml_report_path=${{ env.artifact-content-dir }}/pytest_report.xml
