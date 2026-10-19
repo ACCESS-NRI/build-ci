@@ -51,7 +51,8 @@ runs:
 
   - name: Init - Disable Self-Hosted Upstreams
     shell: bash
-    if: ${{ ! inputs.run-self-hosted }}
+    # NOTE: Composite action inputs are always strings, so compare against 'true' explicitly
+    if: inputs.run-self-hosted != 'true'
     # For GitHub-hosted versions of build-ci, we don't have an upstream, so we disable in our user scope
     # NOTE: In future may be able to be replaced by spack config --scope=access.nri.ci.user add upstreams::{}
     run: |
@@ -63,7 +64,7 @@ runs:
       spack config blame upstreams
 
   - name: Init - Enable Runner Set Buildcache
-    if: inputs.run-self-hosted
+    if: inputs.run-self-hosted == 'true'
     shell: bash
     run: |
       . ${{ steps.env.outputs.SPACK_ROOT }}/share/spack/setup-env.sh

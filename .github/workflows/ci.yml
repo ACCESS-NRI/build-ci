@@ -523,10 +523,10 @@ jobs:
         - ${{ inputs.run-self-hosted && '/opt/runner_set_buildcache:/opt/runner_set_buildcache:rw' || '/dev/null:/dev/null:ro' }}
     outputs:
       artifact-url: ${{ steps.upload.outputs.artifact-url }}
-      tests-passed: ${{ steps.test.outputs.passed }}
-      tests-failed: ${{ steps.test.outputs.failed }}
-      tests-error: ${{ steps.test.outputs.error }}
-      tests-total: ${{ steps.test.outputs.total }}
+      tests-passed: ${{ steps.results.outputs.passed }}
+      tests-failed: ${{ steps.results.outputs.failed }}
+      tests-error: ${{ steps.results.outputs.error }}
+      tests-total: ${{ steps.results.outputs.total }}
     steps:
       - name: Init - Clone build-ci for custom actions
         uses: actions/checkout@v6
@@ -572,9 +572,12 @@ jobs:
           # Only checkout the manifests, rather than the entire repository
           path: manifest
           sparse-checkout-cone-mode: false
+          # In non-cone mode, '.' matches nothing, so we use '/*' to match everything in that case.
+          # We also checkout the optional pytest requirements file, which may be outside the search path.
           sparse-checkout: |-
             .github/build-ci
-            ${{ inputs.pytest-search-path }}
+            ${{ inputs.pytest-search-path == '.' && '/*' || inputs.pytest-search-path }}
+            ${{ inputs.pytest-requirements-path }}
           # Similarly to the spack install command below, we need to be able to checkout the spack-manifest-repository (which may be private)
           token: ${{ secrets.spack-install-command-pat || github.token }}
 
@@ -647,7 +650,7 @@ jobs:
         id: reserved-defs
         # Accepts _pytest-args arrays of the form: ['-m marker -k MyClass'] or ['-m marker', '-k MyClass']
         run: |
-          args=$(yq '.spack.definitions[]._pytest-args // [] | join(" ")' ${{ env.artifact-content-dir }}/spack.yaml)
+          args=$(yq '[.spack.definitions[]._pytest-args // []] | flatten | join(" ")' ${{ env.artifact-content-dir }}/spack.yaml)
           echo "Pytest args extracted from reserved definitions: $args"
           echo "args=$args" >> $GITHUB_OUTPUT
 
@@ -679,6 +682,8 @@ jobs:
 
       - name: Test- Parse Test Report
         id: tests
+        # always() so the report is published even when tests fail
+        if: always() && steps.test.outcome != 'skipped'
         uses: EnricoMi/publish-unit-test-result-action/linux@c950f6fb443cb5af20a377fd0dfaa78838901040  #v2.23.0
         with:
           files: ${{ steps.test.outputs.xml-report-path }}

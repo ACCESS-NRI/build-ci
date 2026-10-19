@@ -258,7 +258,7 @@ In order to add args to the `pytest` invocation, one can add a Reserved Definiti
 ```yaml
 spack:
   definitions:
-  - _pytest-args: ['-m marker1 and not marker2', '--verbosity=1']
+  - _pytest-args: ['-m "marker1 and not marker2"', '--verbosity=1']
   # ...
 ```
 
