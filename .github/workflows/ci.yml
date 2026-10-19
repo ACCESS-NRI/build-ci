@@ -67,12 +67,6 @@ on:
         description: |
           The branch, tag, or commit SHA of the access-nri/spack repository to use.
           For example: develop, releases/0.22, 7ey2uy2.
-      pytest-test-markers:
-        required: false
-        type: string
-        description: |
-          A string of pytest markers to use to filter tests in the caller model component repository's .github/build/tests directory.
-          For example: "not slow and not mpi".
       allow-ssh-into-spack-install:
         required: false
         type: boolean
@@ -480,7 +474,6 @@ jobs:
             "ref": "${{ inputs.ref }}",
             "spack_config_ref": "${{ inputs.spack-config-ref }}",
             "spack_ref": "${{ inputs.spack-ref }}",
-            "pytest_test_markers": "${{ inputs.pytest-test-markers }}",
             "allow_ssh_into_spack_install": "${{ inputs.allow-ssh-into-spack-install }}",
             "container_image_version": "${{ inputs.container-image-version }}",
             "run_self_hosted": "${{ inputs.run-self-hosted }}",
