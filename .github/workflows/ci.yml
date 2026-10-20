@@ -686,8 +686,7 @@ jobs:
         with:
           files: ${{ steps.test.outputs.xml-report-path }}
           comment_mode: off
-          check_run: true
-          check_name: Pytest Results
+          check_run: false
           compare_to_earlier_commit: false
           report_individual_runs: true
           report_suite_logs: any
