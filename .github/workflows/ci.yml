@@ -384,7 +384,7 @@ jobs:
           echo "$(spack spec)" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
-          spack --debug install --fail-fast --deprecated
+          spack --debug install --test=root --fail-fast --deprecated
 
           # Output builtin and access-spack-packages-shas
           echo "access-spack-packages-sha=$(git -C $(spack location --repo access.nri) rev-parse HEAD)" >> $GITHUB_OUTPUT
@@ -621,7 +621,7 @@ jobs:
           spack config blame
           echo "::endgroup::"
 
-          spack --debug install --fail-fast --deprecated --use-cache
+          spack --debug install --test=root --fail-fast --deprecated --use-cache
 
       - name: Test - Install pytest requirements
         working-directory: manifest
