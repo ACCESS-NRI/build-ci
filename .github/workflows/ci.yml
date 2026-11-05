@@ -388,7 +388,7 @@ jobs:
           echo "$(spack spec)" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
-          spack --debug install --test=root --fail-fast --deprecated
+          spack --debug install --test=root --fail-fast --deprecated  --dirty
 
           # Output builtin and access-spack-packages-shas
           echo "access-spack-packages-sha=$(git -C $(spack location --repo access.nri) rev-parse HEAD)" >> $GITHUB_OUTPUT
