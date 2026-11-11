@@ -25,6 +25,8 @@ RUN dnf update -y \
     csh \
     flex \
     curl \
+    environment-modules \
+    epel-release \
     file \
     findutils \
     gcc \
@@ -56,6 +58,8 @@ RUN dnf update -y \
     xz \
     zstd \
  # NOTE: use only if needed: && alternatives --set python /usr/bin/python3.12
+ && dnf config-manager --set-enabled powertools \
+ && dnf -y install Lmod \
  # Install gh
  && dnf -y install 'dnf-command(config-manager)' \
  && dnf config-manager --add-repo https://cli.github.com/packages/rpm/gh-cli.repo \
@@ -77,6 +81,7 @@ RUN zypper ref \
     bzip2 \
     flex \
     curl \
+    environment-modules \
     file \
     findutils \
     gcc \
@@ -89,6 +94,7 @@ RUN zypper ref \
     hg \
     hostname \
     iproute \
+    lua-lmod \
     make \
     patch \
     patchutils \
