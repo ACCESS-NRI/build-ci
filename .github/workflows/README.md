@@ -10,6 +10,8 @@ Entrypoint workflows are reusable workflows that are the starting point for the 
 
 This workflow handles building and running short CI tests on a given spack manifest. It offers customisation of `spack`, `spack-config`, and spack packages repos, and allows SSH access to the installation to the author of the PR.
 
+Testing is done natively through spack: build- and install-time tests via `spack install --test=root`, and post-install stand-alone tests via `spack test run`. See [Testing via Spack](#testing-via-spack).
+
 #### Inputs
 
 | Name | Type | Description | Required | Default | Example |
@@ -17,22 +19,17 @@ This workflow handles building and running short CI tests on a given spack manif
 | `spack-manifest-repository` | `string` (`OWNER/REPO` format) | The repository containing the spack manifest to install | `false` | `github.repository` (AKA, the caller repository) | For example: ACCESS-NRI/access-test-component |
 | `spack-manifest-repository-ref` | `string` (Git ref) | The branch, tag, or commit SHA of the `inputs.spack-manifest-repository` to use | `false` | For a `inputs.spack-manifest-repository` the same as the caller repository, it will attempt to use the callers SHA, otherwise it will default to the default branch of the `inputs.spack-manifest-repository` | `main`, `2025.03.0`, `r23ij2o3` |
 | `spack-manifest-path` | `string` (Path relative to component repository root) | File path in the caller model component repository that contains the spack manifest jinja template to install | `true` | N/A | `".github/build/manifests/template/access-om2.spack.yaml.j2"`, `".github/some.spack.yaml"` |
-| `spack-manifest-data-path` | `string` (Path relative to component repository root) | File path in the caller model component repository that contains jinja data to fill in to the spack manifest jinja template given by `inputs.spack-manifest-path`. This doesn't include the pull request ref (`{{ ref }}`), which is filled in automatically | `false` | N/A | `".github/build/data/template-data.json"` |
 | `spack-compiler-manifest-path` | `string` (Path relative to component repository root) | A file path in the caller model component repository that contains the spack manifest to install local compilers not in the upstream | `false` | N/A | `".github/build/compilers/intel-2021.11.0.spack.yml"` |
 | `spack-manifest-data-pairs` | `string` | An optional, multi-line string of space-separated key-value pairs to fill in `inputs.spack-manifest-path`. This is useful for filling in template values created dynamically by earlier jobs needed by this workflow. This doesn't include `{{ ref }}`, which is filled in automatically. | `false` | N/A | `"package mom5`(newline)`compiler intel"` |
 | `ref` | `string` (Git ref) | The branch, tag, or commit SHA of the caller model component repository | `false` | `github.event.pull_request.head.sha` for PRs, `github.sha` otherwise | `"c0fef23fc1e69d3a31ec18fd8b7102acdf95f651"`, `"main"`, `"2025.01.000"` |
-| `spack-config-ref` | `string` (Git ref) | The branch, tag, or commit SHA of the access-nri/spack-config repository to use | `false` | Ref in `spack-config`s `repos.yaml`, or `develop` if not specified | `"02125b01eb7c778c8d0ae0a02a260de474782e81"`, `"main"`, `"2025.01.000"` |
+| `spack-config-ref` | `string` (Git ref) | The branch, tag, or commit SHA of the access-nri/spack-config repository to use | `false` | `"main"` | `"02125b01eb7c778c8d0ae0a02a260de474782e81"`, `"main"`, `"2025.01.000"` |
+| `spack-ref` | `string` (Git ref) | The branch, tag, or commit SHA of the access-nri/spack repository to use | `false` | `"access/releases/v1.1"` | `"access/releases/v1.1"`, `"develop"`, `"7ey2uy2"` |
 | `allow-ssh-into-spack-install` | `boolean` | Enable the actor of the workflow to SSH into the container where the spack packages have been installed. This is useful for gathering post-install information before the container is destroyed. This will also make the workflow wait until the actor SSHs into the container, or it times out, before continuing | `false` | `false` | `true`, `false` |
 | `container-image-version` | `string` (Docker version ref) | The version of the container image to use for the runner. Can be either a `:TAG` or a `@sha256:SHA`. | `false` | `":rocky"` | `':8.9'` (tag), `'@sha256:1234...'` (SHA) |
 | `spack-oci-buildcache-url` | `string` (OCI URL) | The URL to an oci-backed buildcache, available in spack >= v1.0. OCI-backed buildcaches are the only option for GitHub-hosted CI, and can be used as a backup for self-hosted CI's runner buildcache | `false` | N/A | `"oci://ghcr.io/ACCESS-NRI/build-ci-buildcache"`, `"oci://ghcr.io/ORG/IMAGE"` |
 | `run-self-hosted` | `boolean` | Whether to run the job on a self-hosted runner. For security, workflow runs will hang if this is `true` but it is not using a valid `v*` branch or tag for the workflow ref | `false` | `true` | `true`, `false` |
-
-##### Future Inputs
-
-| Name | Type | Description | Required | Default | Example |
-| ---- | ---- | ----------- | -------- | ------- | ------- |
-| `pytest-test-directory-path` | `string` (Directory path relative to component repository root) | Directory path in the caller model component repository that contains pytests to run against the built manifests | `false` | N/A | `".github/build/tests/"` |
-| `pytest-test-markers` | `string` (Pytest-style markers) | A string of pytest markers to use to filter tests in the caller model component repository | `false` | `""` (runs all tests) | `"not slow and not mpi"` |
+| `enable-build-tests` | `boolean` | Run the build- and install-time tests of the manifest's root specs during the install (`spack install --test=root`). These are the tests defined in the component repository and run by its build system, for example `ctest` | `false` | `false` | `true`, `false` |
+| `enable-stand-alone-tests` | `boolean` | Run the post-install stand-alone tests of the manifest's root specs (`spack test run`) after a successful install. These are the `test_*` methods defined in the package's `package.py`, for example in `ACCESS-NRI/access-spack-packages` | `false` | `false` | `true`, `false` |
 
 #### Secrets
 
@@ -53,16 +50,15 @@ This workflow handles building and running short CI tests on a given spack manif
 | `builtin-spack-packages-sha` | `string` (Git commit SHA) | The SHA of the `spack/spack-packages` repository checked out | `"9225ee95da5c6e212a80d933db8aca44271417a3"` |
 | `access-spack-packages-sha` | `string` (Git commit SHA) | The SHA of the `ACCESS-NRI/access-spack-packages` repository checked out | `"2acb57187fc75c0fc83c898d1dd47bdaced2fca9"` |
 | `spack-manifest-repository-sha` | `string` (Git commit SHA) | The SHA of the spack manifest repository checked out | `24ef5da423028a9a25133884e6e402900e87a3aa` |
-| `sha` | `string` (Git commit SHA) | The SHA of the caller model component repository checked out | `"43ef5da423028a9a25133884e6e402900e87a3ce"` |
+| `caller-sha` | `string` (Git commit SHA) | The SHA of the caller model component repository checked out | `"43ef5da423028a9a25133884e6e402900e87a3ce"` |
 | `container-id` | `string` | The ID of the container where the spack packages have been installed | `"ohfn2ofy2h2uyfg2uyg3uyg3uh"` |
+| `short-container-id` | `string` | The first 8 characters of `container-id`, used to name the job's artifact (`output-SHORT_CONTAINER_ID`) | `"ohfn2ofy"` |
+| `tests-passed` | `string` (number) | Number of stand-alone test cases that passed, if `inputs.enable-stand-alone-tests` is `true`. Each test case is one root spec, not one test method - see [Stand-Alone Tests](#stand-alone-tests) | `"1"` |
+| `tests-failed` | `string` (number) | Number of stand-alone test cases that failed | `"0"` |
+| `tests-skipped` | `string` (number) | Number of stand-alone test cases that were skipped | `"0"` |
+| `tests-total` | `string` (number) | Total number of stand-alone test cases | `"1"` |
 | `artifact-pattern` | `string` (glob) | Wildcard pattern to match all artifacts across a matrix job | `'output-*'` |
 | `artifact-url` | `string` (URL) | The URL of the artifact | `"https://github.com/ACCESS-NRI/MOM5/actions/runs/15890554355/artifacts/3406449135"` |
-
-##### Future Outputs
-
-| Name | Type | Description | Example |
-| ---- | ---- | ----------- | ------- |
-| `test-artifact-url` | `string` (URL) | The URL of the pytest result artifact | `"https://github.com/ACCESS-NRI/MOM5/actions/runs/15890554355/artifacts/3406449136"` |
 
 #### Examples
 
@@ -86,9 +82,10 @@ jobs:
       spack-manifest-repository: some-org/build-ci-manifests
       spack-manifest-repository-ref: main
       spack-manifest-path: .github/build/spack.yaml.j2
-      spack-manifest-data-path: .github/build/data/data.json
+      spack-manifest-data-pairs: |-
+        compiler_version 2021.10.0
       spack-compiler-manifest-path: .github/build/compiler/intel.spack.yaml
-      spack-ref: releases/v0.22
+      spack-ref: access/releases/v1.1
       spack-config-ref: 2025.10.001
       allow-ssh-into-spack-install: true
       run-self-hosted: false
@@ -152,8 +149,8 @@ jobs:
         compiler: [".github/build/compiler/intel.spack.yaml", ".github/build/compiler/gcc.spack.yaml"]
     uses: access-nri/build-ci/.github/workflows/ci.yml@v3
     with:
-      spack-manifest-path: ${{ matrix.values.manifest }}
-      spack-compiler-manifest-path: ${{ matrix.values.compiler }}
+      spack-manifest-path: ${{ matrix.manifest }}
+      spack-compiler-manifest-path: ${{ matrix.compiler }}
 ```
 
 #### More Information
@@ -164,20 +161,12 @@ The `inputs.spack-manifest-path` is a path to a jinja-templatable spack manifest
 
 It is jinja-templatable as we need a way to inject the `inputs.ref` (and see below, `inputs.spack-manifest-data-pairs`) into the caller model components `@git.VERSION` at build-time, as it is unknown at commit-time. This is why we use `{{ ref }}` in the spack manifest.
 
-Since it is jinja-templatable, we also allow users to specify their own jinja template variables outside of `{{ ref }}` through the `inputs.spack-manifest-data-path`. This file can be quite simple:
+You can define your own template variables outside of `{{ ref }}` by supplying a newline-separated list of space-separated template-value pairs through `inputs.spack-manifest-data-pairs`. This is especially useful if you are supplying data to this workflow through `need`ed job outputs. You are responsible for making sure the manifest templates into a valid spack manifest - see the [docs on jinja templates](https://jinja.palletsprojects.com/en/stable/templates/).
 
-```json
-{
-    "adjective": "cool",
-    "compiler_version": "2025.10.0"
-}
-```
+> [!NOTE]
+> Jinja data files (the old `inputs.spack-manifest-data-path`) are no longer supported. To share configuration (for example compiler requirements) across manifests, use spack's `include` section with the `$SPACK_MANIFEST_REPOSITORY_PATH` environment variable set by this workflow, for example `include: [{path: $SPACK_MANIFEST_REPOSITORY_PATH/.github/build-ci/config}]`.
 
-and you can reference the above in the manifest via `{{ adjective }}` and `{{ compiler_version }}` respectively, where they will be filled in at build-time. This can be used to define certain fields across spack manifests that are being built, in one place - for example, compiler flags.
-
-The jinja data file (and the jinja-templatable spack manifest) can be much more complicated, but you will be responsible for making sure that it is templated into a valid spack manifest - see the [docs on jinja templates](https://jinja.palletsprojects.com/en/stable/templates/).
-
-Alternatively, you can supply a newline-separated list of space-separated template-value pairs through `inputs.spack-manifest-data-pairs`, which are more useful if you are supplying data to this workflow through `need`ed job outputs. For example:
+For example:
 
 ```yaml
     uses: access-nri/build-ci/.github/workflows/ci.yml@v3
@@ -224,7 +213,7 @@ spack:
 
 ##### Using outputs of a Matrix Job
 
-If you need to aggregate data across multiple instances of a matrix job, you will need to use the `job-output-artifact-pattern` output rather than individual job outputs through `needs`, due to GitHubs insistence of jobs overwriting the sole matrix job output. This pattern, when used as an argument to `actions/download-artifact`, will have all the inputs, outputs and conclusion of each instance of the matrix job, in JSON. In a dependent later job, you will need to merge all these artifacts together and parse them. For example:
+If you need to aggregate data across multiple instances of a matrix job, you will need to use the `artifact-pattern` output rather than individual job outputs through `needs`, due to GitHubs insistence of jobs overwriting the sole matrix job output. This pattern, when used as an argument to `actions/download-artifact`, downloads the artifact of each instance of the matrix job. Each artifact contains a `job_outputs.json` with that instance's inputs, outputs and install result. In a dependent later job, you will need to read each of these files and parse them. For example:
 
 ```yaml
 jobs:
@@ -235,7 +224,7 @@ jobs:
         file:
         - .github/build-ci/manifests/some.spack.yaml.j2
         - .github/build-ci/manifests/another.spack.yaml.j2
-    uses: access-nri/build-ci/.github/workflows/ci.yaml@v3
+    uses: access-nri/build-ci/.github/workflows/ci.yml@v3
     with:
       spack-manifest-path: ${{ matrix.file }}
 
@@ -246,18 +235,60 @@ jobs:
     steps:
     - uses: actions/download-artifact@v4
       with:
-        pattern: ${{ needs.ci.outputs.job-output-artifact-pattern }}
-        merge-multiple: true
+        pattern: ${{ needs.ci.outputs.artifact-pattern }}
+        # Don't merge-multiple: every artifact has a job_outputs.json, so they would overwrite each other.
+        # Each artifact is downloaded into ./outputs/ARTIFACT_NAME instead.
         path: ./outputs
 
     - name: Output all concretization graphs within this job
       run: |
-        cd ./outputs
-        for f in *; do
+        for f in ./outputs/*/job_outputs.json; do
           echo "For job with container id: $(jq '.container_id' $f)"
           jq '.spec_concretization_graph' $f
         done
 ```
+
+##### Testing via Spack
+
+Testing uses spack's own testing support, so the same tests can be run in CI, on a deployment (for example `spack test run` on Gadi), and with the component's own build system outside of spack. There are two kinds, enabled separately:
+
+```yaml
+jobs:
+  ci:
+    uses: access-nri/build-ci/.github/workflows/ci.yml@v3
+    with:
+      spack-manifest-path: .github/build-ci/manifests/spack.yaml.j2
+      enable-build-tests: true
+      enable-stand-alone-tests: true
+```
+
+Both only test the **root specs** of the manifest. If the model component under test is only a dependency of another root spec (for example `access-om2 ^mom5@git.{{ ref }}`), its tests won't run - add it as a root spec of its own as well:
+
+```yaml
+spack:
+  specs:
+  - access-om2
+  # The same mom5 node as access-om2's dependency, so that its tests are run
+  - mom5
+  packages:
+    mom5:
+      require:
+      - '@git.{{ ref }}=stable'
+```
+
+###### Build-Time Tests
+
+With `inputs.enable-build-tests`, the manifest is concretized and installed with `--test=root`. Spack then runs each root spec's build- and install-time tests while building it, for example `make test`/`ctest` for a `CMakePackage`. These are the tests that live in the component repository; the package only needs to enable them when `self.run_tests` and declare any test-only dependencies with `type="test"`. Some caveats:
+
+- **Failures:** a failing build-time test fails the installation.
+- **Logs:** each root spec's test log is added to the `output-*` job artifact as `spec_install_test_log_N.log`, next to its install log `spec_install_log_N.log`, for the `N`th root spec.
+- **Different hashes:** `type="test"` dependencies are part of the concretized spec, so a spec concretized with tests has a different hash to the same spec without them.
+
+###### Stand-Alone Tests
+
+With `inputs.enable-stand-alone-tests`, after a successful install the job runs `spack test run` on the root specs. These are the `test_*` methods in the package's `package.py` (see the [spack stand-alone testing docs](https://spack.readthedocs.io/en/v1.1.1/packaging_guide_testing.html#stand-alone-tests)), so they are written in `ACCESS-NRI/access-spack-packages`, rather than the component repository.
+
+The results are written as a JUnit report, added to the job artifact as `spack_test_report.xml`, and shown in the job summary. `spack test results --log` output is also printed in the job log.
 
 ## Other Workflows
 

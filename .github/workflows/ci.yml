@@ -67,12 +67,6 @@ on:
         description: |
           The branch, tag, or commit SHA of the access-nri/spack repository to use.
           For example: develop, releases/0.22, 7ey2uy2.
-      pytest-test-markers:
-        required: false
-        type: string
-        description: |
-          A string of pytest markers to use to filter tests in the caller model component repository's .github/build/tests directory.
-          For example: "not slow and not mpi".
       allow-ssh-into-spack-install:
         required: false
         type: boolean
@@ -103,6 +97,18 @@ on:
         description: |
           Whether to run the job on a self-hosted runner.
           For security, workflow runs will hang if this is true but it is not using a valid v* branch or tag for the workflow ref.
+      enable-build-tests:
+        type: boolean
+        required: false
+        default: false
+        description: |
+          Enable build- and install-time tests during spack install, defined in the caller repository.
+      enable-stand-alone-tests:
+        type: boolean
+        required: false
+        default: false
+        description: |
+          Enable post-install stand-alone tests defined in the package repository.
     secrets:
       spack-install-command-pat:
         required: false
@@ -144,7 +150,7 @@ on:
       caller-sha:
         value: ${{ jobs.spack-install-and-test.outputs.caller-sha }}
         description: |
-          The SHA of the caller model component repository checked out.
+          The SHA of the package under test.
       container-id:
         value: ${{ jobs.spack-install-and-test.outputs.container-id }}
         description: |
@@ -153,6 +159,23 @@ on:
         value: ${{ jobs.spack-install-and-test.outputs.short-container-id }}
         description: |
           The short ID of the container where the spack packages have been installed - used for artifact disambiguation.
+      ## These outputs contain information on stand-alone-tests results
+      tests-passed:
+        value: ${{ jobs.spack-install-and-test.outputs.tests-passed }}
+        description: |
+            Spack stand-alone tests passed
+      tests-failed:
+        value: ${{ jobs.spack-install-and-test.outputs.tests-failed }}
+        description: |
+            Spack stand-alone tests failed
+      tests-skipped:
+        value: ${{ jobs.spack-install-and-test.outputs.tests-skipped }}
+        description: |
+            Spack stand-alone tests skipped
+      tests-total:
+        value: ${{ jobs.spack-install-and-test.outputs.tests-total }}
+        description: |
+            Total number of Spack stand-alone tests
       ## These outputs contain information on data uploaded as artifacts
       artifact-pattern:
         value: ${{ jobs.spack-install-and-test.outputs.artifact-pattern }}
@@ -163,13 +186,12 @@ on:
         description: |
           The URL of the artifact, which contains all outputs of the job.
           This contains spack files and outputs of the job itself for post-matrix processing.
-      # test-artifact-url:
-      #   value: ${{}}
-      #   description: |
-      #     The URL of the pytest result artifact.
+env:
+  # Common directory for outputs to be added to artifact
+  artifact-content-dir: /tmp/artifact-output
 jobs:
   spack-install-and-test:
-    name: Install and Test
+    name: Install + Test
     runs-on: ${{ inputs.run-self-hosted && fromJson('{"group":"build-ci"}') || 'ubuntu-latest' }}
     container:
       image: ghcr.io/access-nri/build-ci-runner${{ inputs.container-image-version }}
@@ -179,6 +201,7 @@ jobs:
         - ${{ inputs.run-self-hosted && '/opt/upstream-v1:/opt/release:ro' || '/dev/null:/dev/null:ro' }}
         - ${{ inputs.run-self-hosted && '/opt/runner_set_buildcache:/opt/runner_set_buildcache:rw' || '/dev/null:/dev/null:ro' }}
     outputs:
+      # Job outputs outputted as workflow output
       spec-concretization-graph: ${{ steps.install.outputs.spec }}
       spack-manifest-repository-sha: ${{ steps.checkout.outputs.commit }}
       spack-sha: ${{ steps.setup.outputs.spack-sha }}
@@ -190,10 +213,12 @@ jobs:
       artifact-url: ${{ steps.upload.outputs.artifact-url }}
       container-id: ${{ steps.init.outputs.container-id }}
       short-container-id: ${{ steps.init.outputs.short-container-id }}
-      # test-artifact-url: ${{ steps.test.outputs.artifact-url }}
-    env:
-      # Common directory for outputs to be added to artifact
-      artifact-content-dir: /tmp/artifact-output
+      artifact-name: ${{ steps.init.outputs.artifact-name }}
+      # Test results
+      tests-passed: ${{ steps.test-parser.outputs.passed }}
+      tests-failed: ${{ steps.test-parser.outputs.failed }}
+      tests-skipped: ${{ steps.test-parser.outputs.skipped }}
+      tests-total: ${{ steps.test-parser.outputs.total }}
     steps:
       - name: Init - Clone build-ci for custom actions
         uses: actions/checkout@v6
@@ -202,7 +227,7 @@ jobs:
           ref: ${{ job.workflow_sha }}
           path: build-ci
 
-      - name: Init - Initalize dynamic vars
+      - name: Init - Initalize workflow vars
         id: init
         # GitHub Actions doesn't allow expressions in the on.workflow_call.inputs.*.default section, so we need to define them here
         # Furthermore, some outputs depend on the container being started, so we define them here as well
@@ -353,6 +378,15 @@ jobs:
           GIT_CONFIG_COUNT: 1
           GIT_CONFIG_KEY_0: url.https://oauth2:${{ secrets.spack-install-command-pat || secrets.GITHUB_TOKEN }}@github.com/.insteadOf
           GIT_CONFIG_VALUE_0: https://github.com/
+          # The job container runs as root; allow Open MPI (prterun) to run
+          # MPI-based 'spack install --test' component tests without each repository opting in.
+          OMPI_ALLOW_RUN_AS_ROOT: 1
+          OMPI_ALLOW_RUN_AS_ROOT_CONFIRM: 1
+          # Allow Open MPI 5 (PRRTE) to start more ranks than detected slots, as GitHub-hosted
+          # runners may expose fewer physical cores than the ranks a component test requests.
+          PRTE_MCA_rmaps_default_mapping_policy: ':oversubscribe'
+          # Print the output of failing ctest tests, so it ends up in spack's install-time-test-log.txt
+          CTEST_OUTPUT_ON_FAILURE: 1
         run: |
           . ${{ steps.setup.outputs.SPACK_ROOT }}/share/spack/setup-env.sh
 
@@ -364,17 +398,18 @@ jobs:
           spack config blame
           echo "::endgroup::"
 
-          spack concretize --force
+          spack concretize --force ${{ inputs.enable-build-tests && '--test=root' || '' }}
 
           echo "spec<<EOF" >> $GITHUB_OUTPUT
           echo "$(spack spec)" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
-          spack --debug install --fail-fast --deprecated
-
           # Output builtin and access-spack-packages-shas
           echo "access-spack-packages-sha=$(git -C $(spack location --repo access.nri) rev-parse HEAD)" >> $GITHUB_OUTPUT
           echo "builtin-spack-packages-sha=$(git -C $(spack location --repo builtin) rev-parse HEAD)"  >> $GITHUB_OUTPUT
+
+          # Finally, do the installation (and post-build/install tests for the roots if enabled)
+          spack --debug install --fail-fast --deprecated --dirty ${{ inputs.enable-build-tests && '--test=root' || '' }}
 
       - name: Manifest - Push to Buildcache
         env:
@@ -386,6 +421,64 @@ jobs:
         run: |
           . ${{ steps.setup.outputs.SPACK_ROOT }}/share/spack/setup-env.sh
           spack -e default buildcache push --unsigned --only=dependencies oci_buildcache
+
+      - name: Outputs - Retrieve Root Hashes
+        id: get-roots
+        # Run even if the install failed, so the root hashes can be used to consolidate install and test logs
+        if: always() && (steps.install.conclusion == 'failure' || steps.install.conclusion == 'success')
+        run: |
+          . ${{ steps.setup.outputs.SPACK_ROOT }}/share/spack/setup-env.sh
+
+          if [ ! -f ${{ steps.setup.outputs.spack-env-dir }}/default/spack.lock ]; then
+            echo "Spack lock file not found, skipping root hash reads."
+            exit 0
+          fi
+
+          # Get all the top-level hashes from the manifest
+          hashes="$(jq --raw-output '[.roots[].hash] | join(" ")' ${{ steps.setup.outputs.spack-env-dir }}/default/spack.lock)"
+          echo "Found top-level hashes:"
+          echo "$hashes"
+          echo "hashes=$hashes" >> $GITHUB_OUTPUT
+
+      - name: Test - Run
+        id: test
+        if: inputs.enable-stand-alone-tests && steps.install.outcome == 'success'
+        env:
+          # The job container runs as root; allow Open MPI (prterun) to run
+          # MPI-based component tests without each repository opting in.
+          OMPI_ALLOW_RUN_AS_ROOT: 1
+          OMPI_ALLOW_RUN_AS_ROOT_CONFIRM: 1
+          # Allow Open MPI 5 (PRRTE) to start more ranks than detected slots, as GitHub-hosted
+          # runners may expose fewer physical cores than the ranks a component test requests.
+          PRTE_MCA_rmaps_default_mapping_policy: ':oversubscribe'
+        run: |
+          . ${{ steps.setup.outputs.SPACK_ROOT }}/share/spack/setup-env.sh
+          spack env activate default
+
+          # Spack writes the JUnit report even if there are no tests
+          spack test run --alias build-ci-tests --dirty --log-format=junit \
+            --log-file=${{ env.artifact-content-dir }}/spack_test_report.xml \
+            $(printf '/%s ' ${{ steps.get-roots.outputs.hashes }})
+
+      - name: Test - Results
+        id: results
+        if: always() && steps.test.outcome != 'skipped'
+        run: |
+          . ${{ steps.setup.outputs.SPACK_ROOT }}/share/spack/setup-env.sh
+          spack env activate default
+          spack test results --log build-ci-tests || true
+
+      - name: Test - Parse Test Report
+        id: test-parser
+        # always() so the report is published even when tests fail
+        if: always() && steps.test.outcome != 'skipped'
+        uses: mikepenz/action-junit-report@a16be3a69023e9bd7e748ede768b3282ea7b30ce # v6.7.1
+        with:
+          report_paths: ${{ env.artifact-content-dir }}/spack_test_report.xml
+          include_passed: true
+          detailed_summary: true
+          job_summary_text: Raw JUnit output can be found in `output-${{ steps.init.outputs.short-container-id }}`s spack_test_report.xml.
+          failed_summary_logs: true
 
       - name: Tmate - Create session
         # Only create the session if the spack installation was attempted, and we want a tmate session
@@ -405,43 +498,44 @@ jobs:
           # Our runner container has tmate pre-installed
           install-dependencies: false
 
-      # TODO: Add pytest infrastructure
-      # - name: Run pytests
-      #   id: test
-      #   run: |
-      #     python -m pytest -v -m "${{ inputs.pytest-test-markers }}" --junitxml=pytest.xml
-      #     echo "pytest=$(cat pytest.xml)" >> $GITHUB_OUTPUT
-
-
       - name: Outputs - Consolidate Spack Outputs
         if: always() && (steps.install.conclusion == 'failure' || steps.install.conclusion == 'success')
         # Logs or manifests may not be available if the spack install failed before concretization, so we'd rather direct users to the
         # above install failure than have this step fail.
+        id: consolidation
         continue-on-error: true
         run: |
-          # Consolidate Manifest
+          # Consolidate Manifests
           if compgen -G "${{ steps.setup.outputs.spack-env-dir }}/default/spack.*" > /dev/null; then
             cp -v ${{ steps.setup.outputs.spack-env-dir }}/default/spack.* ${{ env.artifact-content-dir }}
+          fi
+
+          if compgen -G "${{ steps.setup.outputs.spack-env-dir }}/local_compilers/spack.*" > /dev/null; then
+            mkdir -p ${{ env.artifact-content-dir }}/local_compilers
+            cp -v ${{ steps.setup.outputs.spack-env-dir }}/local_compilers/spack.* ${{ env.artifact-content-dir }}/local_compilers
           fi
 
           # Consolidate Logs
           . ${{ steps.setup.outputs.SPACK_ROOT }}/share/spack/setup-env.sh
 
-          if [ ! -f ${{ steps.setup.outputs.spack-env-dir }}/default/spack.lock ]; then
-            echo "Spack lock file not found, skipping log creation."
-            exit 0
-          fi
-
-          # Get all the top-level hashes from the manifest
-          hashes="$(jq --raw-output '.roots[].hash' ${{ steps.setup.outputs.spack-env-dir }}/default/spack.lock)"
-          echo "Found top-level hashes:"
-          echo "$hashes"
-
           i=0
-          while read -r hash; do
+          for hash in ${{ steps.get-roots.outputs.hashes }}; do
             spack -e default logs /$hash > "${{ env.artifact-content-dir }}/spec_install_log_${i}.log" || true
+
+            # See https://spack.readthedocs.io/en/v1.1.1/packaging_guide_testing.html#checking-build-time-test-results
+            # The test log is in the install prefix if the spec installed, or in the stage dir if it failed.
+            for test_log in \
+              "$(spack -e default location --install-dir /$hash)/.spack/install-time-test-log.txt" \
+              "$(spack -e default location --stage-dir /$hash)/install-time-test-log.txt"; do
+
+              if [ -f "$test_log" ]; then
+                cp "$test_log" "${{ env.artifact-content-dir }}/spec_install_test_log_${i}.log"
+                break
+              fi
+            done
+
             i=$((i + 1))
-          done <<< "$hashes"
+          done
 
       - name: Outputs - Consolidate Job Outputs
         if: always() && (steps.install.conclusion == 'failure' || steps.install.conclusion == 'success')
@@ -463,12 +557,17 @@ jobs:
             "ref": "${{ inputs.ref }}",
             "spack_config_ref": "${{ inputs.spack-config-ref }}",
             "spack_ref": "${{ inputs.spack-ref }}",
-            "pytest_test_markers": "${{ inputs.pytest-test-markers }}",
             "allow_ssh_into_spack_install": "${{ inputs.allow-ssh-into-spack-install }}",
             "container_image_version": "${{ inputs.container-image-version }}",
             "run_self_hosted": "${{ inputs.run-self-hosted }}",
 
             "spack_install_result": "${{ steps.install.conclusion }}",
+            "test_build_result" : "${{ steps.test.outcome }}",
+
+            "tests_passed": ${{ steps.test-parser.outputs.passed != '' && steps.test-parser.outputs.passed || 0 }},
+            "tests_failed": ${{ steps.test-parser.outputs.failed != '' && steps.test-parser.outputs.failed || 0 }},
+            "tests_skipped": ${{ steps.test-parser.outputs.skipped != '' && steps.test-parser.outputs.skipped || 0 }},
+            "tests_total": ${{ steps.test-parser.outputs.total != '' && steps.test-parser.outputs.total || 0 }},
 
             "spec_concretization_graph": $spec,
             "spack_manifest_repository_sha": "${{ steps.checkout.outputs.commit }}",
@@ -485,7 +584,7 @@ jobs:
       - name: Outputs - Upload
         if: always() && (steps.install.conclusion == 'failure' || steps.install.conclusion == 'success')
         id: upload
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ steps.init.outputs.artifact-name }}
           path: ${{ env.artifact-content-dir }}
