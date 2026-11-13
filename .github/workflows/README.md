@@ -288,7 +288,9 @@ With `inputs.enable-build-tests`, the manifest is concretized and installed with
 
 With `inputs.enable-stand-alone-tests`, after a successful install the job runs `spack test run` on the root specs. These are the `test_*` methods in the package's `package.py` (see the [spack stand-alone testing docs](https://spack.readthedocs.io/en/v1.1.1/packaging_guide_testing.html#stand-alone-tests)), so they are written in `ACCESS-NRI/access-spack-packages`, rather than the component repository.
 
-The results are written as a JUnit report, added to the job artifact as `spack_test_report.xml`, and shown in the job summary. `spack test results --log` output is also printed in the job log.
+The results are shown in the job summary, with one row per test rather than one per spec. To get this, spack writes its CDash reports (one per root spec, split by test), which are converted into a single JUnit report by [`cdash_to_junit.py`](../scripts/cdash_to_junit.py). Both are added to the job artifact: the JUnit report as `spack_test_report.xml`, and the CDash reports under `spack_test_cdash/`. `spack test results --log` output is also printed in the job log.
+
+The split into tests is done by spack, which has some quirks: a test with subtests (such as `test_c` for `test_c_hello.c`) is listed as its own row without output, and its `PASSED`/`FAILED` line appears in the output of its last subtest. The result of the job comes from the exit code of `spack test run`, not from the individual rows.
 
 ## Other Workflows
 

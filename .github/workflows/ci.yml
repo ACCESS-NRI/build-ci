@@ -455,9 +455,10 @@ jobs:
           . ${{ steps.setup.outputs.SPACK_ROOT }}/share/spack/setup-env.sh
           spack env activate default
 
-          # Spack writes the JUnit report even if there are no tests
-          spack test run --alias build-ci-tests --dirty --log-format=junit \
-            --log-file=${{ env.artifact-content-dir }}/spack_test_report.xml \
+          # CDash is used over JUnit as it reports each test of a spec separately, rather than
+          # one result per spec. For CDash, --log-file is a directory with a report per spec.
+          spack test run --alias build-ci-tests --dirty --log-format=cdash \
+            --log-file=${{ env.artifact-content-dir }}/spack_test_cdash \
             $(printf '/%s ' ${{ steps.get-roots.outputs.hashes }})
 
       - name: Test - Results
@@ -468,6 +469,16 @@ jobs:
           spack env activate default
           spack test results --log build-ci-tests || true
 
+      - name: Test - Convert CDash Report to JUnit
+        id: test-convert
+        # GitHub actions for test reports support JUnit rather than CDash.
+        # always() so the report is converted even when tests fail
+        if: always() && steps.test.outcome != 'skipped'
+        run: |
+          python3 build-ci/.github/scripts/cdash_to_junit.py \
+            ${{ env.artifact-content-dir }}/spack_test_cdash \
+            ${{ env.artifact-content-dir }}/spack_test_report.xml
+
       - name: Test - Parse Test Report
         id: test-parser
         # always() so the report is published even when tests fail
@@ -477,7 +488,7 @@ jobs:
           report_paths: ${{ env.artifact-content-dir }}/spack_test_report.xml
           include_passed: true
           detailed_summary: true
-          job_summary_text: Raw JUnit output can be found in `output-${{ steps.init.outputs.short-container-id }}`s spack_test_report.xml.
+          job_summary_text: JUnit output can be found in `output-${{ steps.init.outputs.short-container-id }}`s spack_test_report.xml, and the raw CDash output it was converted from in spack_test_cdash.
           failed_summary_logs: true
 
       - name: Tmate - Create session
