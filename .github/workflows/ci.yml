@@ -100,13 +100,13 @@ on:
       enable-build-tests:
         type: boolean
         required: false
-        default: false
+        default: true
         description: |
           Enable build- and install-time tests during spack install, defined in the caller repository.
       enable-stand-alone-tests:
         type: boolean
         required: false
-        default: false
+        default: true
         description: |
           Enable post-install stand-alone tests defined in the package repository.
     secrets:

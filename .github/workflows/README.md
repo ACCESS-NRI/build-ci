@@ -28,8 +28,8 @@ Testing is done natively through spack: build- and install-time tests via `spack
 | `container-image-version` | `string` (Docker version ref) | The version of the container image to use for the runner. Can be either a `:TAG` or a `@sha256:SHA`. | `false` | `":rocky"` | `':8.9'` (tag), `'@sha256:1234...'` (SHA) |
 | `spack-oci-buildcache-url` | `string` (OCI URL) | The URL to an oci-backed buildcache, available in spack >= v1.0. OCI-backed buildcaches are the only option for GitHub-hosted CI, and can be used as a backup for self-hosted CI's runner buildcache | `false` | N/A | `"oci://ghcr.io/ACCESS-NRI/build-ci-buildcache"`, `"oci://ghcr.io/ORG/IMAGE"` |
 | `run-self-hosted` | `boolean` | Whether to run the job on a self-hosted runner. For security, workflow runs will hang if this is `true` but it is not using a valid `v*` branch or tag for the workflow ref | `false` | `true` | `true`, `false` |
-| `enable-build-tests` | `boolean` | Run the build- and install-time tests of the manifest's root specs during the install (`spack install --test=root`). These are the tests defined in the component repository and run by its build system, for example `ctest` | `false` | `false` | `true`, `false` |
-| `enable-stand-alone-tests` | `boolean` | Run the post-install stand-alone tests of the manifest's root specs (`spack test run`) after a successful install. These are the `test_*` methods defined in the package's `package.py`, for example in `ACCESS-NRI/access-spack-packages` | `false` | `false` | `true`, `false` |
+| `enable-build-tests` | `boolean` | Run the build- and install-time tests of the manifest's root specs during the install (`spack install --test=root`). These are the tests defined in the component repository and run by its build system, for example `ctest` | `false` | `true` | `true`, `false` |
+| `enable-stand-alone-tests` | `boolean` | Run the post-install stand-alone tests of the manifest's root specs (`spack test run`) after a successful install. These are the `test_*` methods defined in the package's `package.py`, for example in `ACCESS-NRI/access-spack-packages` | `false` | `true` | `true`, `false` |
 
 #### Secrets
 
