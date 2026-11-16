@@ -261,7 +261,9 @@ jobs:
           echo "short-container-id=$short_container_id" >> $GITHUB_OUTPUT
 
           # Initialize artifact content directory
-          mkdir -p ${{ env.artifact-content-dir }}
+          mkdir -p ${{ env.artifact-content-dir }}/install
+          mkdir -p ${{ env.artifact-content-dir }}/manifest
+          mkdir -p ${{ env.artifact-content-dir }}/test
 
           # Output caller and manifest paths cloned in steps.checkout/checkout-caller for use in env-var-aware spack manifests spack.include sections
           echo "SPACK_MANIFEST_REPOSITORY_PATH=$(pwd)/manifest" >> $GITHUB_ENV
@@ -455,10 +457,12 @@ jobs:
           . ${{ steps.setup.outputs.SPACK_ROOT }}/share/spack/setup-env.sh
           spack env activate default
 
+          mkdir -p ${{ env.artifact-content-dir }}/test/stand_alone
+
           # CDash is used over JUnit as it reports each test of a spec separately, rather than
           # one result per spec. For CDash, --log-file is a directory with a report per spec.
           spack test run --alias build-ci-tests --dirty --log-format=cdash \
-            --log-file=${{ env.artifact-content-dir }}/spack_test_cdash \
+            --log-file=${{ env.artifact-content-dir }}/test/stand_alone/original_cdash \
             $(printf '/%s ' ${{ steps.get-roots.outputs.hashes }})
 
       - name: Test - Results
@@ -476,8 +480,8 @@ jobs:
         if: always() && steps.test.outcome != 'skipped'
         run: |
           python3 build-ci/.github/scripts/cdash_to_junit.py \
-            ${{ env.artifact-content-dir }}/spack_test_cdash \
-            ${{ env.artifact-content-dir }}/spack_test_report.xml
+            ${{ env.artifact-content-dir }}/test/stand_alone/original_cdash \
+            ${{ env.artifact-content-dir }}/test/stand_alone/converted_junit/test_report.xml
 
       - name: Test - Parse Test Report
         id: test-parser
@@ -485,10 +489,10 @@ jobs:
         if: always() && steps.test.outcome != 'skipped'
         uses: mikepenz/action-junit-report@a16be3a69023e9bd7e748ede768b3282ea7b30ce # v6.7.1
         with:
-          report_paths: ${{ env.artifact-content-dir }}/spack_test_report.xml
+          report_paths: ${{ env.artifact-content-dir }}/test/stand_alone/converted_junit/test_report.xml
           include_passed: true
           detailed_summary: true
-          job_summary_text: JUnit output can be found in `output-${{ steps.init.outputs.short-container-id }}`s spack_test_report.xml, and the raw CDash output it was converted from in spack_test_cdash.
+          job_summary_text: JUnit output can be found in `output-${{ steps.init.outputs.short-container-id }}`s `test/stand_alone/converted_junit/test_report.xml`, and the raw CDash output it was converted from in `test/stand_alone/original_cdash`.
           failed_summary_logs: true
 
       - name: Tmate - Create session
@@ -518,12 +522,13 @@ jobs:
         run: |
           # Consolidate Manifests
           if compgen -G "${{ steps.setup.outputs.spack-env-dir }}/default/spack.*" > /dev/null; then
-            cp -v ${{ steps.setup.outputs.spack-env-dir }}/default/spack.* ${{ env.artifact-content-dir }}
+            mkdir -p ${{ env.artifact-content-dir }}/manifest/default
+            cp -v ${{ steps.setup.outputs.spack-env-dir }}/default/spack.* ${{ env.artifact-content-dir }}/manifest/default
           fi
 
           if compgen -G "${{ steps.setup.outputs.spack-env-dir }}/local_compilers/spack.*" > /dev/null; then
-            mkdir -p ${{ env.artifact-content-dir }}/local_compilers
-            cp -v ${{ steps.setup.outputs.spack-env-dir }}/local_compilers/spack.* ${{ env.artifact-content-dir }}/local_compilers
+            mkdir -p ${{ env.artifact-content-dir }}/manifest/local_compilers
+            cp -v ${{ steps.setup.outputs.spack-env-dir }}/local_compilers/spack.* ${{ env.artifact-content-dir }}/manifest/local_compilers
           fi
 
           # Consolidate Logs
@@ -531,7 +536,7 @@ jobs:
 
           i=0
           for hash in ${{ steps.get-roots.outputs.hashes }}; do
-            spack -e default logs /$hash > "${{ env.artifact-content-dir }}/spec_install_log_${i}.log" || true
+            spack -e default logs /$hash > "${{ env.artifact-content-dir }}/install/install_log_${i}.log" || true
 
             # See https://spack.readthedocs.io/en/v1.1.1/packaging_guide_testing.html#checking-build-time-test-results
             # The test log is in the install prefix if the spec installed, or in the stage dir if it failed.
@@ -540,7 +545,8 @@ jobs:
               "$(spack -e default location --stage-dir /$hash)/install-time-test-log.txt"; do
 
               if [ -f "$test_log" ]; then
-                cp "$test_log" "${{ env.artifact-content-dir }}/spec_install_test_log_${i}.log"
+                mkdir -p ${{ env.artifact-content-dir }}/test/build
+                cp "$test_log" "${{ env.artifact-content-dir }}/test/build/test_log_${i}.log"
                 break
               fi
             done

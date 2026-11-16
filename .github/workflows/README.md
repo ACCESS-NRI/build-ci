@@ -60,6 +60,27 @@ Testing is done natively through spack: build- and install-time tests via `spack
 | `artifact-pattern` | `string` (glob) | Wildcard pattern to match all artifacts across a matrix job | `'output-*'` |
 | `artifact-url` | `string` (URL) | The URL of the artifact | `"https://github.com/ACCESS-NRI/MOM5/actions/runs/15890554355/artifacts/3406449135"` |
 
+These outputs are also contained within the artifact(s) associated with the workflow run - named `output-{{ short-container-id }}`, under `job_outputs.json` - useful for post-matrix-CI parsing. The full structure of the artifact is as follows:
+
+```txt
+install/ (for spack install logs)
+└── install_log_0.log
+manifest/ (for spack manifests)
+├── local_compilers(?)/
+│   ├── spack.yaml
+│   └── spack.lock
+└── default/
+    ├── spack.yaml
+    └── spack.lock
+test/ (for test-related output, assuming inputs.enable-*-tests: true)
+├── build/ (build-time tests as part of spack install)
+│   └── test_log_N.log
+└── stand_alone/ (stand-alone tests as part of spack test run)
+    ├── original_cdash
+    └── converted_junit
+job_outputs.json (above outputs)
+```
+
 #### Examples
 
 ##### Minimal
@@ -281,14 +302,14 @@ spack:
 With `inputs.enable-build-tests`, the manifest is concretized and installed with `--test=root`. Spack then runs each root spec's build- and install-time tests while building it, for example `make test`/`ctest` for a `CMakePackage`. These are the tests that live in the component repository; the package only needs to enable them when `self.run_tests` and declare any test-only dependencies with `type="test"`. Some caveats:
 
 - **Failures:** a failing build-time test fails the installation.
-- **Logs:** each root spec's test log is added to the `output-*` job artifact as `spec_install_test_log_N.log`, next to its install log `spec_install_log_N.log`, for the `N`th root spec.
+- **Logs:** each root spec's test log is added to the `output-*` job artifact as `test/build/test_log_N.log`, with its install log in `install/install_log_N.log`, for the `N`th root spec.
 - **Different hashes:** `type="test"` dependencies are part of the concretized spec, so a spec concretized with tests has a different hash to the same spec without them.
 
 ###### Stand-Alone Tests
 
 With `inputs.enable-stand-alone-tests`, after a successful install the job runs `spack test run` on the root specs. These are the `test_*` methods in the package's `package.py` (see the [spack stand-alone testing docs](https://spack.readthedocs.io/en/v1.1.1/packaging_guide_testing.html#stand-alone-tests)), so they are written in `ACCESS-NRI/access-spack-packages`, rather than the component repository.
 
-The results are shown in the job summary, with one row per test rather than one per spec. To get this, spack writes its CDash reports (one per root spec, split by test), which are converted into a single JUnit report by [`cdash_to_junit.py`](../scripts/cdash_to_junit.py). Both are added to the job artifact: the JUnit report as `spack_test_report.xml`, and the CDash reports under `spack_test_cdash/`. `spack test results --log` output is also printed in the job log.
+The results are shown in the job summary, with one row per test rather than one per spec. To get this, spack writes its CDash reports (one per root spec, split by test), which are converted into a single JUnit report by [`cdash_to_junit.py`](../scripts/cdash_to_junit.py). Both are added to the job artifact: the JUnit report as `test/stand_alone/converted_junit/test_report.xml`, and the CDash reports under `test/stand_alone/original_cdash/`. `spack test results --log` output is also printed in the job log.
 
 The split into tests is done by spack, which has some quirks: a test with subtests (such as `test_c` for `test_c_hello.c`) is listed as its own row without output, and its `PASSED`/`FAILED` line appears in the output of its last subtest. The result of the job comes from the exit code of `spack test run`, not from the individual rows.
 
