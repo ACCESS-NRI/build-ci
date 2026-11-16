@@ -366,7 +366,7 @@ jobs:
 
           echo "spack-manifest-path=$templated_manifest_path" >> $GITHUB_OUTPUT
 
-      - name: Manifest - Install
+      - name: Manifest - Install ${{ inputs.enable-build-tests && 'And Run Build Tests' || '' }}
         id: install
         working-directory: manifest
         env:
