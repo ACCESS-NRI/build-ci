@@ -532,6 +532,8 @@ jobs:
             ## Stand-Alone Tests
             JUnit output can be found in `output-${{ steps.init.outputs.short-container-id }}`s `test/stand_alone/converted_junit/test_report.xml`, and the raw CDash output it was converted from in `test/stand_alone/original_cdash`.
           failed_summary_logs: true
+          # We don't need to create check runs for the stand-alone tests
+          annotate_only: true
 
       - name: Tmate - Create session
         # Only create the session if the spack installation was attempted, and we want a tmate session
