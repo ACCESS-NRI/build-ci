@@ -13,7 +13,7 @@ spack:
     - intel@2021.10.0
     - oneapi@2025.2.0
     - oneapi@2025.3.2
-    - gcc@13.2.0
+    # - gcc@13.2.0 Not building packages for gcc@13 to keep image size low
     - gcc@15.1.0
 
     # Targets for the packages
