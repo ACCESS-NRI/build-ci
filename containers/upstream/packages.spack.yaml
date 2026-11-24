@@ -11,7 +11,7 @@ spack:
     # Compilers to install the packages
   - compilers:
     - intel@2021.10.0
-    - oneapi@2025.2.0
+    # - oneapi@2025.2.0 Not building packages for oneapi@2025.2.0 either, keeping image size low
     - oneapi@2025.3.2
     # - gcc@13.2.0 Not building packages for gcc@13 to keep image size low
     - gcc@15.1.0
