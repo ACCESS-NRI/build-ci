@@ -5,6 +5,7 @@ spack:
   # when running spack-enable.bash
   specs:
   - gcc@13.2.0 %gcc@8.5.0
+  - gcc@15.1.0 %gcc@8.5.0
   - intel-oneapi-compilers-classic@2021.10.0
   - intel-oneapi-compilers@2025.2.0
   - intel-oneapi-compilers@2025.3.2
