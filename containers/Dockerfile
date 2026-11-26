@@ -233,8 +233,10 @@ FROM base-dev AS dev
 
 RUN <<EOF
 spack install gcc@13.2.0 target=x86_64_v3
+spack install gcc@15.1.0 target=x86_64_v3
 spack install intel-oneapi-compilers-classic@2021.10.0 target=x86_64_v3
 spack install intel-oneapi-compilers@2025.2.0 target=x86_64_v3
+spack install intel-oneapi-compilers@2025.3.2 target=x86_64_v3
 
 case "$SPACK_VERSION" in
   v0.*)
